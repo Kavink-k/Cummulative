@@ -5,25 +5,31 @@ import { FormStepper } from "@/components/FormStepper";
 import { PersonalProfileForm } from "@/components/PersonalProfileForm";
 import { EducationalQualificationForm } from "@/components/EducationalQualificationForm";
 import { AdmissionDetailsForm } from "@/components/AdmissionDetailsForm";
+import { AttendanceForm } from "@/components/AttendanceForm";
+import { ActivitiesParticipationForm } from "@/components/ActivitiesParticipationForm";
+import { CourseInstructionForm } from "@/components/CourseInstructionForm";
+import { ObservationalVisitForm } from "@/components/ObservationalVisitForm";
+import { ClinicalExperienceForm } from "@/components/ClinicalExperienceForm";
+import { ResearchProjectForm } from "@/components/ResearchProjectForm";
+import { AdditionalCoursesForm } from "@/components/AdditionalCoursesForm";
+import { CourseCompletionForm } from "@/components/CourseCompletionForm";
+import { VerificationForm } from "@/components/VerificationForm";
 import { toast } from "sonner";
-import { BookOpen, ChevronLeft, ChevronRight, Save } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Save, CheckCircle2 } from "lucide-react";
 
 const steps = [
-  {
-    id: 1,
-    title: "Personal Profile",
-    description: "Student's basic information",
-  },
-  {
-    id: 2,
-    title: "Educational Qualification",
-    description: "Academic records",
-  },
-  {
-    id: 3,
-    title: "Admission Details",
-    description: "Admission & certificates",
-  },
+  { id: 1, title: "Personal Profile", description: "Student's basic information" },
+  { id: 2, title: "Educational Qualification", description: "Academic records" },
+  { id: 3, title: "Admission Details", description: "Admission & certificates" },
+  { id: 4, title: "Attendance Record", description: "Working days & leave details" },
+  { id: 5, title: "Activities & Participation", description: "Sports & co-curricular activities" },
+  { id: 6, title: "Course Instruction", description: "Course details & marks" },
+  { id: 7, title: "Observational Visits", description: "Field visit records" },
+  { id: 8, title: "Clinical Experience", description: "Clinical hours tracking" },
+  { id: 9, title: "Research Projects", description: "Nursing research projects" },
+  { id: 10, title: "Additional Courses", description: "Extra courses completed" },
+  { id: 11, title: "Course Completion", description: "Course completion details" },
+  { id: 12, title: "Verification", description: "Semester-wise verification" },
 ];
 
 const Index = () => {
@@ -52,13 +58,39 @@ const Index = () => {
       handleNext();
     } else {
       console.log("Complete form data:", { ...formData, [`step${currentStep}`]: stepData });
-      toast.success("All forms completed successfully!");
+      toast.success("All forms completed successfully!", {
+        description: "Your cumulative record has been submitted.",
+        icon: <CheckCircle2 className="h-5 w-5" />,
+      });
     }
   };
 
   const handleSaveDraft = () => {
     toast.info("Draft saved successfully!");
     console.log("Current draft:", formData);
+  };
+
+  const renderCurrentForm = () => {
+    const props = {
+      onSubmit: handleFormSubmit,
+      defaultValues: formData[`step${currentStep}`],
+    };
+
+    switch (currentStep) {
+      case 1: return <PersonalProfileForm {...props} />;
+      case 2: return <EducationalQualificationForm {...props} />;
+      case 3: return <AdmissionDetailsForm {...props} />;
+      case 4: return <AttendanceForm {...props} />;
+      case 5: return <ActivitiesParticipationForm {...props} />;
+      case 6: return <CourseInstructionForm {...props} />;
+      case 7: return <ObservationalVisitForm {...props} />;
+      case 8: return <ClinicalExperienceForm {...props} />;
+      case 9: return <ResearchProjectForm {...props} />;
+      case 10: return <AdditionalCoursesForm {...props} />;
+      case 11: return <CourseCompletionForm {...props} />;
+      case 12: return <VerificationForm {...props} />;
+      default: return null;
+    }
   };
 
   return (
@@ -87,7 +119,7 @@ const Index = () => {
         <Card className="mb-8 border-2">
           <CardHeader>
             <CardTitle>Form Progress</CardTitle>
-            <CardDescription>Complete all sections to submit your cumulative record</CardDescription>
+            <CardDescription>Complete all {steps.length} sections to submit your cumulative record</CardDescription>
           </CardHeader>
           <CardContent>
             <FormStepper steps={steps} currentStep={currentStep} onStepClick={setCurrentStep} />
@@ -102,24 +134,7 @@ const Index = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
-            {currentStep === 1 && (
-              <PersonalProfileForm
-                onSubmit={handleFormSubmit}
-                defaultValues={formData.step1}
-              />
-            )}
-            {currentStep === 2 && (
-              <EducationalQualificationForm
-                onSubmit={handleFormSubmit}
-                defaultValues={formData.step2}
-              />
-            )}
-            {currentStep === 3 && (
-              <AdmissionDetailsForm
-                onSubmit={handleFormSubmit}
-                defaultValues={formData.step3}
-              />
-            )}
+            {renderCurrentForm()}
 
             <div className="flex justify-between mt-8 pt-6 border-t">
               <Button
@@ -165,7 +180,9 @@ const Index = () => {
                         currentForm.dispatchEvent(submitEvent);
                       }
                     }}
+                    className="bg-primary"
                   >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
                     Submit All Forms
                   </Button>
                 )}
@@ -175,7 +192,7 @@ const Index = () => {
         </Card>
 
         <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>Step {currentStep} of {steps.length} • All fields marked with * are required</p>
+          <p>Step {currentStep} of {steps.length} • All information will be saved automatically</p>
         </div>
       </main>
 
