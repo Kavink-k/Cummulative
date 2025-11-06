@@ -190,7 +190,7 @@ export const EducationalQualificationForm = ({ onSubmit, defaultValues }: Educat
                   className="flex items-center gap-1"
                 >
                   <Minus className="h-4 w-4" />
-                  {/* Remove Attempt {attemptCount} */}
+                  Remove Attempt {attemptCount}
                 </Button>
               )}
               {attemptCount < 3 && (
@@ -202,7 +202,7 @@ export const EducationalQualificationForm = ({ onSubmit, defaultValues }: Educat
                   className="flex items-center gap-1"
                 >
                   <Plus className="h-4 w-4" />
-                  {/* Add Attempt {attemptCount + 1} */}
+                  Add Attempt {attemptCount + 1}
                 </Button>
               )}
             </div>
