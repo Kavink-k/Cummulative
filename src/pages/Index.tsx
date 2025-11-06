@@ -122,7 +122,17 @@ const Index = () => {
             <CardDescription>Complete all {steps.length} sections to submit your cumulative record</CardDescription>
           </CardHeader>
           <CardContent>
-            <FormStepper steps={steps} currentStep={currentStep} onStepClick={setCurrentStep} />
+            {/* Fixed: Responsive wrapper for horizontal scroll/overflow */}
+            <div className="overflow-x-auto pb-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-start sm:justify-between gap-2 sm:gap-4 min-w-max sm:min-w-0">
+                <FormStepper 
+                  steps={steps} 
+                  currentStep={currentStep} 
+                  onStepClick={setCurrentStep}
+                  className="flex-1"  // Allows it to flex and shrink if needed
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
