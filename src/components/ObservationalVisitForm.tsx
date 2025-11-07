@@ -1,15 +1,15 @@
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const visitSchema = z.object({
   semester: z.string(),
-  institution: z.string(),
-  place: z.string(),
+  institutionPlace: z.string(),
   date: z.string(),
 });
 
@@ -18,6 +18,49 @@ const observationalVisitSchema = z.object({
 });
 
 type ObservationalVisitFormData = z.infer<typeof observationalVisitSchema>;
+
+// Data from the Excel file - Field Visit sheet
+const observationalVisitData = {
+  "I": [
+    { institutionPlace: "Social Organization" }
+  ],
+  "II": [
+    { institutionPlace: "Hospital Visit on Hospital Management System" }
+  ],
+  "III": [
+    { institutionPlace: "Blood Bank" }
+  ],
+  "IV": [
+    { institutionPlace: "Alternative Medicine (Ayurved / Homeopathy / Unani / Siddha)" },
+    { institutionPlace: "Dialysis Centre" },
+    { institutionPlace: "Local Disaster Management Centre" },
+    { institutionPlace: "Old Age Home" }
+  ],
+  "V": [
+    { institutionPlace: "Anganwadi Child Guidance Clinic" },
+    { institutionPlace: "Deaddiction Centre" },
+    { institutionPlace: "CHC/PHC/SC/Health And Purification Site" },
+    { institutionPlace: "Water Supply And Purification Site" },
+    { institutionPlace: "Sewage and Waste Disposal Site" },
+    { institutionPlace: "Milk Purification Plant" },
+    { institutionPlace: "Slaughter House" },
+    { institutionPlace: "Communicable Disease Hospital/Entomology Office" },
+    { institutionPlace: "Regional Forensic Science Laboratory" },
+    { institutionPlace: "Rainwater Harvesting Area" },
+    { institutionPlace: "Nursing Education Institution-Regional/National organization" }
+  ],
+  "VI": [
+    { institutionPlace: "Hospital - Regional / National Organization" },
+    { institutionPlace: "Child guidance Clinic, School for mentally, Socially and Physically Challenged" },
+    { institutionPlace: "Mental Health Service Agency" },
+    { institutionPlace: "Family Welfare Service" }
+  ],
+  "VII": [
+    { institutionPlace: "Healthcare Delivery System" },
+    { institutionPlace: "Waste Management Site" },
+    { institutionPlace: "Infertility Clinic, ART Centre" }
+  ]
+};
 
 interface ObservationalVisitFormProps {
   onSubmit: (data: ObservationalVisitFormData) => void;
@@ -28,14 +71,33 @@ export const ObservationalVisitForm = ({ onSubmit, defaultValues }: Observationa
   const form = useForm<ObservationalVisitFormData>({
     resolver: zodResolver(observationalVisitSchema),
     defaultValues: defaultValues || {
-      visits: [{ semester: "", institution: "", place: "", date: "" }],
+      visits: [{ semester: "", institutionPlace: "", date: "" }],
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append } = useFieldArray({
     control: form.control,
     name: "visits",
   });
+
+  const handleSemesterChange = (index: number, value: string) => {
+    // Update the semester field
+    form.setValue(`visits.${index}.semester`, value);
+    
+    // Clear the institutionPlace when semester changes
+    form.setValue(`visits.${index}.institutionPlace`, "");
+  };
+
+  const handleInstitutionPlaceChange = (index: number, value: string) => {
+    form.setValue(`visits.${index}.institutionPlace`, value);
+  };
+
+  const getInstitutionPlacesForSemester = (semester: string) => {
+    if (semester && observationalVisitData[semester as keyof typeof observationalVisitData]) {
+      return observationalVisitData[semester as keyof typeof observationalVisitData];
+    }
+    return [];
+  };
 
   return (
     <Form {...form}>
@@ -45,10 +107,8 @@ export const ObservationalVisitForm = ({ onSubmit, defaultValues }: Observationa
             <thead>
               <tr className="bg-muted">
                 <th className="border p-3 text-left font-semibold">Semester</th>
-                <th className="border p-3 text-left font-semibold">Institution</th>
-                <th className="border p-3 text-left font-semibold">Place</th>
+                <th className="border p-3 text-left font-semibold">Institution & Place</th>
                 <th className="border p-3 text-left font-semibold">Date</th>
-                <th className="border p-3 text-center font-semibold w-20">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -60,9 +120,23 @@ export const ObservationalVisitForm = ({ onSubmit, defaultValues }: Observationa
                       name={`visits.${index}.semester`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormControl>
-                            <Input {...field} placeholder="I, II, III..." className="h-9" />
-                          </FormControl>
+                          <Select
+                            value={field.value}
+                            onValueChange={(value) => handleSemesterChange(index, value)}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder="Select semester" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Object.keys(observationalVisitData).map((semester) => (
+                                <SelectItem key={semester} value={semester}>
+                                  Semester {semester}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </FormItem>
                       )}
                     />
@@ -70,25 +144,27 @@ export const ObservationalVisitForm = ({ onSubmit, defaultValues }: Observationa
                   <td className="border p-2">
                     <FormField
                       control={form.control}
-                      name={`visits.${index}.institution`}
+                      name={`visits.${index}.institutionPlace`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormControl>
-                            <Input {...field} placeholder="Institution name" className="h-9" />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`visits.${index}.place`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input {...field} placeholder="Location" className="h-9" />
-                          </FormControl>
+                          <Select
+                            value={field.value}
+                            onValueChange={(value) => handleInstitutionPlaceChange(index, value)}
+                            disabled={!form.watch(`visits.${index}.semester`)}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder="Select institution & place" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {getInstitutionPlacesForSemester(form.watch(`visits.${index}.semester`)).map((visit, visitIndex) => (
+                                <SelectItem key={visitIndex} value={visit.institutionPlace}>
+                                  {visit.institutionPlace}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </FormItem>
                       )}
                     />
@@ -106,18 +182,6 @@ export const ObservationalVisitForm = ({ onSubmit, defaultValues }: Observationa
                       )}
                     />
                   </td>
-                  <td className="border p-2 text-center">
-                    {fields.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => remove(index)}
-                      >
-                        <X className="h-4 w-4 text-destructive" />
-                      </Button>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -126,12 +190,15 @@ export const ObservationalVisitForm = ({ onSubmit, defaultValues }: Observationa
         <Button
           type="button"
           variant="outline"
-          onClick={() => append({ semester: "", institution: "", place: "", date: "" })}
+          onClick={() => append({ semester: "", institutionPlace: "", date: "" })}
           className="w-full"
         >
           <Plus className="h-4 w-4 mr-2" />
           Add Visit Record
         </Button>
+        <div className="flex justify-end">
+          <Button type="submit">Save Observational Visits</Button>
+        </div>
       </form>
     </Form>
   );
