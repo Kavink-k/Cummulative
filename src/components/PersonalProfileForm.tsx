@@ -5,6 +5,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useEffect } from "react";
 
 const personalProfileSchema = z.object({
   studentName: z.string().min(2, "Name must be at least 2 characters").max(100),
@@ -33,17 +34,51 @@ type PersonalProfileFormData = z.infer<typeof personalProfileSchema>;
 interface PersonalProfileFormProps {
   onSubmit: (data: PersonalProfileFormData) => void;
   defaultValues?: Partial<PersonalProfileFormData>;
+  onProgressChange?: (progress: number) => void; // New prop to report progress
 }
 
-export const PersonalProfileForm = ({ onSubmit, defaultValues }: PersonalProfileFormProps) => {
+export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange }: PersonalProfileFormProps) => {
   const form = useForm<PersonalProfileFormData>({
     resolver: zodResolver(personalProfileSchema),
     defaultValues: defaultValues || {},
   });
 
+  // Calculate progress based on filled fields
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      const requiredFields = [
+        "studentName",
+        "age",
+        "gender",
+        "dateOfBirth",
+        "nationality",
+        "religion",
+        "community",
+        "nativity",
+        "maritalStatus",
+        "parentGuardianName",
+        "motherTongue",
+        "communicationAddress",
+        "permanentAddress",
+        "contactMobile",
+        "studentEmail",
+        "aadharNo",
+        "emisNo",
+        "mediumOfInstruction",
+      ];
+      const filledFields = requiredFields.filter(
+        (field) => values[field] && values[field].toString().trim() !== ""
+      ).length;
+      const progress = (filledFields / requiredFields.length) * 100;
+      onProgressChange?.(progress);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onProgressChange]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Existing form fields remain unchanged */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}

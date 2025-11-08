@@ -4,6 +4,8 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Plus, X } from "lucide-react";
+import { useEffect } from "react";
 
 const courseCompletionSchema = z.object({
   courseName: z.string(),
@@ -31,9 +33,10 @@ const certificateNames = [
 interface CourseCompletionFormProps {
   onSubmit: (data: CourseCompletionFormData) => void;
   defaultValues?: Partial<CourseCompletionFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const CourseCompletionForm = ({ onSubmit, defaultValues }: CourseCompletionFormProps) => {
+export const CourseCompletionForm = ({ onSubmit, defaultValues, onProgressChange }: CourseCompletionFormProps) => {
   const form = useForm<CourseCompletionFormData>({
     resolver: zodResolver(courseCompletionFormSchema),
     defaultValues: defaultValues || {
@@ -49,6 +52,22 @@ export const CourseCompletionForm = ({ onSubmit, defaultValues }: CourseCompleti
     control: form.control,
     name: "completions",
   });
+
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      let filledFields = 0;
+      const fieldsPerCompletion = ["courseName", "certificateNumber", "dateOfIssue"];
+      values.completions?.forEach((completion: any) => {
+        filledFields += fieldsPerCompletion.filter(
+          (field) => completion[field] && completion[field].toString().trim() !== ""
+        ).length;
+      });
+      const totalRequiredFields = values.completions?.length * fieldsPerCompletion.length || 0;
+      const progress = totalRequiredFields > 0 ? (filledFields / totalRequiredFields) * 100 : 0;
+      onProgressChange?.(progress);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onProgressChange]);
 
   return (
     <Form {...form}>

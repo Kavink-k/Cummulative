@@ -5,6 +5,7 @@ import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, X } from "lucide-react";
+import { useEffect } from "react";
 
 const projectSchema = z.object({
   semester: z.string(),
@@ -22,9 +23,10 @@ type ResearchProjectFormData = z.infer<typeof researchProjectSchema>;
 interface ResearchProjectFormProps {
   onSubmit: (data: ResearchProjectFormData) => void;
   defaultValues?: Partial<ResearchProjectFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const ResearchProjectForm = ({ onSubmit, defaultValues }: ResearchProjectFormProps) => {
+export const ResearchProjectForm = ({ onSubmit, defaultValues, onProgressChange }: ResearchProjectFormProps) => {
   const form = useForm<ResearchProjectFormData>({
     resolver: zodResolver(researchProjectSchema),
     defaultValues: defaultValues || {
@@ -36,6 +38,22 @@ export const ResearchProjectForm = ({ onSubmit, defaultValues }: ResearchProject
     control: form.control,
     name: "projects",
   });
+
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      let filledFields = 0;
+      const fieldsPerProject = ["semester", "areaOfStudy", "type", "projectTitle"];
+      values.projects?.forEach((project: any) => {
+        filledFields += fieldsPerProject.filter(
+          (field) => project[field] && project[field].toString().trim() !== ""
+        ).length;
+      });
+      const totalRequiredFields = values.projects?.length * fieldsPerProject.length || 0;
+      const progress = totalRequiredFields > 0 ? (filledFields / totalRequiredFields) * 100 : 0;
+      onProgressChange?.(progress);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onProgressChange]);
 
   return (
     <Form {...form}>

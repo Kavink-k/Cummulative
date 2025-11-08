@@ -4,6 +4,7 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect } from "react";
 
 const courseInstructionSchema = z.object({
   semester: z.string().min(1, "Semester is required"),
@@ -45,13 +46,30 @@ type CourseInstructionFormData = z.infer<typeof courseInstructionSchema>;
 interface CourseInstructionFormProps {
   onSubmit: (data: CourseInstructionFormData) => void;
   defaultValues?: Partial<CourseInstructionFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const CourseInstructionForm = ({ onSubmit, defaultValues }: CourseInstructionFormProps) => {
+export const CourseInstructionForm = ({ onSubmit, defaultValues, onProgressChange }: CourseInstructionFormProps) => {
   const form = useForm<CourseInstructionFormData>({
     resolver: zodResolver(courseInstructionSchema),
     defaultValues: defaultValues || {},
   });
+
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      const requiredFields = [
+        "semester",
+        "courseCode",
+        "courseTitle"
+      ];
+      const filledFields = requiredFields.filter(
+        (field) => values[field] && values[field].toString().trim() !== ""
+      ).length;
+      const progress = (filledFields / requiredFields.length) * 100;
+      onProgressChange?.(progress);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onProgressChange]);
 
   return (
     <Form {...form}>
@@ -133,7 +151,7 @@ export const CourseInstructionForm = ({ onSubmit, defaultValues }: CourseInstruc
               name="theoryCredits"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Theory Credits</FormLabel>
+                  <FormLabel>Theory</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} />
                   </FormControl>
@@ -145,7 +163,7 @@ export const CourseInstructionForm = ({ onSubmit, defaultValues }: CourseInstruc
               name="skillLabCredits"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Skill Lab Credits</FormLabel>
+                  <FormLabel>Skill Lab</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} />
                   </FormControl>
@@ -157,7 +175,7 @@ export const CourseInstructionForm = ({ onSubmit, defaultValues }: CourseInstruc
               name="clinicalCredits"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Clinical Credits</FormLabel>
+                  <FormLabel>Clinical</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} />
                   </FormControl>
@@ -168,135 +186,141 @@ export const CourseInstructionForm = ({ onSubmit, defaultValues }: CourseInstruc
         </div>
 
         <div className="bg-muted/30 p-4 rounded-lg border">
-          <h3 className="font-semibold text-lg mb-4">Instruction Hours</h3>
+          <h3 className="font-semibold text-lg mb-4">Attendance</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm">Theory</h4>
-              <FormField
-                control={form.control}
-                name="theoryPrescribed"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Prescribed</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="theoryAttended"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Attended</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="theoryPercentage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">%</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+            <div className="space-y-2">
+              <FormLabel>Theory</FormLabel>
+              <div className="grid grid-cols-3 gap-2">
+                <FormField
+                  control={form.control}
+                  name="theoryPrescribed"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Prescribed</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="theoryAttended"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Attended</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="theoryPercentage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">%</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm">Skill Lab</h4>
-              <FormField
-                control={form.control}
-                name="skillLabPrescribed"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Prescribed</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="skillLabAttended"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Attended</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="skillLabPercentage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">%</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+            <div className="space-y-2">
+              <FormLabel>Skill Lab</FormLabel>
+              <div className="grid grid-cols-3 gap-2">
+                <FormField
+                  control={form.control}
+                  name="skillLabPrescribed"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Prescribed</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="skillLabAttended"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Attended</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="skillLabPercentage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">%</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm">Clinical</h4>
-              <FormField
-                control={form.control}
-                name="clinicalPrescribed"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Prescribed</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="clinicalAttended"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Attended</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="clinicalPercentage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">%</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+            <div className="space-y-2">
+              <FormLabel>Clinical</FormLabel>
+              <div className="grid grid-cols-3 gap-2">
+                <FormField
+                  control={form.control}
+                  name="clinicalPrescribed"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Prescribed</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="clinicalAttended"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Attended</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="clinicalPercentage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">%</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
           </div>
         </div>
 
         <div className="bg-muted/30 p-4 rounded-lg border">
-          <h3 className="font-semibold text-lg mb-4">Marks Obtained</h3>
+          <h3 className="font-semibold text-lg mb-4">Marks</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <h4 className="font-medium">Theory</h4>
+            <div className="space-y-2">
+              <FormLabel>Theory</FormLabel>
               <div className="grid grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
@@ -373,8 +397,8 @@ export const CourseInstructionForm = ({ onSubmit, defaultValues }: CourseInstruc
               </div>
             </div>
 
-            <div className="space-y-3">
-              <h4 className="font-medium">Practical</h4>
+            <div className="space-y-2">
+              <FormLabel>Practical</FormLabel>
               <div className="grid grid-cols-2 gap-3">
                 <FormField
                   control={form.control}

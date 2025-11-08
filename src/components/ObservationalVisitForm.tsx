@@ -210,6 +210,8 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Plus, X } from "lucide-react";
+import { useEffect } from "react";
 
 const visitSchema = z.object({
   semester: z.string(),
@@ -255,9 +257,10 @@ const observationalVisitData = [
 interface ObservationalVisitFormProps {
   onSubmit: (data: ObservationalVisitFormData) => void;
   defaultValues?: Partial<ObservationalVisitFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const ObservationalVisitForm = ({ onSubmit, defaultValues }: ObservationalVisitFormProps) => {
+export const ObservationalVisitForm = ({ onSubmit, defaultValues, onProgressChange }: ObservationalVisitFormProps) => {
   const form = useForm<ObservationalVisitFormData>({
     resolver: zodResolver(observationalVisitSchema),
     defaultValues: defaultValues || {
@@ -270,16 +273,21 @@ export const ObservationalVisitForm = ({ onSubmit, defaultValues }: Observationa
     name: "visits",
   });
 
-  // Group visits by semester for merged rows
-  const groupedVisits = fields.reduce((acc, field, index) => {
-    if (!acc[field.semester]) {
-      acc[field.semester] = [];
-    }
-    acc[field.semester].push({ ...field, index });
-    return acc;
-  }, {} as Record<string, Array<any>>);
-
-  const semesterOrder = ["I", "II", "III", "IV", "V", "VI", "VII"];
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      let filledFields = 0;
+      const fieldsPerVisit = ["semester", "institution", "place", "date"];
+      values.visits?.forEach((visit: any) => {
+        filledFields += fieldsPerVisit.filter(
+          (field) => visit[field] && visit[field].toString().trim() !== ""
+        ).length;
+      });
+      const totalRequiredFields = values.visits?.length * fieldsPerVisit.length || 0;
+      const progress = totalRequiredFields > 0 ? (filledFields / totalRequiredFields) * 100 : 0;
+      onProgressChange?.(progress);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onProgressChange]);
 
   return (
     <Form {...form}>

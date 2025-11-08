@@ -4,8 +4,8 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, X } from "lucide-react";
+import { useEffect } from "react";
 
 const clinicalRecordSchema = z.object({
   semester: z.string(),
@@ -120,9 +120,10 @@ const clinicalExperienceData = {
 interface ClinicalExperienceFormProps {
   onSubmit: (data: ClinicalExperienceFormData) => void;
   defaultValues?: Partial<ClinicalExperienceFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const ClinicalExperienceForm = ({ onSubmit, defaultValues }: ClinicalExperienceFormProps) => {
+export const ClinicalExperienceForm = ({ onSubmit, defaultValues, onProgressChange }: ClinicalExperienceFormProps) => {
   const form = useForm<ClinicalExperienceFormData>({
     resolver: zodResolver(clinicalExperienceSchema),
     defaultValues: defaultValues || {
@@ -135,41 +136,21 @@ export const ClinicalExperienceForm = ({ onSubmit, defaultValues }: ClinicalExpe
     name: "records",
   });
 
-  const handleSemesterChange = (index: number, value: string) => {
-    // Update the semester field
-    form.setValue(`records.${index}.semester`, value);
-    
-    // Clear the clinical area when semester changes
-    form.setValue(`records.${index}.clinicalArea`, "");
-    form.setValue(`records.${index}.credits`, "");
-    form.setValue(`records.${index}.prescribedWeeks`, "");
-    form.setValue(`records.${index}.prescribedHours`, "");
-    form.setValue(`records.${index}.completedHours`, "");
-    form.setValue(`records.${index}.hospital`, "");
-  };
-
-  const handleClinicalAreaChange = (index: number, value: string) => {
-    const semester = form.getValues(`records.${index}.semester`);
-    if (semester && clinicalExperienceData[semester as keyof typeof clinicalExperienceData]) {
-      const selectedArea = clinicalExperienceData[semester as keyof typeof clinicalExperienceData].find(
-        area => area.clinicalArea === value
-      );
-      
-      if (selectedArea) {
-        form.setValue(`records.${index}.clinicalArea`, value);
-        form.setValue(`records.${index}.credits`, selectedArea.credits);
-        form.setValue(`records.${index}.prescribedWeeks`, selectedArea.prescribedWeeks);
-        form.setValue(`records.${index}.prescribedHours`, selectedArea.prescribedHours);
-      }
-    }
-  };
-
-  const getClinicalAreasForSemester = (semester: string) => {
-    if (semester && clinicalExperienceData[semester as keyof typeof clinicalExperienceData]) {
-      return clinicalExperienceData[semester as keyof typeof clinicalExperienceData];
-    }
-    return [];
-  };
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      let filledFields = 0;
+      const fieldsPerRecord = ["semester", "clinicalArea", "credits", "prescribedHours", "completedHours", "hospital"];
+      values.records?.forEach((record: any) => {
+        filledFields += fieldsPerRecord.filter(
+          (field) => record[field] && record[field].toString().trim() !== ""
+        ).length;
+      });
+      const totalRequiredFields = values.records?.length * fieldsPerRecord.length || 0;
+      const progress = totalRequiredFields > 0 ? (filledFields / totalRequiredFields) * 100 : 0;
+      onProgressChange?.(progress);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onProgressChange]);
 
   return (
     <Form {...form}>
