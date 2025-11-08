@@ -5,6 +5,7 @@ import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, X } from "lucide-react";
+import { useEffect } from "react";
 
 const clinicalRecordSchema = z.object({
   semester: z.string(),
@@ -24,9 +25,10 @@ type ClinicalExperienceFormData = z.infer<typeof clinicalExperienceSchema>;
 interface ClinicalExperienceFormProps {
   onSubmit: (data: ClinicalExperienceFormData) => void;
   defaultValues?: Partial<ClinicalExperienceFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const ClinicalExperienceForm = ({ onSubmit, defaultValues }: ClinicalExperienceFormProps) => {
+export const ClinicalExperienceForm = ({ onSubmit, defaultValues, onProgressChange }: ClinicalExperienceFormProps) => {
   const form = useForm<ClinicalExperienceFormData>({
     resolver: zodResolver(clinicalExperienceSchema),
     defaultValues: defaultValues || {
@@ -38,6 +40,22 @@ export const ClinicalExperienceForm = ({ onSubmit, defaultValues }: ClinicalExpe
     control: form.control,
     name: "records",
   });
+
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      let filledFields = 0;
+      const fieldsPerRecord = ["semester", "clinicalArea", "credits", "prescribedHours", "completedHours", "hospital"];
+      values.records?.forEach((record: any) => {
+        filledFields += fieldsPerRecord.filter(
+          (field) => record[field] && record[field].toString().trim() !== ""
+        ).length;
+      });
+      const totalRequiredFields = values.records?.length * fieldsPerRecord.length || 0;
+      const progress = totalRequiredFields > 0 ? (filledFields / totalRequiredFields) * 100 : 0;
+      onProgressChange?.(progress);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onProgressChange]);
 
   return (
     <Form {...form}>

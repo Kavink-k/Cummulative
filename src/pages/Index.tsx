@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormStepper } from "@/components/FormStepper";
@@ -35,6 +35,7 @@ const steps = [
 const Index = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<Record<string, any>>({});
+  const [stepProgress, setStepProgress] = useState<Record<number, number>>({}); // Track progress per step
 
   const handleNext = () => {
     if (currentStep < steps.length) {
@@ -52,8 +53,9 @@ const Index = () => {
 
   const handleFormSubmit = (stepData: any) => {
     setFormData({ ...formData, [`step${currentStep}`]: stepData });
+    setStepProgress((prev) => ({ ...prev, [currentStep]: 100 })); // Mark step as complete on submit
     toast.success("Section saved successfully!");
-    
+
     if (currentStep < steps.length) {
       handleNext();
     } else {
@@ -70,26 +72,44 @@ const Index = () => {
     console.log("Current draft:", formData);
   };
 
+  const handleProgressChange = (step: number) => (progress: number) => {
+    setStepProgress((prev) => ({ ...prev, [step]: progress }));
+  };
+
   const renderCurrentForm = () => {
     const props = {
       onSubmit: handleFormSubmit,
       defaultValues: formData[`step${currentStep}`],
+      onProgressChange: handleProgressChange(currentStep), // Pass progress callback
     };
 
     switch (currentStep) {
-      case 1: return <PersonalProfileForm {...props} />;
-      case 2: return <EducationalQualificationForm {...props} />;
-      case 3: return <AdmissionDetailsForm {...props} />;
-      case 4: return <AttendanceForm {...props} />;
-      case 5: return <ActivitiesParticipationForm {...props} />;
-      case 6: return <CourseInstructionForm {...props} />;
-      case 7: return <ObservationalVisitForm {...props} />;
-      case 8: return <ClinicalExperienceForm {...props} />;
-      case 9: return <ResearchProjectForm {...props} />;
-      case 10: return <AdditionalCoursesForm {...props} />;
-      case 11: return <CourseCompletionForm {...props} />;
-      case 12: return <VerificationForm {...props} />;
-      default: return null;
+      case 1:
+        return <PersonalProfileForm {...props} />;
+      case 2:
+        return <EducationalQualificationForm {...props} />;
+      case 3:
+        return <AdmissionDetailsForm {...props} />;
+      case 4:
+        return <AttendanceForm {...props} />;
+      case 5:
+        return <ActivitiesParticipationForm {...props} />;
+      case 6:
+        return <CourseInstructionForm {...props} />;
+      case 7:
+        return <ObservationalVisitForm {...props} />;
+      case 8:
+        return <ClinicalExperienceForm {...props} />;
+      case 9:
+        return <ResearchProjectForm {...props} />;
+      case 10:
+        return <AdditionalCoursesForm {...props} />;
+      case 11:
+        return <CourseCompletionForm {...props} />;
+      case 12:
+        return <VerificationForm {...props} />;
+      default:
+        return null;
     }
   };
 
@@ -116,13 +136,22 @@ const Index = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
-        <Card className="mb-8 border-2">
+        <Card className="mb-8 border-2 overflow-x-auto">
           <CardHeader>
             <CardTitle>Form Progress</CardTitle>
-            <CardDescription>Complete all {steps.length} sections to submit your cumulative record</CardDescription>
+            <CardDescription>
+              Complete all {steps.length} sections to submit your cumulative record
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <FormStepper steps={steps} currentStep={currentStep} onStepClick={setCurrentStep} />
+          <CardContent className="overflow-x-auto">
+            <div className="min-w-max flex gap-2">
+              <FormStepper
+                steps={steps}
+                currentStep={currentStep}
+                onStepClick={setCurrentStep}
+                stepProgress={stepProgress} // Pass progress data
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -149,9 +178,9 @@ const Index = () => {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    const currentForm = document.querySelector('form');
+                    const currentForm = document.querySelector("form");
                     if (currentForm) {
-                      const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                      const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
                       currentForm.dispatchEvent(submitEvent);
                     }
                   }}
@@ -161,9 +190,9 @@ const Index = () => {
                 {currentStep < steps.length ? (
                   <Button
                     onClick={() => {
-                      const currentForm = document.querySelector('form');
+                      const currentForm = document.querySelector("form");
                       if (currentForm) {
-                        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                        const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
                         currentForm.dispatchEvent(submitEvent);
                       }
                     }}
@@ -174,9 +203,9 @@ const Index = () => {
                 ) : (
                   <Button
                     onClick={() => {
-                      const currentForm = document.querySelector('form');
+                      const currentForm = document.querySelector("form");
                       if (currentForm) {
-                        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                        const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
                         currentForm.dispatchEvent(submitEvent);
                       }
                     }}

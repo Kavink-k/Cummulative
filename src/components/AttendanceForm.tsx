@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useEffect } from "react";
 
 const semesterAttendanceSchema = z.object({
   semester: z.string(),
@@ -25,9 +26,10 @@ const semesters = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 interface AttendanceFormProps {
   onSubmit: (data: AttendanceFormData) => void;
   defaultValues?: Partial<AttendanceFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const AttendanceForm = ({ onSubmit, defaultValues }: AttendanceFormProps) => {
+export const AttendanceForm = ({ onSubmit, defaultValues, onProgressChange }: AttendanceFormProps) => {
   const form = useForm<AttendanceFormData>({
     resolver: zodResolver(attendanceSchema),
     defaultValues: defaultValues || {
@@ -47,6 +49,29 @@ export const AttendanceForm = ({ onSubmit, defaultValues }: AttendanceFormProps)
     control: form.control,
     name: "semesters",
   });
+
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      let filledFields = 0;
+      const fieldsPerSemester = [
+        "workingDays",
+        "annualLeave",
+        "sickLeave",
+        "gazettedHolidays",
+        "otherLeave",
+        "compensationDaysHours"
+      ];
+      values.semesters?.forEach((semester: any) => {
+        filledFields += fieldsPerSemester.filter(
+          (field) => semester[field] && semester[field].toString().trim() !== ""
+        ).length;
+      });
+      const totalRequiredFields = semesters.length * fieldsPerSemester.length; // 8 * 6 = 48
+      const progress = (filledFields / totalRequiredFields) * 100;
+      onProgressChange?.(progress);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onProgressChange]);
 
   return (
     <Form {...form}>

@@ -5,6 +5,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, X } from "lucide-react";
+import { useEffect } from "react";
 
 const visitSchema = z.object({
   semester: z.string(),
@@ -22,9 +23,10 @@ type ObservationalVisitFormData = z.infer<typeof observationalVisitSchema>;
 interface ObservationalVisitFormProps {
   onSubmit: (data: ObservationalVisitFormData) => void;
   defaultValues?: Partial<ObservationalVisitFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const ObservationalVisitForm = ({ onSubmit, defaultValues }: ObservationalVisitFormProps) => {
+export const ObservationalVisitForm = ({ onSubmit, defaultValues, onProgressChange }: ObservationalVisitFormProps) => {
   const form = useForm<ObservationalVisitFormData>({
     resolver: zodResolver(observationalVisitSchema),
     defaultValues: defaultValues || {
@@ -36,6 +38,22 @@ export const ObservationalVisitForm = ({ onSubmit, defaultValues }: Observationa
     control: form.control,
     name: "visits",
   });
+
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      let filledFields = 0;
+      const fieldsPerVisit = ["semester", "institution", "place", "date"];
+      values.visits?.forEach((visit: any) => {
+        filledFields += fieldsPerVisit.filter(
+          (field) => visit[field] && visit[field].toString().trim() !== ""
+        ).length;
+      });
+      const totalRequiredFields = values.visits?.length * fieldsPerVisit.length || 0;
+      const progress = totalRequiredFields > 0 ? (filledFields / totalRequiredFields) * 100 : 0;
+      onProgressChange?.(progress);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onProgressChange]);
 
   return (
     <Form {...form}>
