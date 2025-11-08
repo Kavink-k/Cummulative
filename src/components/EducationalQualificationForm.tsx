@@ -315,17 +315,19 @@ import { useEffect } from "react";
 
 const subjectSchema = z.object({
   subject: z.string(),
-  attempt1MaxMarks: z.string(),
-  attempt1Score: z.string(),
-  attempt1Percentage: z.string(),
-  attempt2MaxMarks: z.string().optional(),
-  attempt2Score: z.string().optional(),
-  attempt2Percentage: z.string().optional(),
+  plusOneAttempts: z.array(attemptSchema),
+  plusTwoAttempts: z.array(attemptSchema),
 });
 
 const educationalQualificationSchema = z.object({
   streamGroup: z.string().min(1, "Stream/Group is required"),
   subjects: z.array(subjectSchema),
+  totalPlusOneMaxMarks: z.string(),
+  totalPlusOneScore: z.string(),
+  totalPlusOnePercentage: z.string(),
+  totalPlusTwoMaxMarks: z.string(),
+  totalPlusTwoScore: z.string(),
+  totalPlusTwoPercentage: z.string(),
   certificateNo: z.string().min(1, "Certificate number is required"),
   certificateDate: z.string().min(1, "Certificate date is required"),
   yearOfPassing: z.string().min(4, "Year of passing is required"),
@@ -338,14 +340,14 @@ const educationalQualificationSchema = z.object({
 type EducationalQualificationFormData = z.infer<typeof educationalQualificationSchema>;
 
 const defaultSubjects = [
-  "Language",
-  "English",
-  "Physics",
-  "Chemistry",
-  "Biology/Botany",
-  "Zoology",
-  "Mathematics",
-  "Others",
+  { subject: "Language", id: "language" },
+  { subject: "English", id: "english" },
+  { subject: "Physics", id: "physics" },
+  { subject: "Chemistry", id: "chemistry" },
+  { subject: "Biology / Botany", id: "biology" },
+  { subject: "Zoology", id: "zoology" },
+  { subject: "Mathematics", id: "mathematics" },
+  { subject: "Others", id: "others" },
 ];
 
 interface EducationalQualificationFormProps {
@@ -368,6 +370,12 @@ export const EducationalQualificationForm = ({
         attempt1Score: "",
         attempt1Percentage: "",
       })),
+      totalPlusOneMaxMarks: "",
+      totalPlusOneScore: "",
+      totalPlusOnePercentage: "",
+      totalPlusTwoMaxMarks: "",
+      totalPlusTwoScore: "",
+      totalPlusTwoPercentage: "",
     },
   });
 
@@ -417,19 +425,22 @@ export const EducationalQualificationForm = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="streamGroup"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Stream/Group</FormLabel>
-              <FormControl>
-                <Input placeholder="Science/Commerce/Arts" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold">II. EDUCATIONAL QUALIFICATION DETAILS</h2>
+          <FormField
+            control={form.control}
+            name="streamGroup"
+            render={({ field }) => (
+              <FormItem className="w-48">
+                <FormLabel className="text-sm">STREAM / GROUP</FormLabel>
+                <FormControl>
+                  <Input placeholder="Science" {...field} className="h-9" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="border rounded-lg p-4 space-y-4">
           <h3 className="font-semibold text-lg">Subject-wise Marks</h3>
@@ -537,10 +548,126 @@ export const EducationalQualificationForm = ({
                         )}
                       />
                     </td>
+                    
+                    {/* +1 Total Columns - Show input fields for ALL attempts */}
+                    {Array.from({ length: plusOneAttempts }).map((_, attemptIndex) => (
+                      <React.Fragment key={`plus-one-total-${attemptIndex}`}>
+                        <td className="border p-2 min-w-[80px]">
+                          <FormField
+                            control={form.control}
+                            name="totalPlusOneMaxMarks"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input 
+                                    type="number" 
+                                    {...field} 
+                                    className="h-9 text-sm font-medium w-full" 
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        </td>
+                        <td className="border p-2 min-w-[80px]">
+                          <FormField
+                            control={form.control}
+                            name="totalPlusOneScore"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input 
+                                    type="number" 
+                                    {...field} 
+                                    className="h-9 text-sm font-medium w-full" 
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        </td>
+                        <td className="border p-2 min-w-[80px]">
+                          <FormField
+                            control={form.control}
+                            name="totalPlusOnePercentage"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input 
+                                    type="number" 
+                                    step="0.01" 
+                                    {...field} 
+                                    className="h-9 text-sm font-medium w-full" 
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        </td>
+                      </React.Fragment>
+                    ))}
+                    
+                    {/* +2 Total Columns - Show input fields for ALL attempts */}
+                    {Array.from({ length: plusTwoAttempts }).map((_, attemptIndex) => (
+                      <React.Fragment key={`plus-two-total-${attemptIndex}`}>
+                        <td className="border p-2 min-w-[80px]">
+                          <FormField
+                            control={form.control}
+                            name="totalPlusTwoMaxMarks"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input 
+                                    type="number" 
+                                    {...field} 
+                                    className="h-9 text-sm font-medium w-full" 
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        </td>
+                        <td className="border p-2 min-w-[80px]">
+                          <FormField
+                            control={form.control}
+                            name="totalPlusTwoScore"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input 
+                                    type="number" 
+                                    {...field} 
+                                    className="h-9 text-sm font-medium w-full" 
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        </td>
+                        <td className="border p-2 min-w-[80px]">
+                          <FormField
+                            control={form.control}
+                            name="totalPlusTwoPercentage"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input 
+                                    type="number" 
+                                    step="0.01" 
+                                    {...field} 
+                                    className="h-9 text-sm font-medium w-full" 
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        </td>
+                      </React.Fragment>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -550,9 +677,9 @@ export const EducationalQualificationForm = ({
             name="certificateNo"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Certificate Number</FormLabel>
+                <FormLabel>Certificate No/Date</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter certificate number" {...field} />
+                  <Input placeholder="32402339" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -578,9 +705,9 @@ export const EducationalQualificationForm = ({
             name="yearOfPassing"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Year of Passing</FormLabel>
+                <FormLabel>Year of passing</FormLabel>
                 <FormControl>
-                  <Input placeholder="2024" {...field} />
+                  <Input placeholder="2020" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -601,6 +728,7 @@ export const EducationalQualificationForm = ({
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="state">State Board</SelectItem>
+                    <SelectItem value="matric">Matriculation Board</SelectItem>
                     <SelectItem value="cbse">CBSE</SelectItem>
                     <SelectItem value="icse">ICSE</SelectItem>
                     <SelectItem value="nios">National Open School (NIOS)</SelectItem>
@@ -632,7 +760,7 @@ export const EducationalQualificationForm = ({
               <FormItem>
                 <FormLabel>HSC Verification Certificate No.</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter verification number" {...field} />
+                  <Input placeholder="SP102331" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -652,6 +780,10 @@ export const EducationalQualificationForm = ({
               </FormItem>
             )}
           />
+        </div>
+
+        <div className="flex justify-end">
+          <Button type="submit">Submit</Button>
         </div>
       </form>
     </Form>

@@ -7,17 +7,28 @@ import { Button } from "@/components/ui/button";
 import { Plus, X } from "lucide-react";
 import { useEffect } from "react";
 
-const completionSchema = z.object({
+const courseCompletionSchema = z.object({
   courseName: z.string(),
   certificateNumber: z.string(),
   dateOfIssue: z.string(),
 });
 
-const courseCompletionSchema = z.object({
-  completions: z.array(completionSchema),
+const courseCompletionFormSchema = z.object({
+  completions: z.array(courseCompletionSchema),
 });
 
-type CourseCompletionFormData = z.infer<typeof courseCompletionSchema>;
+type CourseCompletionFormData = z.infer<typeof courseCompletionFormSchema>;
+
+// Predefined certificate names from the Excel file
+const certificateNames = [
+  "Name of the Certificate",
+  "Course completion certificate",
+  "Transfer certificate",
+  "Provisional certificate",
+  "Degree certificate",
+  "Nursing registration certificate",
+  "TNAI card"
+];
 
 interface CourseCompletionFormProps {
   onSubmit: (data: CourseCompletionFormData) => void;
@@ -27,13 +38,17 @@ interface CourseCompletionFormProps {
 
 export const CourseCompletionForm = ({ onSubmit, defaultValues, onProgressChange }: CourseCompletionFormProps) => {
   const form = useForm<CourseCompletionFormData>({
-    resolver: zodResolver(courseCompletionSchema),
+    resolver: zodResolver(courseCompletionFormSchema),
     defaultValues: defaultValues || {
-      completions: [{ courseName: "", certificateNumber: "", dateOfIssue: "" }],
+      completions: certificateNames.map(name => ({
+        courseName: name,
+        certificateNumber: "",
+        dateOfIssue: "",
+      })),
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields } = useFieldArray({
     control: form.control,
     name: "completions",
   });
@@ -64,25 +79,12 @@ export const CourseCompletionForm = ({ onSubmit, defaultValues, onProgressChange
                 <th className="border p-3 text-left font-semibold">Name of the Course</th>
                 <th className="border p-3 text-left font-semibold">Certificate Number</th>
                 <th className="border p-3 text-left font-semibold">Date of Issue</th>
-                <th className="border p-3 text-center font-semibold w-20">Action</th>
               </tr>
             </thead>
             <tbody>
               {fields.map((field, index) => (
                 <tr key={field.id} className="hover:bg-muted/50">
-                  <td className="border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`completions.${index}.courseName`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input {...field} placeholder="Course name" className="h-9" />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
+                  <td className="border p-2 font-medium">{field.courseName}</td>
                   <td className="border p-2">
                     <FormField
                       control={form.control}
@@ -109,32 +111,17 @@ export const CourseCompletionForm = ({ onSubmit, defaultValues, onProgressChange
                       )}
                     />
                   </td>
-                  <td className="border p-2 text-center">
-                    {fields.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => remove(index)}
-                      >
-                        <X className="h-4 w-4 text-destructive" />
-                      </Button>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => append({ courseName: "", certificateNumber: "", dateOfIssue: "" })}
-          className="w-full"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Completion Record
-        </Button>
+        <p className="text-sm text-muted-foreground italic">
+          Note: This form records the course completion details and certificate information for various academic and professional documents.
+        </p>
+        <div className="flex justify-end">
+          <Button type="submit">Save Course Completion Details</Button>
+        </div>
       </form>
     </Form>
   );
