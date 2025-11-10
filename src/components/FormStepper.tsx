@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StepProgressBar } from "@/components/StepProgressBar";
 
 interface Step {
   id: number;
@@ -11,27 +12,35 @@ interface FormStepperProps {
   steps: Step[];
   currentStep: number;
   onStepClick?: (step: number) => void;
+  stepProgress: Record<number, number>; // Progress percentage for each step
 }
 
-export const FormStepper = ({ steps, currentStep, onStepClick }: FormStepperProps) => {
+export const FormStepper = ({ steps, currentStep, onStepClick, stepProgress }: FormStepperProps) => {
   return (
     <nav aria-label="Progress">
       <ol className="space-y-4 md:flex md:space-y-0 md:space-x-8">
         {steps.map((step, index) => {
           const isCompleted = currentStep > step.id;
           const isCurrent = currentStep === step.id;
-          
+          const progress = stepProgress[step.id] || 0; // Get progress for this step
+
           return (
             <li key={step.id} className="md:flex-1">
               <button
                 onClick={() => onStepClick?.(step.id)}
                 disabled={!onStepClick}
                 className={cn(
-                  "group flex flex-col border-l-4 py-2 pl-4 md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4 w-full text-left",
-                  isCompleted ? "border-primary" : isCurrent ? "border-primary" : "border-border",
-                  onStepClick && "hover:border-primary/50 cursor-pointer"
+                  "group flex flex-col py-2 pl-4 md:pl-0 md:pt-4 w-full text-left",
+                  onStepClick && "hover:opacity-80 cursor-pointer"
                 )}
               >
+                <div className="mb-2">
+                  <StepProgressBar
+                    progress={progress}
+                    isCurrent={isCurrent}
+                    isCompleted={isCompleted}
+                  />
+                </div>
                 <span className="flex items-center text-sm font-medium">
                   <span
                     className={cn(

@@ -4,6 +4,7 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect } from "react";
 
 const admissionDetailsSchema = z.object({
   dateOfAdmission: z.string().min(1, "Date of admission is required"),
@@ -34,13 +35,32 @@ type AdmissionDetailsFormData = z.infer<typeof admissionDetailsSchema>;
 interface AdmissionDetailsFormProps {
   onSubmit: (data: AdmissionDetailsFormData) => void;
   defaultValues?: Partial<AdmissionDetailsFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const AdmissionDetailsForm = ({ onSubmit, defaultValues }: AdmissionDetailsFormProps) => {
+export const AdmissionDetailsForm = ({ onSubmit, defaultValues, onProgressChange }: AdmissionDetailsFormProps) => {
   const form = useForm<AdmissionDetailsFormData>({
     resolver: zodResolver(admissionDetailsSchema),
     defaultValues: defaultValues || {},
   });
+
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      const requiredFields = [
+        "dateOfAdmission",
+        "admissionNumber",
+        "rollNumber",
+        "universityRegistration",
+        "allotmentCategory"
+      ];
+      const filledFields = requiredFields.filter(
+        (field) => values[field] && values[field].toString().trim() !== ""
+      ).length;
+      const progress = (filledFields / requiredFields.length) * 100;
+      onProgressChange?.(progress);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onProgressChange]);
 
   return (
     <Form {...form}>
@@ -189,7 +209,7 @@ export const AdmissionDetailsForm = ({ onSubmit, defaultValues }: AdmissionDetai
               name="govtAllotmentNo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Govt. Allotment Order No.</FormLabel>
+                  <FormLabel>Govt Allotment Order No.</FormLabel>
                   <FormControl>
                     <Input placeholder="Enter allotment number" {...field} />
                   </FormControl>
