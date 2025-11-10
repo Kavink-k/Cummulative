@@ -1,8 +1,16 @@
+import { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const verificationSchema = z.object({
   semester: z.string(),
@@ -25,6 +33,8 @@ interface VerificationFormProps {
 }
 
 export const VerificationForm = ({ onSubmit, defaultValues }: VerificationFormProps) => {
+  const [selectedSemester, setSelectedSemester] = useState("I");
+  
   const form = useForm<VerificationFormData>({
     resolver: zodResolver(verificationFormSchema),
     defaultValues: defaultValues || {
@@ -42,67 +52,79 @@ export const VerificationForm = ({ onSubmit, defaultValues }: VerificationFormPr
     name: "verifications",
   });
 
+  // Find the index of the currently selected semester
+  const selectedIndex = fields.findIndex(field => field.semester === selectedSemester);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="overflow-x-auto border rounded-lg">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-muted">
-                <th className="border p-3 text-left font-semibold">Semester</th>
-                <th className="border p-3 text-left font-semibold">Name of Class Teacher/Coordinator</th>
-                <th className="border p-3 text-left font-semibold">Signature of Class Teacher with Date</th>
-                <th className="border p-3 text-left font-semibold">Signature of Principal with Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fields.map((field, index) => (
-                <tr key={field.id} className="hover:bg-muted/50">
-                  <td className="border p-2 font-medium">{field.semester}</td>
-                  <td className="border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`verifications.${index}.classTeacherName`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input {...field} placeholder="Teacher name" className="h-9" />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`verifications.${index}.teacherSignature`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input {...field} placeholder="Signature & date" className="h-9" />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`verifications.${index}.principalSignature`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input {...field} placeholder="Signature & date" className="h-9" />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                </tr>
+        {/* Semester Selector */}
+        <div className="flex items-center gap-4 mb-6">
+          <label className="text-sm font-semibold whitespace-nowrap">
+            Select Semester:
+          </label>
+          <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select semester" />
+            </SelectTrigger>
+            <SelectContent>
+              {semesters.map((sem) => (
+                <SelectItem key={sem} value={sem}>
+                  Semester {sem}
+                </SelectItem>
               ))}
-            </tbody>
-          </table>
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Display fields for selected semester only */}
+        {selectedIndex !== -1 && (
+          <div className="space-y-4 border rounded-lg p-6 bg-card">
+            <h3 className="text-lg font-semibold mb-4">
+              Semester {selectedSemester} Verification
+            </h3>
+            
+            <FormField
+              control={form.control}
+              name={`verifications.${selectedIndex}.classTeacherName`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name of Class Teacher/Coordinator</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter teacher name" />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name={`verifications.${selectedIndex}.teacherSignature`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Signature of Class Teacher with Date</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Signature & date" />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name={`verifications.${selectedIndex}.principalSignature`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Signature of Principal with Date</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Signature & date" />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
+        )}
+
         <p className="text-sm text-muted-foreground italic">
           Note: This form records the verification of cumulative records by class teachers/coordinators and the principal for each semester.
         </p>

@@ -1,8 +1,4 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect } from "react";
 
@@ -100,48 +96,131 @@ export const CourseInstructionForm = ({ onSubmit, defaultValues, onProgressChang
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="courseCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Course Code</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter course code" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+      
+      {
+        slNo: 32,
+      courseCode: "",
+      universityCourseCode: "",
+      courseTitle: "Elective 3",
+      theoryCredits: "1",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 20,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 50,
+      theoryTotalMax: 50,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+      }
+      ],
+      "VIII":[
+        
+          {
+        slNo: 33,
+      courseCode: "INTEA",
+      universityCourseCode: "",
+      courseTitle: "Community Health Nursing-4 weeks",
+      theoryCredits: "-",
+      skillLabCredits: "-",
+      clinicalCredits: "12",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 192,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 200
+      },
+        
+      
+        {
+        slNo: 34,
+      courseCode: "INTE420",
+      universityCourseCode: "",
+      courseTitle: "Adult Health Nursing-6 weeks",
+      theoryCredits: "-",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 288,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+      },
+      
+        {
+        slNo: 35,
+      courseCode: "INTE425",
+      universityCourseCode: "",
+      courseTitle: "Child Health Nursing-4 weeks",
+      theoryCredits: "0",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 192,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+      
+      },
+        {
+        slNo: 36,
+      courseCode: "INTE430",
+      universityCourseCode: "",
+      courseTitle: "Mental Health Nursing -4weeks ",
+      theoryCredits: "0",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 192,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+      
+      },
+      {
+          
+        slNo: 37,
+      courseCode: "INTEA435",
+      universityCourseCode: "",
+      courseTitle: "Midwifery-4 weeks",
+      theoryCredits: "0",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 192,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+      
+      }],
+    
+    
 
-            <FormField
-              control={form.control}
-              name="universityCourseCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>University Course Code</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter university code" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
 
-            <FormField
-              control={form.control}
-              name="courseTitle"
-              render={({ field }) => (
-                <FormItem className="md:col-span-2">
-                  <FormLabel>Course Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter course title" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
+  // Add more semesters as needed
+};
 
         <div className="bg-muted/30 p-4 rounded-lg border">
           <h3 className="font-semibold text-lg mb-4">Credits</h3>
@@ -477,60 +556,9 @@ export const CourseInstructionForm = ({ onSubmit, defaultValues, onProgressChang
           </div>
         </div>
 
-        <div className="bg-muted/30 p-4 rounded-lg border">
-          <h3 className="font-semibold text-lg mb-4">Grade & Performance</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <FormField
-              control={form.control}
-              name="gradePoint"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Grade Point</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.01" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="letterGrade"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Letter Grade</FormLabel>
-                  <FormControl>
-                    <Input placeholder="A, B, C..." {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="sgpa"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>SGPA</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.01" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="rank"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Rank</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-      </form>
-    </Form>
+      <div className="text-sm text-muted-foreground italic">
+        Note: P = Prescribed, A = Attended, % = Percentage
+      </div>
+    </div>
   );
 };
