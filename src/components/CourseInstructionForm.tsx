@@ -4,56 +4,735 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-
-const courseInstructionSchema = z.object({
-  semester: z.string().min(1, "Semester is required"),
-  courseCode: z.string().min(1, "Course code is required"),
-  universityCourseCode: z.string(),
-  courseTitle: z.string().min(1, "Course title is required"),
-  theoryCredits: z.string(),
-  skillLabCredits: z.string(),
-  clinicalCredits: z.string(),
-  theoryPrescribed: z.string(),
-  theoryAttended: z.string(),
-  theoryPercentage: z.string(),
-  skillLabPrescribed: z.string(),
-  skillLabAttended: z.string(),
-  skillLabPercentage: z.string(),
-  clinicalPrescribed: z.string(),
-  clinicalAttended: z.string(),
-  clinicalPercentage: z.string(),
-  theoryInternalMax: z.string(),
-  theoryInternalObtained: z.string(),
-  theoryEndSemMax: z.string(),
-  theoryEndSemObtained: z.string(),
-  theoryTotalMax: z.string(),
-  theoryTotalObtained: z.string(),
-  practicalInternalMax: z.string(),
-  practicalInternalObtained: z.string(),
-  practicalEndSemMax: z.string(),
-  practicalEndSemObtained: z.string(),
-  practicalTotalMax: z.string(),
-  practicalTotalObtained: z.string(),
-  gradePoint: z.string(),
-  letterGrade: z.string(),
-  sgpa: z.string(),
-  rank: z.string(),
-});
-
-type CourseInstructionFormData = z.infer<typeof courseInstructionSchema>;
-
-interface CourseInstructionFormProps {
-  onSubmit: (data: CourseInstructionFormData) => void;
-  defaultValues?: Partial<CourseInstructionFormData>;
-  onProgressChange?: (progress: number) => void;
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+ 
+interface Course {
+  slNo: number;
+  courseCode: string;
+  universityCourseCode: string;
+  courseTitle: string;
+  theoryCredits: string;
+  skillLabCredits: string;
+  clinicalCredits: string;
+  theoryPrescribed: number;
+  theoryAttended?: string;
+  theoryPercentage?: string;
+  skillLabPrescribed: string;
+  skillLabAttended?: string;
+  skillLabPercentage?: string;
+  clinicalPrescribed: number;
+  clinicalAttended?: string;
+  clinicalPercentage?: string;
+  theoryInternalMax: string;
+  theoryInternalObtained?: string;
+  theoryEndSemMax: number;
+  theoryEndSemObtained?: string;
+  theoryTotalMax: number;
+  theoryTotalObtained?: string;
+  practicalInternalMax: number;
+  practicalInternalObtained?: string;
+  practicalEndSemMax: number;
+  practicalEndSemObtained?: string;
+  practicalTotalMax: number;
+  practicalTotalObtained?: string;
+  gradePoint?: string;
+  letterGrade?: string;
 }
-
-// Define course data OUTSIDE the component
-const courseDataBySemester = {
-  "VII": [
+ 
+const semesterData: Record<string, Course[]> = {
+  "I": [
     {
-      slNo: 32,
+      slNo: 1,
+      courseCode: "ENGL 101",
+      universityCourseCode: "",
+      courseTitle: "Communicative English",
+      theoryCredits: "2",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 40,
+      theoryAttended: "",
+      theoryPercentage: "",
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 25,
+      theoryTotalMax: 50,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 2,
+      courseCode: "ANAT 105",
+      universityCourseCode: "",
+      courseTitle: "Applied Anatomy",
+      theoryCredits: "3",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 60,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 3,
+      courseCode: "PHYS 110",
+      universityCourseCode: "",
+      courseTitle: "Applied Physiology",
+      theoryCredits: "3",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 60,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 4,
+      courseCode: "SOCI 115",
+      universityCourseCode: "",
+      courseTitle: "Applied Sociology",
+      theoryCredits: "3",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 60,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 5,
+      courseCode: "PSYC 120",
+      universityCourseCode: "",
+      courseTitle: "Applied Psychology",
+      theoryCredits: "3",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 80,
+      skillLabPrescribed: "30",
+      clinicalPrescribed: 250,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 100,
+      practicalTotalMax: 100
+    },
+    {
+      slNo: 6,
+      courseCode: "N-NF(I) 125",
+      universityCourseCode: "",
+      courseTitle: "Nursing Foundation I IncludingFirst Aid module ",
+      theoryCredits: "6",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 120,
+      skillLabPrescribed: "80",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 7,
+      courseCode: "SSCC (I) 130",
+      universityCourseCode: "",
+      courseTitle: "Self-study/Co-curricular",
+      theoryCredits: "0",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    }
+  ],
+  "II": [
+    {
+      slNo: 8,
+      courseCode: "BIOC 135",
+      universityCourseCode: "",
+      courseTitle: "Applied Biochemistry",
+      theoryCredits: "2",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 40,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 9,
+      courseCode: "NUTR 140",
+      universityCourseCode: "",
+      courseTitle: "Applied Nutrition and Dietetics",
+      theoryCredits: "3",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 60,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 10,
+      courseCode: "N-NF (II) 125",
+      universityCourseCode: "",
+      courseTitle: "Nursing Foundation II  Including Health Assessment Module(Nursing Foundation(I&II)",
+      theoryCredits: "6",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 120,
+      skillLabPrescribed: "120",
+      clinicalPrescribed: 320,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 50,
+      practicalEndSemMax: 50,
+      practicalTotalMax: 100
+    },
+    {
+      slNo: 11,
+      courseCode: "HNIT 145",
+      universityCourseCode: "",
+      courseTitle: "Health/Nursing Informatics & Technology",
+      theoryCredits: "2",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 40,
+      skillLabPrescribed: "40",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 25,
+      theoryTotalMax: 50,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 12,
+      courseCode: "SSCC (II) 130",
+      universityCourseCode: "",
+      courseTitle: "Self-study/Co-curricular",
+      theoryCredits: "0",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    }
+  ],
+  "III":[
+    {
+      slNo: 13,
+      courseCode: "MICR 201",
+      universityCourseCode: "",
+      courseTitle: "Applied microbiology and infection control including safety",
+      theoryCredits: "2",
+      skillLabCredits: "1",
+      clinicalCredits: "-",
+      theoryPrescribed: 40,
+      skillLabPrescribed: "40",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 14,
+      courseCode: "PHAR(I)205",
+      universityCourseCode: "",
+      courseTitle: "Pharmacology I",
+      theoryCredits: "1",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 20,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    
+      {
+      slNo: 15,
+      courseCode: "PATH(I)210",
+      universityCourseCode: "",
+      courseTitle: "Pathology I",
+      theoryCredits: "1",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 20,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 16,
+      courseCode: "N-AHN(I)215",
+      universityCourseCode: "",
+      courseTitle: "Adult Health Nursing I With Integrated Pathophysiology Including BCLS Module(Adult Health Nursing I)",
+      theoryCredits: "7",
+      skillLabCredits: "1",
+      clinicalCredits: "6",
+      theoryPrescribed: 140,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 480,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 50,
+      practicalEndSemMax: 50,
+      practicalTotalMax: 100
+    },
+    {
+      slNo: 17,
+      courseCode: "SSCC(I)220",
+      universityCourseCode: "",
+      courseTitle: "Self-Study/Co-Curricular",
+      theoryCredits: "0",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    }
+  ],
+  "IV": [
+    {
+      slNo: 18,
+      courseCode: "PHAR(II)205",
+      universityCourseCode: "",
+      courseTitle: "Pharmacology II including Fundamentals of prescribing module",
+      theoryCredits: "3",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 60,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 19,
+      courseCode: "PATH(II)210",
+      universityCourseCode: "",
+      courseTitle: "Pathology II& Genetics",
+      theoryCredits: "1",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 20,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 20,
+      courseCode: "N-AHN(II)225",
+      universityCourseCode: "",
+      courseTitle: "Adult Health Nursing -II With Integrated Pathophysiology Including Geriatric Nursing+ Paliative Care Module",
+      theoryCredits: "7",
+      skillLabCredits: "1",
+      clinicalCredits: "6",
+      theoryPrescribed: 140,
+      skillLabPrescribed: "40",
+      clinicalPrescribed: 480,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 50,
+      practicalEndSemMax: 50,
+      practicalTotalMax: 100
+    },
+    {
+      slNo: 21,
+      courseCode: "PROF230",
+      universityCourseCode: "",
+      courseTitle: "Professionalism,professional values,Ethics Including Bioethics",
+      theoryCredits: "1",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 20,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 25,
+      theoryTotalMax: 50,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 22,
+      courseCode: "",
+      universityCourseCode: "",
+      courseTitle: "Elective I",
+      theoryCredits: "1",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 20,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 50,
+      theoryTotalMax: 50,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 23,
+      courseCode: "SSCC(II)220",
+      universityCourseCode: "",
+      courseTitle: "Self-study/Co-curricular",
+      theoryCredits: "0",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    }
+  ],
+  "V":[
+    {
+      slNo: 24,
+      courseCode: "N-CHN(I)301",
+      universityCourseCode: "",
+      courseTitle: "Child Health Nursing -I including Essential New born Care (ENBC),FBNC,IMNCI,and PLS Modules",
+      theoryCredits: "3",
+      skillLabCredits: "1",
+      clinicalCredits: "2",
+      theoryPrescribed: 60,
+      skillLabPrescribed: "40",
+      clinicalPrescribed: 160,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 25,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    
+      
+    {
+      slNo: 25,
+      courseCode: "N-HN(I)305",
+      universityCourseCode: "",
+      courseTitle: "Mental Health Nursing-I",
+      theoryCredits: "3",
+      skillLabCredits: "-",
+      clinicalCredits: "1",
+      theoryPrescribed: 60,
+      skillLabPrescribed: "-",
+      clinicalPrescribed:80,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 25,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 26,
+      courseCode: "N-COMH(1)310",
+      universityCourseCode: "",
+      courseTitle: "Community Health Nursing-I including Environmental Science &Epidemiology",
+      theoryCredits: "5",
+      skillLabCredits: "-",
+      clinicalCredits: "2",
+      theoryPrescribed: 100,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 160,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 50,
+      practicalTotalMax: 100
+    },
+    {
+      slNo: 27,
+      courseCode: "EDUC 315",
+      universityCourseCode: "",
+      courseTitle: "Educational technology/Nursing Education",
+      theoryCredits: "2",
+      skillLabCredits: "1",
+      clinicalCredits: "-",
+      theoryPrescribed: 40,
+      skillLabPrescribed: "40",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0,
+    }
+    ,
+    {
+      slNo: 28,
+      courseCode: "N-FORN 320",
+      universityCourseCode: "",
+      courseTitle: "Introduction to Forensic Nursing and Indian Laws",
+      theoryCredits: "1",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 20,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 25,
+      theoryTotalMax: 50,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0,
+    },
+    {
+      slNo: 29,
+      courseCode: "SSCC(I)325",
+      universityCourseCode: "",
+      courseTitle: "Self-study/Co-curricular",
+      theoryCredits: "0",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    }
+      ],
+      "VI":[
+    {
+      slNo: 24,
+      courseCode: "N-CHN(II)301",
+      universityCourseCode: "",
+      courseTitle: "Child Health Nursing(I&II)",
+      theoryCredits: "2",
+      skillLabCredits: "-",
+      clinicalCredits: "1",
+      theoryPrescribed: 40,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 80,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 50,
+      practicalEndSemMax: 50,
+      practicalTotalMax: 100
+    },
+    
+      
+    {
+      slNo: 25,
+      courseCode: "N-HN(II)305",
+      universityCourseCode: "",
+      courseTitle: "Mental Health Nursing(I&II)",
+      theoryCredits: "2",
+      skillLabCredits: "-",
+      clinicalCredits: "1",
+      theoryPrescribed: 40,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 80,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 50,
+      practicalEndSemMax: 50,
+      practicalTotalMax: 100
+    },
+    {
+      slNo: 26,
+      courseCode: "NMLE330",
+      universityCourseCode: "",
+      courseTitle: "Nursing Management &Leadership",
+      theoryCredits: "3",
+      skillLabCredits: "1",
+      clinicalCredits: "-",
+      theoryPrescribed: 60,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 80,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 27,
+      courseCode: "N-IDW(I)/OBG335",
+      universityCourseCode: "",
+      courseTitle: "Midwifery/Obsterics and Gynecology (OBG)Nursing I Including SBA module",
+      theoryCredits: "3",
+      skillLabCredits: "1",
+      clinicalCredits: "3",
+      theoryPrescribed: 60,
+      skillLabPrescribed: "40",
+      clinicalPrescribed:240,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 25,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 28,
+      courseCode: "",
+      universityCourseCode: "",
+      courseTitle: "Elective 2",
+      theoryCredits: "1",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 20,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 50,
+      theoryTotalMax: 50,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    }
+      ],
+ 
+    "VII":[
+      {
+        slNo: 29,
+      courseCode: "N-COMH 401",
+      universityCourseCode: "",
+      courseTitle: "Community Health Nursing II",
+      theoryCredits: "5",
+      skillLabCredits: "-",
+      clinicalCredits: "2",
+      theoryPrescribed: 100,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 160,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 50,
+      practicalEndSemMax: 50,
+      practicalTotalMax: 100
+      },
+      {
+        slNo: 30,
+      courseCode: "NRST405",
+      universityCourseCode: "",
+      courseTitle: "Nursing Research&Statistics",
+      theoryCredits: "2",
+      skillLabCredits: "2",
+      clinicalCredits: "-",
+      theoryPrescribed: 40,
+      skillLabPrescribed: "80",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+      },
+      {
+        slNo: 31,
+      courseCode: "N-MIDW(II)/OBG 410",
+      universityCourseCode: "",
+      courseTitle: "MidWifery/Obsterics and Gynecology(OBG) Nursing II Including Safe delivery App Module",
+      theoryCredits: "3",
+      skillLabCredits: "1",
+      clinicalCredits: "4",
+      theoryPrescribed: 60,
+      skillLabPrescribed: "40",
+      clinicalPrescribed: 320,
+      theoryInternalMax: "25",
+      theoryEndSemMax: 75,
+      theoryTotalMax: 100,
+      practicalInternalMax: 50,
+      practicalEndSemMax: 50,
+      practicalTotalMax: 100
+      },
+ 
+ 
+      
+      {
+        slNo: 32,
       courseCode: "",
       universityCourseCode: "",
       courseTitle: "Elective 3",
@@ -161,435 +840,247 @@ const courseDataBySemester = {
       practicalInternalMax: 0,
       practicalEndSemMax: 0,
       practicalTotalMax: 0
-    }
-  ]
+      
+      }],
+    
+    
+ 
+ 
+  // Add more semesters as needed
 };
-
-export const CourseInstructionForm = ({ onSubmit, defaultValues, onProgressChange }: CourseInstructionFormProps) => {
-  const form = useForm<CourseInstructionFormData>({
-    resolver: zodResolver(courseInstructionSchema),
-    defaultValues: defaultValues || {},
-  });
-
-  useEffect(() => {
-    const subscription = form.watch((values) => {
-      const requiredFields = [
-        "semester",
-        "courseCode",
-        "courseTitle"
-      ];
-      const filledFields = requiredFields.filter(
-        (field) => values[field] && values[field].toString().trim() !== ""
-      ).length;
-      const progress = (filledFields / requiredFields.length) * 100;
-      onProgressChange?.(progress);
-    });
-    return () => subscription.unsubscribe();
-  }, [form, onProgressChange]);
-
+ 
+export const CourseInstructionForm = () => {
+ 
+  const [selectedSemester, setSelectedSemester] = useState<string>("I");
+  const [courses, setCourses] = useState<Course[]>(semesterData["I"]);
+ 
+  const handleSemesterChange = (semester: string) => {
+    setSelectedSemester(semester);
+    setCourses(semesterData[semester] || []);
+  };
+ 
+  const handleInputChange = (index: number, field: keyof Course, value: string) => {
+    const updatedCourses = [...courses];
+    (updatedCourses[index] as any)[field] = value;
+    setCourses(updatedCourses);
+  };
+ 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="bg-muted/30 p-4 rounded-lg border">
-          <h3 className="font-semibold text-lg mb-4">Course Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <FormField
-              control={form.control}
-              name="semester"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Semester</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select semester" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map(sem => (
-                        <SelectItem key={sem} value={sem}>{sem}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="courseCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Course Code</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="courseTitle"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Course Title</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-
-        <div className="bg-muted/30 p-4 rounded-lg border">
-          <h3 className="font-semibold text-lg mb-4">Credits</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FormField
-              control={form.control}
-              name="theoryCredits"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Theory</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="skillLabCredits"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Skill Lab</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="clinicalCredits"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Clinical</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-
-        <div className="bg-muted/30 p-4 rounded-lg border">
-          <h3 className="font-semibold text-lg mb-4">Attendance</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <FormLabel>Theory</FormLabel>
-              <div className="grid grid-cols-3 gap-2">
-                <FormField
-                  control={form.control}
-                  name="theoryPrescribed"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Prescribed</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="theoryAttended"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Attended</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="theoryPercentage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">%</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <FormLabel>Skill Lab</FormLabel>
-              <div className="grid grid-cols-3 gap-2">
-                <FormField
-                  control={form.control}
-                  name="skillLabPrescribed"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Prescribed</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="skillLabAttended"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Attended</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="skillLabPercentage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">%</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <FormLabel>Clinical</FormLabel>
-              <div className="grid grid-cols-3 gap-2">
-                <FormField
-                  control={form.control}
-                  name="clinicalPrescribed"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Prescribed</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="clinicalAttended"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Attended</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="clinicalPercentage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">%</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-muted/30 p-4 rounded-lg border">
-          <h3 className="font-semibold text-lg mb-4">Marks</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <FormLabel>Theory</FormLabel>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name="theoryInternalMax"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Internal Max</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="theoryInternalObtained"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Internal Obtained</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="theoryEndSemMax"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">End Sem Max</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="theoryEndSemObtained"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">End Sem Obtained</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="theoryTotalMax"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Total Max</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="theoryTotalObtained"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Total Obtained</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <FormLabel>Practical</FormLabel>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name="practicalInternalMax"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Internal Max</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="practicalInternalObtained"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Internal Obtained</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="practicalEndSemMax"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">End Sem Max</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="practicalEndSemObtained"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">End Sem Obtained</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="practicalTotalMax"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Total Max</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="practicalTotalObtained"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Total Obtained</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="text-sm text-muted-foreground italic">
-          Note: P = Prescribed, A = Attended, % = Percentage
-        </div>
-
-        <div className="flex justify-end">
-          <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
-            Submit
-          </button>
-        </div>
-      </form>
-    </Form>
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <label className="font-semibold">Select Semester:</label>
+        <Select value={selectedSemester} onValueChange={handleSemesterChange}>
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map((sem) => (
+              <SelectItem key={sem} value={sem}>
+                Semester {sem}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+ 
+      <div className="border rounded-lg overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-12">
+                Sl. No.
+              </TableHead>
+              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-32">
+                Course Code
+              </TableHead>
+              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-32">
+                University Course Code
+              </TableHead>
+              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-48">
+                Course Title
+              </TableHead>
+              <TableHead colSpan={3} className="border-r text-center">
+                Credits
+              </TableHead>
+              <TableHead colSpan={9} className="border-r text-center">
+                Course Instruction Hours
+              </TableHead>
+              <TableHead colSpan={12} className="border-r text-center">
+                Marks Obtained
+              </TableHead>
+              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-20">
+                Grade Point
+              </TableHead>
+              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-20">
+                Letter Grade
+              </TableHead>
+            </TableRow>
+            <TableRow className="bg-muted/50">
+              <TableHead className="border-r text-center min-w-16">Theory</TableHead>
+              <TableHead className="border-r text-center min-w-16">Skill Lab</TableHead>
+              <TableHead className="border-r text-center min-w-16">Clinical</TableHead>
+              <TableHead colSpan={3} className="border-r text-center">Theory</TableHead>
+              <TableHead colSpan={3} className="border-r text-center">Skill Lab</TableHead>
+              <TableHead colSpan={3} className="border-r text-center">Clinical</TableHead>
+              <TableHead colSpan={6} className="border-r text-center">Theory</TableHead>
+              <TableHead colSpan={6} className="border-r text-center">Practical</TableHead>
+            </TableRow>
+            <TableRow className="bg-muted/50">
+              <TableHead className="border-r text-center text-xs">P</TableHead>
+              <TableHead className="border-r text-center text-xs">A</TableHead>
+              <TableHead className="border-r text-center text-xs">%</TableHead>
+              <TableHead className="border-r text-center text-xs">P</TableHead>
+              <TableHead className="border-r text-center text-xs">A</TableHead>
+              <TableHead className="border-r text-center text-xs">%</TableHead>
+              <TableHead className="border-r text-center text-xs">P</TableHead>
+              <TableHead className="border-r text-center text-xs">A</TableHead>
+              <TableHead className="border-r text-center text-xs">%</TableHead>
+              <TableHead className="border-r text-center text-xs">Internal Max</TableHead>
+              <TableHead className="border-r text-center text-xs">Internal Obtained</TableHead>
+              <TableHead className="border-r text-center text-xs">End Sem Max</TableHead>
+              <TableHead className="border-r text-center text-xs">End Sem Obtained</TableHead>
+              <TableHead className="border-r text-center text-xs">Total Max</TableHead>
+              <TableHead className="border-r text-center text-xs">Total Obtained</TableHead>
+              <TableHead className="border-r text-center text-xs">Internal Max</TableHead>
+              <TableHead className="border-r text-center text-xs">Internal Obtained</TableHead>
+              <TableHead className="border-r text-center text-xs">End Sem Max</TableHead>
+              <TableHead className="border-r text-center text-xs">End Sem Obtained</TableHead>
+              <TableHead className="border-r text-center text-xs">Total Max</TableHead>
+              <TableHead className="border-r text-center text-xs">Total Obtained</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {courses.map((course, index) => (
+              <TableRow key={index} className="hover:bg-muted/30">
+                <TableCell className="border-r text-center">{course.slNo}</TableCell>
+                <TableCell className="border-r text-sm">{course.courseCode}</TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.universityCourseCode}
+                    onChange={(e) => handleInputChange(index, "universityCourseCode", e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </TableCell>
+                <TableCell className="border-r text-sm">{course.courseTitle}</TableCell>
+                <TableCell className="border-r text-center">{course.theoryCredits}</TableCell>
+                <TableCell className="border-r text-center">{course.skillLabCredits}</TableCell>
+                <TableCell className="border-r text-center">{course.clinicalCredits}</TableCell>
+                <TableCell className="border-r text-center text-sm">{course.theoryPrescribed}</TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.theoryAttended || ""}
+                    onChange={(e) => handleInputChange(index, "theoryAttended", e.target.value)}
+                    className="h-8 w-16 text-xs"
+                  />
+                </TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.theoryPercentage || ""}
+                    onChange={(e) => handleInputChange(index, "theoryPercentage", e.target.value)}
+                    className="h-8 w-16 text-xs"
+                  />
+                </TableCell>
+                <TableCell className="border-r text-center text-sm">{course.skillLabPrescribed}</TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.skillLabAttended || ""}
+                    onChange={(e) => handleInputChange(index, "skillLabAttended", e.target.value)}
+                    className="h-8 w-16 text-xs"
+                  />
+                </TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.skillLabPercentage || ""}
+                    onChange={(e) => handleInputChange(index, "skillLabPercentage", e.target.value)}
+                    className="h-8 w-16 text-xs"
+                  />
+                </TableCell>
+                <TableCell className="border-r text-center text-sm">{course.clinicalPrescribed}</TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.clinicalAttended || ""}
+                    onChange={(e) => handleInputChange(index, "clinicalAttended", e.target.value)}
+                    className="h-8 w-16 text-xs"
+                  />
+                </TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.clinicalPercentage || ""}
+                    onChange={(e) => handleInputChange(index, "clinicalPercentage", e.target.value)}
+                    className="h-8 w-16 text-xs"
+                  />
+                </TableCell>
+                <TableCell className="border-r text-center text-sm">{course.theoryInternalMax}</TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.theoryInternalObtained || ""}
+                    onChange={(e) => handleInputChange(index, "theoryInternalObtained", e.target.value)}
+                    className="h-8 w-16 text-xs"
+                  />
+                </TableCell>
+                <TableCell className="border-r text-center text-sm">{course.theoryEndSemMax}</TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.theoryEndSemObtained || ""}
+                    onChange={(e) => handleInputChange(index, "theoryEndSemObtained", e.target.value)}
+                    className="h-8 w-16 text-xs"
+                  />
+                </TableCell>
+                <TableCell className="border-r text-center text-sm">{course.theoryTotalMax}</TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.theoryTotalObtained || ""}
+                    onChange={(e) => handleInputChange(index, "theoryTotalObtained", e.target.value)}
+                    className="h-8 w-16 text-xs"
+                  />
+                </TableCell>
+                <TableCell className="border-r text-center text-sm">{course.practicalInternalMax}</TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.practicalInternalObtained || ""}
+                    onChange={(e) => handleInputChange(index, "practicalInternalObtained", e.target.value)}
+                    className="h-8 w-16 text-xs"
+                  />
+                </TableCell>
+                <TableCell className="border-r text-center text-sm">{course.practicalEndSemMax}</TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.practicalEndSemObtained || ""}
+                    onChange={(e) => handleInputChange(index, "practicalEndSemObtained", e.target.value)}
+                    className="h-8 w-16 text-xs"
+                  />
+                </TableCell>
+                <TableCell className="border-r text-center text-sm">{course.practicalTotalMax}</TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.practicalTotalObtained || ""}
+                    onChange={(e) => handleInputChange(index, "practicalTotalObtained", e.target.value)}
+                    className="h-8 w-16 text-xs"
+                  />
+                </TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.gradePoint || ""}
+                    onChange={(e) => handleInputChange(index, "gradePoint", e.target.value)}
+                    className="h-8 w-16 text-xs"
+                  />
+                </TableCell>
+                <TableCell className="border-r">
+                  <Input
+                    value={course.letterGrade || ""}
+                    onChange={(e) => handleInputChange(index, "letterGrade", e.target.value)}
+                    className="h-8 w-16 text-xs"
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+ 
+      <div className="text-sm text-muted-foreground italic">
+        Note: P = Prescribed, A = Attended, % = Percentage
+      </div>
+    </div>
   );
 };
