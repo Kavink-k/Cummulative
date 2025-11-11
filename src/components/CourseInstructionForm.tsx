@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -745,12 +748,11 @@ const semesterData: Record<string, Course[]> = {
       practicalInternalMax: 0,
       practicalEndSemMax: 0,
       practicalTotalMax: 0
-      }
-      ],
-      "VIII":[
-        
-          {
-        slNo: 33,
+    }
+  ],
+  "VIII": [
+    {
+      slNo: 33,
       courseCode: "INTEA",
       universityCourseCode: "",
       courseTitle: "Community Health Nursing-4 weeks",
@@ -766,11 +768,9 @@ const semesterData: Record<string, Course[]> = {
       practicalInternalMax: 0,
       practicalEndSemMax: 0,
       practicalTotalMax: 200
-      },
-        
-      
-        {
-        slNo: 34,
+    },
+    {
+      slNo: 34,
       courseCode: "INTE420",
       universityCourseCode: "",
       courseTitle: "Adult Health Nursing-6 weeks",
@@ -786,10 +786,9 @@ const semesterData: Record<string, Course[]> = {
       practicalInternalMax: 0,
       practicalEndSemMax: 0,
       practicalTotalMax: 0
-      },
-      
-        {
-        slNo: 35,
+    },
+    {
+      slNo: 35,
       courseCode: "INTE425",
       universityCourseCode: "",
       courseTitle: "Child Health Nursing-4 weeks",
@@ -805,10 +804,9 @@ const semesterData: Record<string, Course[]> = {
       practicalInternalMax: 0,
       practicalEndSemMax: 0,
       practicalTotalMax: 0
-      
-      },
-        {
-        slNo: 36,
+    },
+    {
+      slNo: 36,
       courseCode: "INTE430",
       universityCourseCode: "",
       courseTitle: "Mental Health Nursing -4weeks ",
@@ -824,11 +822,9 @@ const semesterData: Record<string, Course[]> = {
       practicalInternalMax: 0,
       practicalEndSemMax: 0,
       practicalTotalMax: 0
-      
-      },
-      {
-          
-        slNo: 37,
+    },
+    {
+      slNo: 37,
       courseCode: "INTEA435",
       universityCourseCode: "",
       courseTitle: "Midwifery-4 weeks",
