@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 const courseInstructionSchema = z.object({
   semester: z.string().min(1, "Semester is required"),
@@ -44,6 +48,122 @@ interface CourseInstructionFormProps {
   defaultValues?: Partial<CourseInstructionFormData>;
   onProgressChange?: (progress: number) => void;
 }
+
+// Define course data OUTSIDE the component
+const courseDataBySemester = {
+  "VII": [
+    {
+      slNo: 32,
+      courseCode: "",
+      universityCourseCode: "",
+      courseTitle: "Elective 3",
+      theoryCredits: "1",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 20,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 0,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 50,
+      theoryTotalMax: 50,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    }
+  ],
+  "VIII": [
+    {
+      slNo: 33,
+      courseCode: "INTEA",
+      universityCourseCode: "",
+      courseTitle: "Community Health Nursing-4 weeks",
+      theoryCredits: "-",
+      skillLabCredits: "-",
+      clinicalCredits: "12",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 192,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 200
+    },
+    {
+      slNo: 34,
+      courseCode: "INTE420",
+      universityCourseCode: "",
+      courseTitle: "Adult Health Nursing-6 weeks",
+      theoryCredits: "-",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 288,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 35,
+      courseCode: "INTE425",
+      universityCourseCode: "",
+      courseTitle: "Child Health Nursing-4 weeks",
+      theoryCredits: "0",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 192,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 36,
+      courseCode: "INTE430",
+      universityCourseCode: "",
+      courseTitle: "Mental Health Nursing -4weeks ",
+      theoryCredits: "0",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 192,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    },
+    {
+      slNo: 37,
+      courseCode: "INTEA435",
+      universityCourseCode: "",
+      courseTitle: "Midwifery-4 weeks",
+      theoryCredits: "0",
+      skillLabCredits: "-",
+      clinicalCredits: "-",
+      theoryPrescribed: 0,
+      skillLabPrescribed: "-",
+      clinicalPrescribed: 192,
+      theoryInternalMax: "-",
+      theoryEndSemMax: 0,
+      theoryTotalMax: 0,
+      practicalInternalMax: 0,
+      practicalEndSemMax: 0,
+      practicalTotalMax: 0
+    }
+  ]
+};
 
 export const CourseInstructionForm = ({ onSubmit, defaultValues, onProgressChange }: CourseInstructionFormProps) => {
   const form = useForm<CourseInstructionFormData>({
@@ -96,131 +216,35 @@ export const CourseInstructionForm = ({ onSubmit, defaultValues, onProgressChang
               )}
             />
 
-      
-      {
-        slNo: 32,
-      courseCode: "",
-      universityCourseCode: "",
-      courseTitle: "Elective 3",
-      theoryCredits: "1",
-      skillLabCredits: "-",
-      clinicalCredits: "-",
-      theoryPrescribed: 20,
-      skillLabPrescribed: "-",
-      clinicalPrescribed: 0,
-      theoryInternalMax: "-",
-      theoryEndSemMax: 50,
-      theoryTotalMax: 50,
-      practicalInternalMax: 0,
-      practicalEndSemMax: 0,
-      practicalTotalMax: 0
-      }
-      ],
-      "VIII":[
-        
-          {
-        slNo: 33,
-      courseCode: "INTEA",
-      universityCourseCode: "",
-      courseTitle: "Community Health Nursing-4 weeks",
-      theoryCredits: "-",
-      skillLabCredits: "-",
-      clinicalCredits: "12",
-      theoryPrescribed: 0,
-      skillLabPrescribed: "-",
-      clinicalPrescribed: 192,
-      theoryInternalMax: "-",
-      theoryEndSemMax: 0,
-      theoryTotalMax: 0,
-      practicalInternalMax: 0,
-      practicalEndSemMax: 0,
-      practicalTotalMax: 200
-      },
-        
-      
-        {
-        slNo: 34,
-      courseCode: "INTE420",
-      universityCourseCode: "",
-      courseTitle: "Adult Health Nursing-6 weeks",
-      theoryCredits: "-",
-      skillLabCredits: "-",
-      clinicalCredits: "-",
-      theoryPrescribed: 0,
-      skillLabPrescribed: "-",
-      clinicalPrescribed: 288,
-      theoryInternalMax: "-",
-      theoryEndSemMax: 0,
-      theoryTotalMax: 0,
-      practicalInternalMax: 0,
-      practicalEndSemMax: 0,
-      practicalTotalMax: 0
-      },
-      
-        {
-        slNo: 35,
-      courseCode: "INTE425",
-      universityCourseCode: "",
-      courseTitle: "Child Health Nursing-4 weeks",
-      theoryCredits: "0",
-      skillLabCredits: "-",
-      clinicalCredits: "-",
-      theoryPrescribed: 0,
-      skillLabPrescribed: "-",
-      clinicalPrescribed: 192,
-      theoryInternalMax: "-",
-      theoryEndSemMax: 0,
-      theoryTotalMax: 0,
-      practicalInternalMax: 0,
-      practicalEndSemMax: 0,
-      practicalTotalMax: 0
-      
-      },
-        {
-        slNo: 36,
-      courseCode: "INTE430",
-      universityCourseCode: "",
-      courseTitle: "Mental Health Nursing -4weeks ",
-      theoryCredits: "0",
-      skillLabCredits: "-",
-      clinicalCredits: "-",
-      theoryPrescribed: 0,
-      skillLabPrescribed: "-",
-      clinicalPrescribed: 192,
-      theoryInternalMax: "-",
-      theoryEndSemMax: 0,
-      theoryTotalMax: 0,
-      practicalInternalMax: 0,
-      practicalEndSemMax: 0,
-      practicalTotalMax: 0
-      
-      },
-      {
-          
-        slNo: 37,
-      courseCode: "INTEA435",
-      universityCourseCode: "",
-      courseTitle: "Midwifery-4 weeks",
-      theoryCredits: "0",
-      skillLabCredits: "-",
-      clinicalCredits: "-",
-      theoryPrescribed: 0,
-      skillLabPrescribed: "-",
-      clinicalPrescribed: 192,
-      theoryInternalMax: "-",
-      theoryEndSemMax: 0,
-      theoryTotalMax: 0,
-      practicalInternalMax: 0,
-      practicalEndSemMax: 0,
-      practicalTotalMax: 0
-      
-      }],
-    
-    
+            <FormField
+              control={form.control}
+              name="courseCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Course Code</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-
-  // Add more semesters as needed
-};
+            <FormField
+              control={form.control}
+              name="courseTitle"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Course Title</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
 
         <div className="bg-muted/30 p-4 rounded-lg border">
           <h3 className="font-semibold text-lg mb-4">Credits</h3>
@@ -556,9 +580,16 @@ export const CourseInstructionForm = ({ onSubmit, defaultValues, onProgressChang
           </div>
         </div>
 
-      <div className="text-sm text-muted-foreground italic">
-        Note: P = Prescribed, A = Attended, % = Percentage
-      </div>
-    </div>
+        <div className="text-sm text-muted-foreground italic">
+          Note: P = Prescribed, A = Attended, % = Percentage
+        </div>
+
+        <div className="flex justify-end">
+          <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
+            Submit
+          </button>
+        </div>
+      </form>
+    </Form>
   );
 };
