@@ -120,9 +120,10 @@ const clinicalExperienceData = {
 interface ClinicalExperienceFormProps {
   onSubmit: (data: ClinicalExperienceFormData) => void;
   defaultValues?: Partial<ClinicalExperienceFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const ClinicalExperienceForm = ({ onSubmit, defaultValues }: ClinicalExperienceFormProps) => {
+export const ClinicalExperienceForm = ({ onSubmit, defaultValues, onProgressChange }: ClinicalExperienceFormProps) => {
   const form = useForm<ClinicalExperienceFormData>({
     resolver: zodResolver(clinicalExperienceSchema),
     defaultValues: defaultValues || {

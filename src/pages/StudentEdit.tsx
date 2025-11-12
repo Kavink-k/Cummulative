@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormStepper } from "@/components/FormStepper";
@@ -17,10 +16,9 @@ import { AdditionalCoursesForm } from "@/components/AdditionalCoursesForm";
 import { CourseCompletionForm } from "@/components/CourseCompletionForm";
 import { VerificationForm } from "@/components/VerificationForm";
 import { toast } from "sonner";
-import { BookOpen, ChevronLeft, ChevronRight, CheckCircle2, LogOut, User2, LayoutDashboard } from "lucide-react";
-
-import { logout, getUser } from "@/lib/auth";
-import { upsertStudent } from "@/lib/data";
+import { BookOpen, ChevronLeft, ChevronRight, CheckCircle2, ArrowLeft } from "lucide-react";
+import { sampleStudents } from "@/data/sampleStudents";
+import { getStudent, updateStudent, upsertStudent } from "@/lib/data";
 
 const steps = [
   { id: 1, title: "Personal Profile", description: "Student's basic information" },
@@ -37,43 +35,44 @@ const steps = [
   { id: 12, title: "Verification", description: "Semester-wise verification" },
 ];
 
-const DRAFT_KEY = "scr_draft_v1";
-
-const Index = () => {
+const StudentEdit = () => {
+  const { studentId } = useParams<{ studentId: string }>();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [stepProgress, setStepProgress] = useState<Record<number, number>>({});
-  const user = getUser();
 
-  // Load draft on mount
+  const student = sampleStudents.find(s => s.id === studentId) || getStudent(studentId || "");
+
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as {
-          currentStep?: number;
-          formData?: Record<string, any>;
-          stepProgress?: Record<number, number>;
-        };
-        if (parsed.formData) setFormData(parsed.formData);
-        if (parsed.stepProgress) setStepProgress(parsed.stepProgress);
-        if (parsed.currentStep && parsed.currentStep >= 1 && parsed.currentStep <= steps.length) {
-          setCurrentStep(parsed.currentStep);
+    if (student) {
+      setFormData(student.steps);
+      // Calculate initial progress
+      const progress: Record<number, number> = {};
+      for (let i = 1; i <= 12; i++) {
+        if (student.steps[`step${i}` as keyof typeof student.steps]) {
+          progress[i] = 100;
         }
-        toast.message("Draft loaded", { description: "We restored your previous progress." });
       }
-    } catch {
-      // ignore parse errors
+      setStepProgress(progress);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [student]);
 
-  // Auto-save draft whenever things change
-  useEffect(() => {
-    const payload = JSON.stringify({ currentStep, formData, stepProgress });
-    localStorage.setItem(DRAFT_KEY, payload);
-  }, [currentStep, formData, stepProgress]);
+  if (!student) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Student Not Found</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">The student record you're looking for doesn't exist.</p>
+            <Button onClick={() => navigate("/dashboard")}>Back to Dashboard</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const handleNext = () => {
     setCurrentStep((s) => {
@@ -91,64 +90,30 @@ const Index = () => {
     });
   };
 
-  // Try to derive a nice display name from step1 values
-  const deriveDisplayName = (step1: any, fallback?: string) => {
-    if (!step1) return fallback || "Student";
-    if (step1.name) return String(step1.name);
-    const maybe =
-      [step1.firstName, step1.middleName, step1.lastName]
-        .filter(Boolean)
-        .join(" ")
-        .trim();
-    return maybe || fallback || "Student";
-  };
-
-  // Try to pick a stable ID: RegNo -> Email -> user.id -> random
-  const deriveRecordId = (step1: any, userObj: any) => {
-    const reg = step1?.regNo || step1?.registerNo || step1?.registrationNo;
-    const mail = userObj?.email;
-    const uid = userObj?.id;
-    return String(reg || mail || uid || crypto.randomUUID());
-  };
-
   const handleFormSubmit = (stepData: any) => {
     const updated = { ...formData, [`step${currentStep}`]: stepData };
     setFormData(updated);
     setStepProgress((prev) => ({ ...prev, [currentStep]: 100 }));
-    toast.success("Section saved successfully!");
+    
+    // Save to storage
+    upsertStudent({
+      id: student.id,
+      name: student.name,
+      email: student.email,
+      regNo: student.regNo,
+      steps: updated,
+    });
+
+    toast.success("Section updated successfully!");
 
     if (currentStep < steps.length) {
       handleNext();
-      return;
-    }
-
-    // FINAL SUBMIT: persist a complete record for Dashboard/Student Detail
-    try {
-      const step1 = updated.step1 || {};
-      const recordId = deriveRecordId(step1, user);
-      const displayName = deriveDisplayName(step1, user?.name);
-
-      upsertStudent({
-        id: recordId,
-        name: displayName,
-        email: user?.email,
-        regNo: step1?.regNo || step1?.registerNo || step1?.registrationNo,
-        steps: updated, // contains step1..step12
-      });
-
-      // Optionally clear draft after final submit
-      // localStorage.removeItem(DRAFT_KEY);
-
-      toast.success("All forms completed successfully!", {
-        description: "Saved to Dashboard. Redirecting to full record…",
+    } else {
+      toast.success("All changes saved!", {
+        description: "Student record has been updated.",
         icon: <CheckCircle2 className="h-5 w-5" />,
       });
-
-      // Navigate to the consolidated record view
-      navigate(`/students/${encodeURIComponent(recordId)}`, { replace: true });
-    } catch (e) {
-      console.error(e);
-      toast.error("Finished, but saving to Dashboard failed. Please try again.");
+      navigate(`/students/${studentId}`);
     }
   };
 
@@ -212,38 +177,15 @@ const Index = () => {
                 <BookOpen className="h-6 w-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Student Cumulative Record</h1>
-                <p className="text-sm text-muted-foreground">Academic Documentation System</p>
+                <h1 className="text-2xl font-bold text-foreground">Edit Student Record</h1>
+                <p className="text-sm text-muted-foreground">{student.name} - {student.regNo}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-sm text-muted-foreground">
-                <User2 className="h-4 w-4" />
-                <span className="max-w-[14rem] truncate">
-                  {user?.name || "User"} {user?.email ? `• ${user.email}` : ""}
-                </span>
-              </div>
-
-              <Button
-                variant="outline"
-                onClick={() => navigate("/dashboard")}
-              >
-                <LayoutDashboard className="h-4 w-4 mr-2" />
-                Dashboard
-              </Button>
-
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  logout();
-                  window.location.href = "/login";
-                }}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
+            <Button variant="outline" onClick={() => navigate(`/students/${studentId}`)}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
           </div>
         </div>
       </header>
@@ -253,7 +195,7 @@ const Index = () => {
           <CardHeader>
             <CardTitle>Form Progress</CardTitle>
             <CardDescription>
-              Complete all {steps.length} sections to submit your cumulative record
+              Edit any of the {steps.length} sections
             </CardDescription>
           </CardHeader>
           <CardContent className="overflow-x-auto">
@@ -298,28 +240,16 @@ const Index = () => {
                 ) : (
                   <Button onClick={triggerActiveFormSubmit} className="bg-primary">
                     <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Submit All Forms
+                    Save All Changes
                   </Button>
                 )}
               </div>
             </div>
           </CardContent>
         </Card>
-
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>
-            Step {currentStep} of {steps.length} • Changes auto-saved to browser storage
-          </p>
-        </div>
       </main>
-
-      <footer className="border-t bg-card/30 mt-12">
-        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          <p>© 2025 Student Cumulative Record System. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   );
 };
 
-export default Index;
+export default StudentEdit;

@@ -1,101 +1,191 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { searchStudents, listStudents } from "@/lib/data";
-import { LayoutDashboard, Search, User2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Search, Eye, Edit, Printer, BookOpen, LogOut, User2 } from "lucide-react";
+import { sampleStudents } from "@/data/sampleStudents";
+import { getUser, logout } from "@/lib/auth";
+import { getAllStudents } from "@/lib/data";
 
-export default function Dashboard() {
+const Dashboard = () => {
   const navigate = useNavigate();
-  const [q, setQ] = useState("");
-  const [rows, setRows] = useState(() => listStudents());
+  const user = getUser();
+  const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    // refresh list from storage whenever we mount
-    setRows(listStudents());
-  }, []);
+  // Combine sample students with any stored students
+  const storedStudents = getAllStudents();
+  const allStudents = [...sampleStudents, ...storedStudents.filter(s => !sampleStudents.find(ss => ss.id === s.id))];
 
-  const results = useMemo(() => {
-    if (!q.trim()) return rows.slice(0, 25);
-    return searchStudents(q).slice(0, 50);
-  }, [q, rows]);
+  const filteredStudents = allStudents.filter((student) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      student.name.toLowerCase().includes(query) ||
+      student.regNo.toLowerCase().includes(query) ||
+      student.email.toLowerCase().includes(query) ||
+      student.id.toLowerCase().includes(query)
+    );
+  });
+
+  const handleView = (studentId: string) => {
+    navigate(`/students/${encodeURIComponent(studentId)}`);
+  };
+
+  const handleEdit = (studentId: string) => {
+    navigate(`/students/${encodeURIComponent(studentId)}/edit`);
+  };
+
+  const handlePrint = (studentId: string) => {
+    navigate(`/students/${encodeURIComponent(studentId)}/print`);
+  };
 
   return (
-    <>
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-30">
-        <div className="px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary text-primary-foreground p-2 rounded-lg">
-              <LayoutDashboard className="h-6 w-6" />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
+      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary text-primary-foreground p-2 rounded-lg">
+                <BookOpen className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Student Records Dashboard</h1>
+                <p className="text-sm text-muted-foreground">Manage Student Cumulative Records</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">Dashboard</h1>
-              <p className="text-sm text-muted-foreground">
-                Search students by name, register number, or email
-              </p>
+
+            <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-sm text-muted-foreground">
+                <User2 className="h-4 w-4" />
+                <span className="max-w-[14rem] truncate">
+                  {user?.name || "Admin"} {user?.email ? `• ${user.email}` : ""}
+                </span>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={() => navigate("/")}
+              >
+                New Record
+              </Button>
+
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  logout();
+                  window.location.href = "/login";
+                }}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="p-4 md:p-6 space-y-4">
-        <Card className="border-2">
-          <CardHeader className="pb-2">
-            <CardTitle>Search</CardTitle>
-            <CardDescription>Type to filter the students list</CardDescription>
+      <main className="container mx-auto px-4 py-8 max-w-7xl">
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Search Students</CardTitle>
+            <CardDescription>Search by name, registration number, email, or student ID</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, RegNo, or email…"
-                className="pl-9"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Showing {results.length} result{results.length !== 1 ? "s" : ""}
+          <CardContent>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search students..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-2">
-          <CardHeader className="pb-2">
-            <CardTitle>Results</CardTitle>
-            <CardDescription>Click a student to view their full record</CardDescription>
+        <Card>
+          <CardHeader>
+            <CardTitle>Student Records ({filteredStudents.length})</CardTitle>
+            <CardDescription>
+              {filteredStudents.length === allStudents.length
+                ? "Showing all student records"
+                : `Showing ${filteredStudents.length} of ${allStudents.length} records`}
+            </CardDescription>
           </CardHeader>
-          <CardContent className="divide-y">
-            {results.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-6">No matches.</div>
-            ) : (
-              results.map((r) => (
-                <button
-                  key={r.id}
-                  onClick={() => navigate(`/students/${encodeURIComponent(r.id)}`)}
-                  className="w-full text-left py-3 flex items-center gap-3 hover:bg-muted/60 rounded-md px-2"
-                >
-                  <div className="bg-muted grid place-items-center rounded-md h-9 w-9">
-                    <User2 className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">
-                      {r.name || "Unnamed"}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {r.regNo ? `RegNo: ${r.regNo}` : r.email || r.id}
-                    </div>
-                  </div>
-                  <div className="ml-auto text-xs text-muted-foreground">
-                    {r.updatedAt ? new Date(r.updatedAt).toLocaleString() : ""}
-                  </div>
-                </button>
-              ))
-            )}
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student ID</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Registration No</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredStudents.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        No students found matching your search.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredStudents.map((student) => (
+                      <TableRow key={student.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium">{student.id}</TableCell>
+                        <TableCell>{student.name}</TableCell>
+                        <TableCell>{student.regNo}</TableCell>
+                        <TableCell>{student.email}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleView(student.id)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(student.id)}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePrint(student.id)}
+                            >
+                              <Printer className="h-4 w-4 mr-1" />
+                              Print
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
-      </div>
-    </>
+      </main>
+
+      <footer className="border-t bg-card/30 mt-12">
+        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
+          <p>© 2025 Student Cumulative Record System. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
   );
-}
+};
+
+export default Dashboard;

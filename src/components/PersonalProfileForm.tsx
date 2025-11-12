@@ -5,7 +5,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { useEffect, useState, useRef } from "react";
+import { Upload, X, User } from "lucide-react";
+import { toast } from "sonner";
 
 const personalProfileSchema = z.object({
   studentName: z.string().min(2, "Name must be at least 2 characters").max(100),
@@ -27,6 +30,7 @@ const personalProfileSchema = z.object({
   ociNumber: z.string().optional(),
   emisNo: z.string().min(1, "EMIS number is required"),
   mediumOfInstruction: z.string().min(1, "Medium of instruction is required"),
+  photoUrl: z.string().optional(),
 });
 
 type PersonalProfileFormData = z.infer<typeof personalProfileSchema>;
@@ -42,6 +46,9 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
     resolver: zodResolver(personalProfileSchema),
     defaultValues: defaultValues || {},
   });
+
+  const [photoPreview, setPhotoPreview] = useState<string | null>(defaultValues?.photoUrl || null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Calculate progress based on filled fields
   useEffect(() => {
@@ -75,39 +82,128 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
     return () => subscription.unsubscribe();
   }, [form, onProgressChange]);
 
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image size should be less than 2MB");
+      return;
+    }
+
+    // Convert to base64 for storage
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setPhotoPreview(base64String);
+      form.setValue('photoUrl', base64String);
+      toast.success("Photo uploaded successfully");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoPreview(null);
+    form.setValue('photoUrl', '');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    toast.info("Photo removed");
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Existing form fields remain unchanged */}
+        {/* Photo Upload Section and First Row Fields */}
+        <div className="flex gap-6 items-start">
+          {/* Left side - Form fields */}
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="studentName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name of Student (Block Letters)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="JOHN DOE" {...field} className="uppercase" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="age"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Age</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="18" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Right side - Photo Upload */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative">
+              <div className="w-32 h-40 border-2 border-dashed border-muted-foreground rounded-lg overflow-hidden bg-muted/30 flex items-center justify-center">
+                {photoPreview ? (
+                  <img 
+                    src={photoPreview} 
+                    alt="Student" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="h-16 w-16 text-muted-foreground" />
+                )}
+              </div>
+              {photoPreview && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                  onClick={handleRemovePhoto}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {photoPreview ? 'Change' : 'Upload'}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoUpload}
+            />
+            <p className="text-xs text-muted-foreground text-center">
+              Max 2MB<br/>JPG, PNG
+            </p>
+          </div>
+        </div>
+
+        {/* Remaining form fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="studentName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name of Student (Block Letters)</FormLabel>
-                <FormControl>
-                  <Input placeholder="JOHN DOE" {...field} className="uppercase" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="age"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Age</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="18" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
           <FormField
             control={form.control}
             name="gender"
