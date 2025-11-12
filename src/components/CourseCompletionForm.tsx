@@ -31,9 +31,10 @@ const certificateNames = [
 interface CourseCompletionFormProps {
   onSubmit: (data: CourseCompletionFormData) => void;
   defaultValues?: Partial<CourseCompletionFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const CourseCompletionForm = ({ onSubmit, defaultValues }: CourseCompletionFormProps) => {
+export const CourseCompletionForm = ({ onSubmit, defaultValues, onProgressChange }: CourseCompletionFormProps) => {
   const form = useForm<CourseCompletionFormData>({
     resolver: zodResolver(courseCompletionFormSchema),
     defaultValues: defaultValues || {

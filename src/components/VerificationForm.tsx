@@ -30,9 +30,10 @@ const semesters = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 interface VerificationFormProps {
   onSubmit: (data: VerificationFormData) => void;
   defaultValues?: Partial<VerificationFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const VerificationForm = ({ onSubmit, defaultValues }: VerificationFormProps) => {
+export const VerificationForm = ({ onSubmit, defaultValues, onProgressChange }: VerificationFormProps) => {
   const [selectedSemester, setSelectedSemester] = useState("I");
   
   const form = useForm<VerificationFormData>({

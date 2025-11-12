@@ -848,8 +848,14 @@ const semesterData: Record<string, Course[]> = {
  
   // Add more semesters as needed
 };
+
+interface CourseInstructionFormProps {
+  onSubmit: (data: any) => void;
+  defaultValues?: any;
+  onProgressChange?: (progress: number) => void;
+}
  
-export const CourseInstructionForm = () => {
+export const CourseInstructionForm = ({ onSubmit, defaultValues, onProgressChange }: CourseInstructionFormProps) => {
  
   const [selectedSemester, setSelectedSemester] = useState<string>("I");
   const [courses, setCourses] = useState<Course[]>(semesterData["I"]);
@@ -1081,6 +1087,13 @@ export const CourseInstructionForm = () => {
       <div className="text-sm text-muted-foreground italic">
         Note: P = Prescribed, A = Attended, % = Percentage
       </div>
+
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit({ semester: selectedSemester, courses });
+      }} className="hidden">
+        <button type="submit">Submit</button>
+      </form>
     </div>
   );
 };

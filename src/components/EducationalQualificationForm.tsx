@@ -55,9 +55,10 @@ const defaultSubjects = [
 interface EducationalQualificationFormProps {
   onSubmit: (data: EducationalQualificationFormData) => void;
   defaultValues?: Partial<EducationalQualificationFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const EducationalQualificationForm = ({ onSubmit, defaultValues }: EducationalQualificationFormProps) => {
+export const EducationalQualificationForm = ({ onSubmit, defaultValues, onProgressChange }: EducationalQualificationFormProps) => {
   const [plusOneAttempts, setPlusOneAttempts] = useState(1);
   const [plusTwoAttempts, setPlusTwoAttempts] = useState(1);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
