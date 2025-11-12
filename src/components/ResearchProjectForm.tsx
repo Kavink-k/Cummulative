@@ -1,9 +1,10 @@
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
 import { useEffect } from "react";
 
@@ -66,7 +67,6 @@ export const ResearchProjectForm = ({ onSubmit, defaultValues, onProgressChange 
                 <th className="border p-3 text-left font-semibold">Area of Study/Discipline</th>
                 <th className="border p-3 text-left font-semibold">Group/Individual</th>
                 <th className="border p-3 text-left font-semibold">Project Title</th>
-                <th className="border p-3 text-center font-semibold w-20">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -78,9 +78,21 @@ export const ResearchProjectForm = ({ onSubmit, defaultValues, onProgressChange 
                       name={`projects.${index}.semester`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormControl>
-                            <Input {...field} placeholder="I, II, III..." className="h-9" />
-                          </FormControl>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder="Select semester" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map((semester) => (
+                                <SelectItem key={semester} value={semester}>
+                                  {semester}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -94,6 +106,7 @@ export const ResearchProjectForm = ({ onSubmit, defaultValues, onProgressChange 
                           <FormControl>
                             <Input {...field} placeholder="Area of study" className="h-9" />
                           </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -107,6 +120,7 @@ export const ResearchProjectForm = ({ onSubmit, defaultValues, onProgressChange 
                           <FormControl>
                             <Input {...field} placeholder="Group/Individual" className="h-9" />
                           </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -120,36 +134,46 @@ export const ResearchProjectForm = ({ onSubmit, defaultValues, onProgressChange 
                           <FormControl>
                             <Input {...field} placeholder="Project title" className="h-9" />
                           </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
-                  </td>
-                  <td className="border p-2 text-center">
-                    {fields.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => remove(index)}
-                      >
-                        <X className="h-4 w-4 text-destructive" />
-                      </Button>
-                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => append({ semester: "", areaOfStudy: "", type: "", projectTitle: "" })}
-          className="w-full"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Research Project
-        </Button>
+        
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => append({ semester: "", areaOfStudy: "", type: "", projectTitle: "" })}
+            className="flex-1"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Research Project
+          </Button>
+          
+          {fields.length > 1 && (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => remove(fields.length - 1)}
+              className="flex items-center gap-2"
+            >
+              <X className="h-4 w-4" />
+              Remove Last
+            </Button>
+          )}
+        </div>
+
+        <div className="flex justify-end">
+          <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            Submit Research Projects
+          </Button>
+        </div>
       </form>
     </Form>
   );

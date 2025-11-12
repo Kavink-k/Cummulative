@@ -1,0 +1,69 @@
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Upload, FileSpreadsheet } from "lucide-react";
+import { toast } from "sonner";
+
+export default function BulkSubmission() {
+  const [file, setFile] = useState<File | null>(null);
+
+  const handleUpload = () => {
+    if (!file) {
+      toast.error("Please select a CSV/XLSX file first.");
+      return;
+    }
+    // TODO: parse & send to API
+    toast.success("Uploaded (demo). Replace with real API logic.");
+  };
+
+  return (
+    <>
+      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="px-4 py-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary text-primary-foreground p-2 rounded-lg">
+              <FileSpreadsheet className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">Bulk Submission</h1>
+              <p className="text-sm text-muted-foreground">
+                Upload many student records at once (CSV or Excel).
+              </p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="p-4 md:p-6">
+        <Card className="border-2 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
+            <CardTitle>Upload File</CardTitle>
+            <CardDescription>
+              Accepted formats: <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            <div className="flex flex-col md:flex-row items-center gap-3">
+              <input
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="block w-full md:w-auto"
+              />
+              <Button onClick={handleUpload}>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload
+              </Button>
+            </div>
+
+            <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+              <li>First row should contain column headers.</li>
+              <li>Include required fields (e.g., Name, RegNo, DOB, Program, etc.).</li>
+              <li>We’ll validate and show a preview before final submission (coming next).</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  );
+}

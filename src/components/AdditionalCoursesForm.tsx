@@ -1,7 +1,7 @@
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, X } from "lucide-react";
@@ -64,7 +64,6 @@ export const AdditionalCoursesForm = ({ onSubmit, defaultValues, onProgressChang
                 <th className="border p-3 text-left font-semibold">Name of the Course</th>
                 <th className="border p-3 text-left font-semibold">From</th>
                 <th className="border p-3 text-left font-semibold">To</th>
-                <th className="border p-3 text-center font-semibold w-20">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -79,6 +78,7 @@ export const AdditionalCoursesForm = ({ onSubmit, defaultValues, onProgressChang
                           <FormControl>
                             <Input {...field} placeholder="Course name" className="h-9" />
                           </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -92,6 +92,7 @@ export const AdditionalCoursesForm = ({ onSubmit, defaultValues, onProgressChang
                           <FormControl>
                             <Input type="date" {...field} className="h-9" />
                           </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -105,36 +106,46 @@ export const AdditionalCoursesForm = ({ onSubmit, defaultValues, onProgressChang
                           <FormControl>
                             <Input type="date" {...field} className="h-9" />
                           </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
-                  </td>
-                  <td className="border p-2 text-center">
-                    {fields.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => remove(index)}
-                      >
-                        <X className="h-4 w-4 text-destructive" />
-                      </Button>
-                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => append({ courseName: "", from: "", to: "" })}
-          className="w-full"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Course
-        </Button>
+        
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => append({ courseName: "", from: "", to: "" })}
+            className="flex-1"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Course
+          </Button>
+          
+          {fields.length > 1 && (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => remove(fields.length - 1)}
+              className="flex items-center gap-2"
+            >
+              <X className="h-4 w-4" />
+              Remove Last
+            </Button>
+          )}
+        </div>
+
+        <div className="flex justify-end">
+          <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            Submit Courses
+          </Button>
+        </div>
       </form>
     </Form>
   );
