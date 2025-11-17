@@ -18,6 +18,7 @@ const clinicalRecordSchema = z.object({
 });
 
 const clinicalExperienceSchema = z.object({
+  studentId: z.string().optional(),
   records: z.array(clinicalRecordSchema),
 });
 

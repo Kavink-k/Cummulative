@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEffect } from "react";
 
 const admissionDetailsSchema = z.object({
+  studentId: z.string().optional(),
   dateOfAdmission: z.string().min(1, "Date of admission is required"),
   admissionNumber: z.string().min(1, "Admission number is required"),
   rollNumber: z.string().min(1, "Roll number is required"),

@@ -853,9 +853,10 @@ interface CourseInstructionFormProps {
   onSubmit: (data: any) => void;
   defaultValues?: any;
   onProgressChange?: (progress: number) => void;
+  studentId?: string;
 }
  
-export const CourseInstructionForm = ({ onSubmit, defaultValues, onProgressChange }: CourseInstructionFormProps) => {
+export const CourseInstructionForm = ({ onSubmit, defaultValues, onProgressChange, studentId }: CourseInstructionFormProps) => {
  
   const [selectedSemester, setSelectedSemester] = useState<string>("I");
   const [courses, setCourses] = useState<Course[]>(semesterData["I"]);
@@ -1090,7 +1091,7 @@ export const CourseInstructionForm = ({ onSubmit, defaultValues, onProgressChang
 
       <form onSubmit={(e) => {
         e.preventDefault();
-        onSubmit({ semester: selectedSemester, courses });
+        onSubmit({ studentId, semester: selectedSemester, courses });
       }} className="hidden">
         <button type="submit">Submit</button>
       </form>

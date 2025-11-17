@@ -20,6 +20,7 @@ const verificationSchema = z.object({
 });
 
 const verificationFormSchema = z.object({
+  studentId: z.string().optional(),
   verifications: z.array(verificationSchema),
 });
 

@@ -22,6 +22,7 @@ const subjectSchema = z.object({
 });
 
 const educationalQualificationSchema = z.object({
+  studentId: z.string().optional(),
   streamGroup: z.string().min(1, "Stream/Group is required"),
   subjects: z.array(subjectSchema),
   totalPlusOneMaxMarks: z.string(),

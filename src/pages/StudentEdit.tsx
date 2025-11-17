@@ -131,9 +131,11 @@ const StudentEdit = () => {
   };
 
   const renderCurrentForm = () => {
+    const studentId = formData.step1?.studentId;
+    const defaultValues = { ...formData[`step${currentStep}`], studentId };
     const props = {
       onSubmit: handleFormSubmit,
-      defaultValues: formData[`step${currentStep}`],
+      defaultValues,
       onProgressChange: handleProgressChange(currentStep),
     };
 

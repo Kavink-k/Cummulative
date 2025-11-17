@@ -12,6 +12,7 @@ const courseCompletionSchema = z.object({
 });
 
 const courseCompletionFormSchema = z.object({
+  studentId: z.string().optional(),
   completions: z.array(courseCompletionSchema),
 });
 

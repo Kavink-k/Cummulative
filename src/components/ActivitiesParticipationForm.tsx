@@ -1,4 +1,3 @@
-
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -18,6 +17,7 @@ const semesterActivitySchema = z.object({
 });
 
 const activitiesSchema = z.object({
+  studentId: z.string().optional(),
   semesters: z.array(semesterActivitySchema),
 });
 

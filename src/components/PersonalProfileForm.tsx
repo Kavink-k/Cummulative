@@ -1,16 +1,31 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, useRef } from "react";
 import { Upload, X, User } from "lucide-react";
 import { toast } from "sonner";
 
+// Schema (photoUrl removed)
 const personalProfileSchema = z.object({
+  studentId: z.string().min(1, "Student ID is required"),
   studentName: z.string().min(2, "Name must be at least 2 characters").max(100),
   age: z.string().min(1, "Age is required"),
   gender: z.string().min(1, "Gender is required"),
@@ -20,59 +35,52 @@ const personalProfileSchema = z.object({
   community: z.string().min(1, "Community is required"),
   nativity: z.string().min(1, "Nativity is required"),
   maritalStatus: z.string().min(1, "Marital status is required"),
-  parentGuardianName: z.string().min(2, "Parent/Guardian name is required").max(100),
+  parentGuardianName: z
+    .string()
+    .min(2, "Parent/Guardian name is required")
+    .max(100),
   motherTongue: z.string().min(1, "Mother tongue is required"),
-  communicationAddress: z.string().min(5, "Communication address is required").max(500),
+  communicationAddress: z
+    .string()
+    .min(5, "Communication address is required")
+    .max(500),
   permanentAddress: z.string().min(5, "Permanent address is required").max(500),
-  contactMobile: z.string().regex(/^[0-9]{10}$/, "Mobile number must be 10 digits"),
+  contactMobile: z
+    .string()
+    .regex(/^[0-9]{10}$/, "Mobile number must be 10 digits"),
   studentEmail: z.string().email("Invalid email address"),
   aadharNo: z.string().regex(/^[0-9]{12}$/, "Aadhar number must be 12 digits"),
   ociNumber: z.string().optional(),
   emisNo: z.string().min(1, "EMIS number is required"),
   mediumOfInstruction: z.string().min(1, "Medium of instruction is required"),
-  photoUrl: z.string().optional(),
 });
 
 type PersonalProfileFormData = z.infer<typeof personalProfileSchema>;
 
 interface PersonalProfileFormProps {
-  onSubmit: (data: PersonalProfileFormData) => void;
+  onSubmit: (data: PersonalProfileFormData, photoFile: File | null) => void;
   defaultValues?: Partial<PersonalProfileFormData>;
-  onProgressChange?: (progress: number) => void; // New prop to report progress
+  onProgressChange?: (progress: number) => void;
 }
 
-export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange }: PersonalProfileFormProps) => {
+export const PersonalProfileForm = ({
+  onSubmit,
+  defaultValues,
+  onProgressChange,
+}: PersonalProfileFormProps) => {
   const form = useForm<PersonalProfileFormData>({
     resolver: zodResolver(personalProfileSchema),
     defaultValues: defaultValues || {},
   });
 
-  const [photoPreview, setPhotoPreview] = useState<string | null>(defaultValues?.photoUrl || null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Calculate progress based on filled fields
   useEffect(() => {
     const subscription = form.watch((values) => {
-      const requiredFields = [
-        "studentName",
-        "age",
-        "gender",
-        "dateOfBirth",
-        "nationality",
-        "religion",
-        "community",
-        "nativity",
-        "maritalStatus",
-        "parentGuardianName",
-        "motherTongue",
-        "communicationAddress",
-        "permanentAddress",
-        "contactMobile",
-        "studentEmail",
-        "aadharNo",
-        "emisNo",
-        "mediumOfInstruction",
-      ];
+      const requiredFields = Object.keys(personalProfileSchema.shape);
       const filledFields = requiredFields.filter(
         (field) => values[field] && values[field].toString().trim() !== ""
       ).length;
@@ -86,59 +94,65 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error("Please upload an image file");
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file (JPG/PNG)");
       return;
     }
 
-    // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       toast.error("Image size should be less than 2MB");
       return;
     }
 
-    // Convert to base64 for storage
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      setPhotoPreview(base64String);
-      form.setValue('photoUrl', base64String);
-      toast.success("Photo uploaded successfully");
-    };
-    reader.readAsDataURL(file);
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    toast.success("Photo selected successfully");
   };
 
   const handleRemovePhoto = () => {
+    setPhotoFile(null);
     setPhotoPreview(null);
-    form.setValue('photoUrl', '');
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
     toast.info("Photo removed");
   };
 
+  const handleSubmit = (data: PersonalProfileFormData) => {
+    onSubmit(data, photoFile);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Photo Upload Section and First Row Fields */}
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="flex gap-6 items-start">
-          {/* Left side - Form fields */}
           <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
-              name="studentName"
+              name="studentId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name of Student (Block Letters)</FormLabel>
+                  <FormLabel>Student ID</FormLabel>
                   <FormControl>
-                    <Input placeholder="JOHN DOE" {...field} className="uppercase" />
+                    <Input {...field} className="uppercase" placeholder="N26NS000" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
+            <FormField
+              control={form.control}
+              name="studentName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Student Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} className="" placeholder="Enter Name" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="age"
@@ -146,7 +160,7 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
                 <FormItem>
                   <FormLabel>Age</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="18" {...field} />
+                    <Input type="number" {...field} placeholder="19"/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -154,18 +168,17 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
             />
           </div>
 
-          {/* Right side - Photo Upload */}
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
-              <div className="w-32 h-40 border-2 border-dashed border-muted-foreground rounded-lg overflow-hidden bg-muted/30 flex items-center justify-center">
+              <div className="w-32 h-40 border-2 border-dashed rounded-lg bg-muted/30 flex items-center justify-center">
                 {photoPreview ? (
-                  <img 
-                    src={photoPreview} 
-                    alt="Student" 
+                  <img
+                    src={photoPreview}
+                    alt="Preview"
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User className="h-16 w-16 text-muted-foreground" />
+                  <User className="h-16 w-16 opacity-50" />
                 )}
               </div>
               {photoPreview && (
@@ -186,8 +199,8 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
               size="sm"
               onClick={() => fileInputRef.current?.click()}
             >
-              <Upload className="h-4 w-4 mr-2" />
-              {photoPreview ? 'Change' : 'Upload'}
+              <Upload className="h-4 w-4 mr-2" />{" "}
+              {photoPreview ? "Change" : "Upload"}
             </Button>
             <input
               ref={fileInputRef}
@@ -197,7 +210,9 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
               onChange={handlePhotoUpload}
             />
             <p className="text-xs text-muted-foreground text-center">
-              Max 2MB<br/>JPG, PNG
+              Max 2MB
+              <br />
+              JPG, PNG
             </p>
           </div>
         </div>
@@ -210,7 +225,10 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Gender</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select gender" />
@@ -303,7 +321,10 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Marital Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select marital status" />
@@ -370,7 +391,11 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
               <FormItem>
                 <FormLabel>Address for Communication</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Enter communication address" {...field} rows={3} />
+                  <Textarea
+                    placeholder="Enter communication address"
+                    {...field}
+                    rows={3}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -384,7 +409,11 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
               <FormItem>
                 <FormLabel>Permanent Address</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Enter permanent address" {...field} rows={3} />
+                  <Textarea
+                    placeholder="Enter permanent address"
+                    {...field}
+                    rows={3}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -414,7 +443,11 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
               <FormItem>
                 <FormLabel>Student Email ID</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="student@example.com" {...field} />
+                  <Input
+                    type="email"
+                    placeholder="student@example.com"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

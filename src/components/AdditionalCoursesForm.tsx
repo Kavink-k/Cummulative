@@ -14,6 +14,7 @@ const courseSchema = z.object({
 });
 
 const additionalCoursesSchema = z.object({
+  studentId: z.string().optional(),
   courses: z.array(courseSchema),
 });
 

@@ -16,6 +16,7 @@ const semesterAttendanceSchema = z.object({
 });
 
 const attendanceSchema = z.object({
+  studentId: z.string().optional(),
   semesters: z.array(semesterAttendanceSchema),
 });
 

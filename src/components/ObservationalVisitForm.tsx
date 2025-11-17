@@ -13,6 +13,7 @@ const visitSchema = z.object({
 });
 
 const observationalVisitSchema = z.object({
+  studentId: z.string().optional(),
   visits: z.array(visitSchema),
 });
 

@@ -16,6 +16,7 @@ const projectSchema = z.object({
 });
 
 const researchProjectSchema = z.object({
+  studentId: z.string().optional(),
   projects: z.array(projectSchema),
 });
 
