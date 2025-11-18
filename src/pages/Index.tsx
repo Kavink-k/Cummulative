@@ -21,6 +21,7 @@ import { BookOpen, ChevronLeft, ChevronRight, CheckCircle2, LogOut, User2, Layou
 
 import { logout, getUser } from "@/lib/auth";
 import { upsertStudent } from "@/lib/data";
+import { StudentInfoDisplay } from "@/components/StudentInfoDisplay";
 
 const steps = [
   { id: 1, title: "Personal Profile", description: "Student's basic information" },
@@ -277,6 +278,12 @@ const Index = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
+            {currentStep > 1 && formData.step1?.studentId && formData.step1?.studentName && (
+              <StudentInfoDisplay
+                studentId={formData.step1.studentId}
+                studentName={formData.step1.studentName}
+              />
+            )}
             {renderCurrentForm()}
 
             <div className="flex justify-between mt-8 pt-6 border-t">

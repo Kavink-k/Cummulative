@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { BookOpen, ChevronLeft, ChevronRight, CheckCircle2, ArrowLeft } from "lucide-react";
 import { sampleStudents } from "@/data/sampleStudents";
 import { getStudent, updateStudent, upsertStudent } from "@/lib/data";
+import { StudentInfoDisplay } from "@/components/StudentInfoDisplay";
 
 const steps = [
   { id: 1, title: "Personal Profile", description: "Student's basic information" },
@@ -221,6 +222,12 @@ const StudentEdit = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
+            {currentStep > 1 && formData.step1?.studentId && formData.step1?.studentName && (
+              <StudentInfoDisplay
+                studentId={formData.step1.studentId}
+                studentName={formData.step1.studentName}
+              />
+            )}
             {renderCurrentForm()}
 
             <div className="flex justify-between mt-8 pt-6 border-t">
