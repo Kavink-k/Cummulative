@@ -4,6 +4,8 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { apiService } from "@/lib/api";
+import { toast } from "sonner";
 
 const courseCompletionSchema = z.object({
   courseName: z.string(),
@@ -52,9 +54,28 @@ export const CourseCompletionForm = ({ onSubmit, defaultValues, onProgressChange
     name: "completions",
   });
 
+  const handleSubmit = async (data: CourseCompletionFormData) => {
+    try {
+      // Submit each completion record as separate records
+      const promises = data.completions.map(completion =>
+        apiService.createCourseCompletion({
+          studentId: data.studentId,
+          ...completion
+        })
+      );
+
+      await Promise.all(promises);
+      toast.success("Course completion records saved successfully!");
+      onSubmit(data);
+    } catch (error: any) {
+      console.error("Error saving course completion records:", error);
+      toast.error(error.response?.data?.message || "Failed to save course completion records");
+    }
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="overflow-x-auto border rounded-lg">
           <table className="w-full border-collapse">
             <thead>

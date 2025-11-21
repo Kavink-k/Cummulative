@@ -4,6 +4,8 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useEffect } from "react";
+import { apiService } from "@/lib/api";
+import { toast } from "sonner";
 
 const semesterAttendanceSchema = z.object({
   semester: z.string(),
@@ -74,9 +76,35 @@ export const AttendanceForm = ({ onSubmit, defaultValues, onProgressChange }: At
     return () => subscription.unsubscribe();
   }, [form, onProgressChange]);
 
+  const handleSubmit = async (data: AttendanceFormData) => {
+    try {
+      // Submit each semester as separate records
+      const promises = data.semesters.map(semester =>
+        apiService.createAttendanceRecord({
+          studentId: data.studentId,
+          ...semester
+        })
+      );
+
+      await Promise.all(promises);
+      toast.success("Attendance records saved successfully!");
+      onSubmit(data);
+    } catch (error: any) {
+      console.error("Error saving attendance records:", error);
+      toast.error(error.response?.data?.message || "Failed to save attendance records");
+    }
+  };
+
+  // Reset form when defaultValues change
+  useEffect(() => {
+    if (defaultValues) {
+      form.reset(defaultValues);
+    }
+  }, [defaultValues, form]);
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="overflow-x-auto border rounded-lg">
           <table className="w-full border-collapse">
             <thead>

@@ -5,6 +5,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect } from "react";
+import { apiService } from "@/lib/api";
+import { toast } from "sonner";
 
 const admissionDetailsSchema = z.object({
   studentId: z.string().optional(),
@@ -37,6 +39,7 @@ interface AdmissionDetailsFormProps {
   onSubmit: (data: AdmissionDetailsFormData) => void;
   defaultValues?: Partial<AdmissionDetailsFormData>;
   onProgressChange?: (progress: number) => void;
+  onChange?: (data: AdmissionDetailsFormData) => void;
 }
 
 export const AdmissionDetailsForm = ({ onSubmit, defaultValues, onProgressChange }: AdmissionDetailsFormProps) => {
@@ -63,9 +66,27 @@ export const AdmissionDetailsForm = ({ onSubmit, defaultValues, onProgressChange
     return () => subscription.unsubscribe();
   }, [form, onProgressChange]);
 
+  const handleSubmit = async (data: AdmissionDetailsFormData) => {
+    try {
+      await apiService.createAdmissionDetail(data);
+      toast.success("Admission details saved successfully!");
+      onSubmit(data);
+    } catch (error: any) {
+      console.error("Error saving admission details:", error);
+      toast.error(error.response?.data?.message || "Failed to save admission details");
+    }
+  };
+
+  // Reset form when defaultValues change
+  useEffect(() => {
+    if (defaultValues) {
+      form.reset(defaultValues);
+    }
+  }, [defaultValues, form]);
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}

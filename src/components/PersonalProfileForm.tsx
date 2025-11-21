@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, useRef } from "react";
 import { Upload, X, User } from "lucide-react";
 import { toast } from "sonner";
+import { apiService } from "@/lib/api";
 
 // Schema (photoUrl removed)
 const personalProfileSchema = z.object({
@@ -61,6 +62,7 @@ interface PersonalProfileFormProps {
   onSubmit: (data: PersonalProfileFormData, photoFile: File | null) => void;
   defaultValues?: Partial<PersonalProfileFormData>;
   onProgressChange?: (progress: number) => void;
+  onChange?: (data: PersonalProfileFormData) => void;
 }
 
 export const PersonalProfileForm = ({
@@ -118,9 +120,24 @@ export const PersonalProfileForm = ({
     toast.info("Photo removed");
   };
 
-  const handleSubmit = (data: PersonalProfileFormData) => {
-    onSubmit(data, photoFile);
+  const handleSubmit = async (data: PersonalProfileFormData) => {
+    console.log("Submitting Personal Profile Data:", data);
+    try {
+      const response = await apiService.createPersonalProfile(data, photoFile || undefined);
+      toast.success("Personal profile saved successfully!");
+      onSubmit(data, photoFile);
+    } catch (error: any) {
+      console.error("Error saving personal profile:", error);
+      toast.error(error.response?.data?.message || "Failed to save personal profile");
+    }
   };
+
+  // Reset form when defaultValues change
+  useEffect(() => {
+    if (defaultValues) {
+      form.reset(defaultValues);
+    }
+  }, [defaultValues, form]);
 
   return (
     <Form {...form}>

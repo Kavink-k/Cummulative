@@ -1,14 +1,31 @@
+import React, { useEffect, useRef, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect, useRef } from "react";
-import React from "react";
 import { ChevronDown } from "lucide-react";
+import { apiService } from "@/lib/api";
+import { toast } from "sonner";
 
+// -----------------------------
+// Schemas (updated totals -> arrays)
+// -----------------------------
 const attemptSchema = z.object({
   maxMarks: z.string(),
   score: z.string(),
@@ -25,12 +42,8 @@ const educationalQualificationSchema = z.object({
   studentId: z.string().optional(),
   streamGroup: z.string().min(1, "Stream/Group is required"),
   subjects: z.array(subjectSchema),
-  totalPlusOneMaxMarks: z.string(),
-  totalPlusOneScore: z.string(),
-  totalPlusOnePercentage: z.string(),
-  totalPlusTwoMaxMarks: z.string(),
-  totalPlusTwoScore: z.string(),
-  totalPlusTwoPercentage: z.string(),
+  totalPlusOneAttempts: z.array(attemptSchema),
+  totalPlusTwoAttempts: z.array(attemptSchema),
   certificateNo: z.string().min(1, "Certificate number is required"),
   certificateDate: z.string().min(1, "Certificate date is required"),
   yearOfPassing: z.string().min(4, "Year of passing is required"),
@@ -57,56 +70,81 @@ interface EducationalQualificationFormProps {
   onSubmit: (data: EducationalQualificationFormData) => void;
   defaultValues?: Partial<EducationalQualificationFormData>;
   onProgressChange?: (progress: number) => void;
+  onChange?: (data: EducationalQualificationFormData) => void;
 }
 
-export const EducationalQualificationForm = ({ onSubmit, defaultValues, onProgressChange }: EducationalQualificationFormProps) => {
-  const [plusOneAttempts, setPlusOneAttempts] = useState(1);
-  const [plusTwoAttempts, setPlusTwoAttempts] = useState(1);
+// -----------------------------
+// Helper utilities
+// -----------------------------
+const makeEmptyAttempt = () => ({ maxMarks: "", score: "", percentage: "" });
+const ensureLength = (arr: any[] | undefined, len: number) => {
+  const copy = Array.isArray(arr) ? [...arr] : [];
+  while (copy.length < len) copy.push(makeEmptyAttempt());
+  if (copy.length > len) return copy.slice(0, len);
+  return copy;
+};
+
+export const EducationalQualificationForm = ({
+  onSubmit,
+  defaultValues,
+  onProgressChange,
+  onChange,
+}: EducationalQualificationFormProps) => {
+  // attempt counts (default 1)
+  const [plusOneAttempts, setPlusOneAttempts] = useState<number>(1);
+  const [plusTwoAttempts, setPlusTwoAttempts] = useState<number>(1);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  // Transform defaultValues if they exist to match the expected structure
-  const transformedDefaultValues = defaultValues ? {
-    ...defaultValues,
-    subjects: defaultValues.subjects?.map(subject => ({
-      ...subject,
-      subject: typeof subject.subject === 'string' ? subject.subject : (subject.subject as any).subject
-    })) || defaultSubjects.map(subject => ({
-      subject: subject.subject,
-      plusOneAttempts: [{ maxMarks: "", score: "", percentage: "" }],
-      plusTwoAttempts: [{ maxMarks: "", score: "", percentage: "" }],
-    }))
-  } : undefined;
+  // Transform backend subject shape if needed (safe guard)
+  const transformedDefaultValues = defaultValues
+    ? {
+        ...defaultValues,
+        subjects:
+          defaultValues.subjects?.map((s: any) => ({
+            ...s,
+            subject: typeof s.subject === "string" ? s.subject : s.subject?.subject || "",
+            plusOneAttempts: Array.isArray(s.plusOneAttempts) ? s.plusOneAttempts : [makeEmptyAttempt()],
+            plusTwoAttempts: Array.isArray(s.plusTwoAttempts) ? s.plusTwoAttempts : [makeEmptyAttempt()],
+          })) ||
+          defaultSubjects.map((sub) => ({
+            subject: sub.subject,
+            plusOneAttempts: [makeEmptyAttempt()],
+            plusTwoAttempts: [makeEmptyAttempt()],
+          })),
+        totalPlusOneAttempts: Array.isArray((defaultValues as any).totalPlusOneAttempts)
+          ? (defaultValues as any).totalPlusOneAttempts
+          : [makeEmptyAttempt()],
+        totalPlusTwoAttempts: Array.isArray((defaultValues as any).totalPlusTwoAttempts)
+          ? (defaultValues as any).totalPlusTwoAttempts
+          : [makeEmptyAttempt()],
+      }
+    : undefined;
 
+  // initialize form with totals arrays
   const form = useForm<EducationalQualificationFormData>({
     resolver: zodResolver(educationalQualificationSchema),
-    defaultValues: transformedDefaultValues || {
-      streamGroup: "",
-      subjects: defaultSubjects.map(subject => ({
-        subject: subject.subject,
-        plusOneAttempts: [{ maxMarks: "", score: "", percentage: "" }],
-        plusTwoAttempts: [{ maxMarks: "", score: "", percentage: "" }],
-      })),
-      totalPlusOneMaxMarks: "",
-      totalPlusOneScore: "",
-      totalPlusOnePercentage: "",
-      totalPlusTwoMaxMarks: "",
-      totalPlusTwoScore: "",
-      totalPlusTwoPercentage: "",
-      certificateNo: "",
-      certificateDate: "",
-      yearOfPassing: "",
-      boardOfExamination: "",
-      mediumOfInstruction: "",
-      hscVerificationNo: "",
-      hscVerificationDate: "",
-    },
+    defaultValues:
+      transformedDefaultValues || {
+        streamGroup: "",
+        subjects: defaultSubjects.map((sub) => ({
+          subject: sub.subject,
+          plusOneAttempts: [makeEmptyAttempt()],
+          plusTwoAttempts: [makeEmptyAttempt()],
+        })),
+        totalPlusOneAttempts: [makeEmptyAttempt()],
+        totalPlusTwoAttempts: [makeEmptyAttempt()],
+        certificateNo: "",
+        certificateDate: "",
+        yearOfPassing: "",
+        boardOfExamination: "",
+        mediumOfInstruction: "",
+        hscVerificationNo: "",
+        hscVerificationDate: "",
+      },
   });
 
-  const { fields } = useFieldArray({
-    control: form.control,
-    name: "subjects",
-  });
+  const { fields } = useFieldArray({ control: form.control, name: "subjects" });
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -115,236 +153,305 @@ export const EducationalQualificationForm = ({ onSubmit, defaultValues, onProgre
         setIsDropdownOpen(false);
       }
     };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Update attempts when dropdown values change
+  // If editing, initialize attempt counters from defaultValues (so edit shows correct columns)
   useEffect(() => {
-    const currentSubjects = form.getValues().subjects;
-    
-    // Handle +1 attempts
-    const updatedPlusOneSubjects = currentSubjects.map(subject => {
-      const currentAttempts = subject.plusOneAttempts.length;
-      if (currentAttempts < plusOneAttempts) {
-        // Add new attempts
-        const newAttempts = [...subject.plusOneAttempts];
-        while (newAttempts.length < plusOneAttempts) {
-          newAttempts.push({ maxMarks: "", score: "", percentage: "" });
-        }
-        return { ...subject, plusOneAttempts: newAttempts };
-      } else if (currentAttempts > plusOneAttempts) {
-        // Remove attempts
-        return { ...subject, plusOneAttempts: subject.plusOneAttempts.slice(0, plusOneAttempts) };
+    if (!defaultValues) return;
+    const subjects = (defaultValues as any).subjects || [];
+    const plusOne = Math.max(...subjects.map((s: any) => (s.plusOneAttempts || []).length), 1);
+    const plusTwo = Math.max(...subjects.map((s: any) => (s.plusTwoAttempts || []).length), 1);
+    setPlusOneAttempts(plusOne);
+    setPlusTwoAttempts(plusTwo);
+
+    // ensure totals arrays exist and have correct length
+    const totalsOne = (defaultValues as any).totalPlusOneAttempts || [];
+    const totalsTwo = (defaultValues as any).totalPlusTwoAttempts || [];
+
+    const ensuredTotalsOne = ensureLength(totalsOne, plusOne);
+    const ensuredTotalsTwo = ensureLength(totalsTwo, plusTwo);
+
+    form.reset({
+      ...(transformedDefaultValues as any),
+      totalPlusOneAttempts: ensuredTotalsOne,
+      totalPlusTwoAttempts: ensuredTotalsTwo,
+      subjects: (transformedDefaultValues as any).subjects.map((s: any) => ({
+        ...s,
+        plusOneAttempts: ensureLength(s.plusOneAttempts, plusOne),
+        plusTwoAttempts: ensureLength(s.plusTwoAttempts, plusTwo),
+      })),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultValues]);
+
+  // When attempt counts change, resize subject attempts and totals immutably
+  useEffect(() => {
+    const current = form.getValues();
+    const subjects = current.subjects || [];
+
+    let needUpdate = false;
+    const newSubjects = subjects.map((s) => {
+      const newPlusOne = ensureLength(s.plusOneAttempts, plusOneAttempts);
+      const newPlusTwo = ensureLength(s.plusTwoAttempts, plusTwoAttempts);
+      if (
+        (s.plusOneAttempts || []).length !== newPlusOne.length ||
+        (s.plusTwoAttempts || []).length !== newPlusTwo.length
+      ) {
+        needUpdate = true;
+        return { ...s, plusOneAttempts: newPlusOne, plusTwoAttempts: newPlusTwo };
       }
-      return subject;
+      return s;
     });
 
-    // Handle +2 attempts
-    const finalSubjects = updatedPlusOneSubjects.map(subject => {
-      const currentAttempts = subject.plusTwoAttempts.length;
-      if (currentAttempts < plusTwoAttempts) {
-        // Add new attempts
-        const newAttempts = [...subject.plusTwoAttempts];
-        while (newAttempts.length < plusTwoAttempts) {
-          newAttempts.push({ maxMarks: "", score: "", percentage: "" });
-        }
-        return { ...subject, plusTwoAttempts: newAttempts };
-      } else if (currentAttempts > plusTwoAttempts) {
-        // Remove attempts
-        return { ...subject, plusTwoAttempts: subject.plusTwoAttempts.slice(0, plusTwoAttempts) };
-      }
-      return subject;
-    });
+    const newTotalsOne = ensureLength(current.totalPlusOneAttempts, plusOneAttempts);
+    const newTotalsTwo = ensureLength(current.totalPlusTwoAttempts, plusTwoAttempts);
 
-    form.setValue("subjects", finalSubjects);
-  }, [plusOneAttempts, plusTwoAttempts, form]);
-
-  const getPlusOneAttemptColumns = () => {
-    const columns = [];
-    for (let i = 0; i < plusOneAttempts; i++) {
-      columns.push(
-        <th key={`plus-one-${i}`} className="border p-2 text-center min-w-[240px]" colSpan={3}>
-          +1 {plusOneAttempts > 1 ? `(Attempt ${i + 1})` : ''}
-        </th>
-      );
+    if (needUpdate) {
+      form.setValue("subjects", newSubjects, { shouldValidate: false, shouldDirty: true });
     }
-    return columns;
+    if (newTotalsOne.length !== (current.totalPlusOneAttempts || []).length) {
+      form.setValue("totalPlusOneAttempts", newTotalsOne, { shouldValidate: false, shouldDirty: true });
+    }
+    if (newTotalsTwo.length !== (current.totalPlusTwoAttempts || []).length) {
+      form.setValue("totalPlusTwoAttempts", newTotalsTwo, { shouldValidate: false, shouldDirty: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plusOneAttempts, plusTwoAttempts]);
+
+  // Auto-calc percentage when score or maxMarks change
+  const watchedSubjects = form.watch("subjects");
+  const watchedTotalsOne = form.watch("totalPlusOneAttempts");
+  const watchedTotalsTwo = form.watch("totalPlusTwoAttempts");
+
+  useEffect(() => {
+    const calcPercent = (scoreStr: string, maxStr: string) => {
+      const score = parseFloat(scoreStr || "0");
+      const max = parseFloat(maxStr || "0");
+      if (!max || isNaN(score) || isNaN(max)) return "";
+      const p = (score / max) * 100;
+      return Number.isFinite(p) ? p.toFixed(2) : "";
+    };
+
+    let subjects = form.getValues("subjects");
+    let totals1 = form.getValues("totalPlusOneAttempts");
+    let totals2 = form.getValues("totalPlusTwoAttempts");
+
+    // ---------------------------
+    // 1) AUTO CALC SUBJECT PERCENTAGES
+    // ---------------------------
+    subjects = subjects.map((sub) => {
+      const plusOne = sub.plusOneAttempts.map((a) => ({
+        ...a,
+        percentage: calcPercent(a.score, a.maxMarks),
+      }));
+
+      const plusTwo = sub.plusTwoAttempts.map((a) => ({
+        ...a,
+        percentage: calcPercent(a.score, a.maxMarks),
+      }));
+
+      return { ...sub, plusOneAttempts: plusOne, plusTwoAttempts: plusTwo };
+    });
+
+    // ---------------------------
+    // 2) AUTO CALC TOTALS (SUM)
+    // totals for each attempt index
+    // ---------------------------
+
+    const sumAttempt = (attemptIndex: number, key: "plusOneAttempts" | "plusTwoAttempts") => {
+      let sumMax = 0;
+      let sumScore = 0;
+
+      for (const sub of subjects) {
+        const att = sub[key][attemptIndex];
+        if (!att) continue;
+
+        sumMax += Number(att.maxMarks || 0);
+        sumScore += Number(att.score || 0);
+      }
+
+      return {
+        maxMarks: String(sumMax),
+        score: String(sumScore),
+        percentage: calcPercent(String(sumScore), String(sumMax)),
+      };
+    };
+
+    // +1 totals
+    totals1 = totals1.map((_, i) => sumAttempt(i, "plusOneAttempts"));
+
+    // +2 totals
+    totals2 = totals2.map((_, i) => sumAttempt(i, "plusTwoAttempts"));
+
+    // ---------------------------
+    // 3) UPDATE FORM VALUES ONLY IF CHANGED
+    // ---------------------------
+
+    form.setValue("subjects", subjects, { shouldValidate: false, shouldDirty: true });
+    form.setValue("totalPlusOneAttempts", totals1, { shouldValidate: false, shouldDirty: true });
+    form.setValue("totalPlusTwoAttempts", totals2, { shouldValidate: false, shouldDirty: true });
+
+    // Notify parent of changes
+    if (onChange) {
+      const currentValues = form.getValues();
+      onChange(currentValues);
+    }
+  }, [
+    watchedSubjects,
+    watchedTotalsOne,
+    watchedTotalsTwo,
+    onChange,
+  ]);
+
+
+  // table helpers (columns)
+  const getPlusOneAttemptColumns = () => {
+    return Array.from({ length: plusOneAttempts }).map((_, i) => (
+      <th key={`plus-one-${i}`} className="border p-2 text-center min-w-[240px]" colSpan={3}>
+        +1 {plusOneAttempts > 1 ? `(Attempt ${i + 1})` : ""}
+      </th>
+    ));
   };
 
   const getPlusTwoAttemptColumns = () => {
-    const columns = [];
-    for (let i = 0; i < plusTwoAttempts; i++) {
-      columns.push(
-        <th key={`plus-two-${i}`} className="border p-2 text-center min-w-[240px]" colSpan={3}>
-          +2 {plusTwoAttempts > 1 ? `(Attempt ${i + 1})` : ''}
-        </th>
-      );
-    }
-    return columns;
+    return Array.from({ length: plusTwoAttempts }).map((_, i) => (
+      <th key={`plus-two-${i}`} className="border p-2 text-center min-w-[240px]" colSpan={3}>
+        +2 {plusTwoAttempts > 1 ? `(Attempt ${i + 1})` : ""}
+      </th>
+    ));
   };
 
   const getPlusOneSubColumns = () => {
-    const subColumns = [];
-    for (let i = 0; i < plusOneAttempts; i++) {
-      subColumns.push(
-        <React.Fragment key={`plus-one-sub-${i}`}>
-          <th className="border p-2 text-xs min-w-[80px]">Max Marks</th>
-          <th className="border p-2 text-xs min-w-[80px]">Score</th>
-          <th className="border p-2 text-xs min-w-[80px]">%</th>
-        </React.Fragment>
-      );
-    }
-    return subColumns;
+    return Array.from({ length: plusOneAttempts }).map((_, i) => (
+      <React.Fragment key={`plus-one-sub-${i}`}>
+        <th className="border p-2 text-xs min-w-[80px]">Max Marks</th>
+        <th className="border p-2 text-xs min-w-[80px]">Score</th>
+        <th className="border p-2 text-xs min-w-[80px]">%</th>
+      </React.Fragment>
+    ));
   };
 
   const getPlusTwoSubColumns = () => {
-    const subColumns = [];
-    for (let i = 0; i < plusTwoAttempts; i++) {
-      subColumns.push(
-        <React.Fragment key={`plus-two-sub-${i}`}>
-          <th className="border p-2 text-xs min-w-[80px]">Max Marks</th>
-          <th className="border p-2 text-xs min-w-[80px]">Score</th>
-          <th className="border p-2 text-xs min-w-[80px]">%</th>
-        </React.Fragment>
-      );
-    }
-    return subColumns;
+    return Array.from({ length: plusTwoAttempts }).map((_, i) => (
+      <React.Fragment key={`plus-two-sub-${i}`}>
+        <th className="border p-2 text-xs min-w-[80px]">Max Marks</th>
+        <th className="border p-2 text-xs min-w-[80px]">Score</th>
+        <th className="border p-2 text-xs min-w-[80px]">%</th>
+      </React.Fragment>
+    ));
   };
 
   const getPlusOneFields = (subjectIndex: number) => {
-    const fields = [];
-    for (let i = 0; i < plusOneAttempts; i++) {
-      fields.push(
-        <React.Fragment key={`plus-one-${i}-${subjectIndex}`}>
-          <td className="border p-2 min-w-[80px]">
-            <FormField
-              control={form.control}
-              name={`subjects.${subjectIndex}.plusOneAttempts.${i}.maxMarks`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
-                      className="h-9 text-sm w-full min-w-[60px]" 
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </td>
-          <td className="border p-2 min-w-[80px]">
-            <FormField
-              control={form.control}
-              name={`subjects.${subjectIndex}.plusOneAttempts.${i}.score`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
-                      className="h-9 text-sm w-full min-w-[60px]" 
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </td>
-          <td className="border p-2 min-w-[80px]">
-            <FormField
-              control={form.control}
-              name={`subjects.${subjectIndex}.plusOneAttempts.${i}.percentage`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.01" 
-                      {...field} 
-                      className="h-9 text-sm w-full min-w-[60px]" 
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </td>
-        </React.Fragment>
-      );
-    }
-    return fields;
+    return Array.from({ length: plusOneAttempts }).map((_, i) => (
+      <React.Fragment key={`plus-one-${i}-${subjectIndex}`}>
+        <td className="border p-2 min-w-[80px]">
+          <FormField
+            control={form.control}
+            name={`subjects.${subjectIndex}.plusOneAttempts.${i}.maxMarks` as any}
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input type="number" {...field} className="h-9 text-sm w-full min-w-[60px]" />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </td>
+        <td className="border p-2 min-w-[80px]">
+          <FormField
+            control={form.control}
+            name={`subjects.${subjectIndex}.plusOneAttempts.${i}.score` as any}
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input type="number" {...field} className="h-9 text-sm w-full min-w-[60px]" />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </td>
+        <td className="border p-2 min-w-[80px]">
+          <FormField
+            control={form.control}
+            name={`subjects.${subjectIndex}.plusOneAttempts.${i}.percentage` as any}
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input type="number" step="0.01" {...field} className="h-9 text-sm w-full min-w-[60px]" />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </td>
+      </React.Fragment>
+    ));
   };
 
   const getPlusTwoFields = (subjectIndex: number) => {
-    const fields = [];
-    for (let i = 0; i < plusTwoAttempts; i++) {
-      fields.push(
-        <React.Fragment key={`plus-two-${i}-${subjectIndex}`}>
-          <td className="border p-2 min-w-[80px]">
-            <FormField
-              control={form.control}
-              name={`subjects.${subjectIndex}.plusTwoAttempts.${i}.maxMarks`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
-                      className="h-9 text-sm w-full min-w-[60px]" 
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </td>
-          <td className="border p-2 min-w-[80px]">
-            <FormField
-              control={form.control}
-              name={`subjects.${subjectIndex}.plusTwoAttempts.${i}.score`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
-                      className="h-9 text-sm w-full min-w-[60px]" 
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </td>
-          <td className="border p-2 min-w-[80px]">
-            <FormField
-              control={form.control}
-              name={`subjects.${subjectIndex}.plusTwoAttempts.${i}.percentage`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.01" 
-                      {...field} 
-                      className="h-9 text-sm w-full min-w-[60px]" 
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </td>
-        </React.Fragment>
-      );
-    }
-    return fields;
+    return Array.from({ length: plusTwoAttempts }).map((_, i) => (
+      <React.Fragment key={`plus-two-${i}-${subjectIndex}`}>
+        <td className="border p-2 min-w-[80px]">
+          <FormField
+            control={form.control}
+            name={`subjects.${subjectIndex}.plusTwoAttempts.${i}.maxMarks` as any}
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input type="number" {...field} className="h-9 text-sm w-full min-w-[60px]" />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </td>
+        <td className="border p-2 min-w-[80px]">
+          <FormField
+            control={form.control}
+            name={`subjects.${subjectIndex}.plusTwoAttempts.${i}.score` as any}
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input type="number" {...field} className="h-9 text-sm w-full min-w-[60px]" />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </td>
+        <td className="border p-2 min-w-[80px]">
+          <FormField
+            control={form.control}
+            name={`subjects.${subjectIndex}.plusTwoAttempts.${i}.percentage` as any}
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input type="number" step="0.01" {...field} className="h-9 text-sm w-full min-w-[60px]" />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </td>
+      </React.Fragment>
+    ));
   };
 
-  // Calculate minimum table width based on attempts
-  const minTableWidth = 200 + (plusOneAttempts * 240) + (plusTwoAttempts * 240);
+  const minTableWidth = 200 + plusOneAttempts * 240 + plusTwoAttempts * 240;
+
+  const handleSubmit = async (data: EducationalQualificationFormData) => {
+    try {
+      // convert any numeric fields if backend expects numbers (optional)
+      await apiService.createEducationalQualification(data);
+      toast.success("Educational qualification saved successfully!");
+      onSubmit(data);
+    } catch (error: any) {
+      console.error("Error saving educational qualification:", error);
+      toast.error(error?.response?.data?.message || "Failed to save educational qualification");
+    }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold">II. EDUCATIONAL QUALIFICATION DETAILS</h2>
           <FormField
@@ -368,7 +475,6 @@ export const EducationalQualificationForm = ({ onSubmit, defaultValues, onProgre
             <div className="flex gap-4">
               <div className="flex items-center gap-2">
                 <div className="relative" ref={dropdownRef}>
-                  {/* Custom Dropdown Trigger */}
                   <Button
                     type="button"
                     variant="outline"
@@ -379,11 +485,9 @@ export const EducationalQualificationForm = ({ onSubmit, defaultValues, onProgre
                     <ChevronDown className="h-4 w-4 opacity-50" />
                   </Button>
 
-                  {/* Custom Dropdown Content */}
                   {isDropdownOpen && (
                     <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50">
                       <div className="p-3 space-y-4">
-                        {/* Plus One Section */}
                         <div className="space-y-2">
                           <div className="text-sm font-medium text-gray-700">+1</div>
                           <div className="flex gap-2">
@@ -405,7 +509,6 @@ export const EducationalQualificationForm = ({ onSubmit, defaultValues, onProgre
                           </div>
                         </div>
 
-                        {/* Plus Two Section */}
                         <div className="space-y-2">
                           <div className="text-sm font-medium text-gray-700">+2</div>
                           <div className="flex gap-2">
@@ -433,13 +536,10 @@ export const EducationalQualificationForm = ({ onSubmit, defaultValues, onProgre
               </div>
             </div>
           </div>
-          
+
           <div className="overflow-x-auto border rounded-lg">
             <div className="min-w-full inline-block align-middle">
-              <table 
-                className="w-full border-collapse text-sm" 
-                style={{ minWidth: `${minTableWidth}px` }}
-              >
+              <table className="w-full border-collapse text-sm" style={{ minWidth: `${minTableWidth}px` }}>
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="border p-3 text-left font-medium min-w-[200px]">SUBJECT</th>
@@ -453,37 +553,32 @@ export const EducationalQualificationForm = ({ onSubmit, defaultValues, onProgre
                   </tr>
                 </thead>
                 <tbody>
-                  {fields.map((field, index) => (
-                    <tr key={field.id}>
+                  {fields.map((fieldItem, index) => (
+                    <tr key={fieldItem.id}>
                       <td className="border p-3 font-medium min-w-[200px] bg-gray-50 sticky left-0 z-10">
-                        {field.subject}
+                        {fieldItem.subject}
                       </td>
+
                       {getPlusOneFields(index)}
                       {getPlusTwoFields(index)}
                     </tr>
                   ))}
-                  
+
                   {/* Total Row */}
                   <tr className="bg-gray-50">
-                    <td className="border p-3 font-medium min-w-[200px] bg-gray-100 sticky left-0 z-10">
-                      Total
-                    </td>
-                    
-                    {/* +1 Total Columns - Show input fields for ALL attempts */}
-                    {Array.from({ length: plusOneAttempts }).map((_, attemptIndex) => (
+                    <td className="border p-3 font-medium min-w-[200px] bg-gray-100 sticky left-0 z-10">Total</td>
+
+                    {/* +1 Totals */}
+                    {(form.getValues().totalPlusOneAttempts || []).map((_, attemptIndex) => (
                       <React.Fragment key={`plus-one-total-${attemptIndex}`}>
                         <td className="border p-2 min-w-[80px]">
                           <FormField
                             control={form.control}
-                            name="totalPlusOneMaxMarks"
+                            name={`totalPlusOneAttempts.${attemptIndex}.maxMarks` as any}
                             render={({ field }) => (
                               <FormItem>
                                 <FormControl>
-                                  <Input 
-                                    type="number" 
-                                    {...field} 
-                                    className="h-9 text-sm font-medium w-full" 
-                                  />
+                                  <Input type="number" {...field} className="h-9 text-sm font-medium w-full" />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -492,15 +587,11 @@ export const EducationalQualificationForm = ({ onSubmit, defaultValues, onProgre
                         <td className="border p-2 min-w-[80px]">
                           <FormField
                             control={form.control}
-                            name="totalPlusOneScore"
+                            name={`totalPlusOneAttempts.${attemptIndex}.score` as any}
                             render={({ field }) => (
                               <FormItem>
                                 <FormControl>
-                                  <Input 
-                                    type="number" 
-                                    {...field} 
-                                    className="h-9 text-sm font-medium w-full" 
-                                  />
+                                  <Input type="number" {...field} className="h-9 text-sm font-medium w-full" />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -509,16 +600,11 @@ export const EducationalQualificationForm = ({ onSubmit, defaultValues, onProgre
                         <td className="border p-2 min-w-[80px]">
                           <FormField
                             control={form.control}
-                            name="totalPlusOnePercentage"
+                            name={`totalPlusOneAttempts.${attemptIndex}.percentage` as any}
                             render={({ field }) => (
                               <FormItem>
                                 <FormControl>
-                                  <Input 
-                                    type="number" 
-                                    step="0.01" 
-                                    {...field} 
-                                    className="h-9 text-sm font-medium w-full" 
-                                  />
+                                  <Input type="number" step="0.01" {...field} className="h-9 text-sm font-medium w-full" />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -526,22 +612,18 @@ export const EducationalQualificationForm = ({ onSubmit, defaultValues, onProgre
                         </td>
                       </React.Fragment>
                     ))}
-                    
-                    {/* +2 Total Columns - Show input fields for ALL attempts */}
-                    {Array.from({ length: plusTwoAttempts }).map((_, attemptIndex) => (
+
+                    {/* +2 Totals */}
+                    {(form.getValues().totalPlusTwoAttempts || []).map((_, attemptIndex) => (
                       <React.Fragment key={`plus-two-total-${attemptIndex}`}>
                         <td className="border p-2 min-w-[80px]">
                           <FormField
                             control={form.control}
-                            name="totalPlusTwoMaxMarks"
+                            name={`totalPlusTwoAttempts.${attemptIndex}.maxMarks` as any}
                             render={({ field }) => (
                               <FormItem>
                                 <FormControl>
-                                  <Input 
-                                    type="number" 
-                                    {...field} 
-                                    className="h-9 text-sm font-medium w-full" 
-                                  />
+                                  <Input type="number" {...field} className="h-9 text-sm font-medium w-full" />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -550,15 +632,11 @@ export const EducationalQualificationForm = ({ onSubmit, defaultValues, onProgre
                         <td className="border p-2 min-w-[80px]">
                           <FormField
                             control={form.control}
-                            name="totalPlusTwoScore"
+                            name={`totalPlusTwoAttempts.${attemptIndex}.score` as any}
                             render={({ field }) => (
                               <FormItem>
                                 <FormControl>
-                                  <Input 
-                                    type="number" 
-                                    {...field} 
-                                    className="h-9 text-sm font-medium w-full" 
-                                  />
+                                  <Input type="number" {...field} className="h-9 text-sm font-medium w-full" />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -567,16 +645,11 @@ export const EducationalQualificationForm = ({ onSubmit, defaultValues, onProgre
                         <td className="border p-2 min-w-[80px]">
                           <FormField
                             control={form.control}
-                            name="totalPlusTwoPercentage"
+                            name={`totalPlusTwoAttempts.${attemptIndex}.percentage` as any}
                             render={({ field }) => (
                               <FormItem>
                                 <FormControl>
-                                  <Input 
-                                    type="number" 
-                                    step="0.01" 
-                                    {...field} 
-                                    className="h-9 text-sm font-medium w-full" 
-                                  />
+                                  <Input type="number" step="0.01" {...field} className="h-9 text-sm font-medium w-full" />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -699,12 +772,11 @@ export const EducationalQualificationForm = ({ onSubmit, defaultValues, onProgre
                 <FormMessage />
               </FormItem>
             )}
-          />
+          />  
         </div>
 
-        <div className="flex justify-end">
-          <Button type="submit">Submit</Button>
-        </div>
+        {/* If you want an explicit submit button in UI, you can add one here. */}
+        {/* <div className="text-right"><Button type="submit">Save</Button></div> */}
       </form>
     </Form>
   );

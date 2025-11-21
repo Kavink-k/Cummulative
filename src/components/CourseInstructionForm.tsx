@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import { apiService } from "@/lib/api";
+import { toast } from "sonner";
  
 interface Course {
   slNo: number;
@@ -856,245 +859,415 @@ interface CourseInstructionFormProps {
   studentId?: string;
 }
  
+const courseInstructionSchema = z.object({
+  studentId: z.string().optional(),
+  semester: z.string(),
+  courses: z.array(z.object({
+    slNo: z.number(),
+    courseCode: z.string(),
+    universityCourseCode: z.string(),
+    courseTitle: z.string(),
+    theoryCredits: z.string(),
+    skillLabCredits: z.string(),
+    clinicalCredits: z.string(),
+    theoryPrescribed: z.number(),
+    theoryAttended: z.string().optional(),
+    theoryPercentage: z.string().optional(),
+    skillLabPrescribed: z.string(),
+    skillLabAttended: z.string().optional(),
+    skillLabPercentage: z.string().optional(),
+    clinicalPrescribed: z.number(),
+    clinicalAttended: z.string().optional(),
+    clinicalPercentage: z.string().optional(),
+    theoryInternalMax: z.string(),
+    theoryInternalObtained: z.string().optional(),
+    theoryEndSemMax: z.number(),
+    theoryEndSemObtained: z.string().optional(),
+    theoryTotalMax: z.number(),
+    theoryTotalObtained: z.string().optional(),
+    practicalInternalMax: z.number(),
+    practicalInternalObtained: z.string().optional(),
+    practicalEndSemMax: z.number(),
+    practicalEndSemObtained: z.string().optional(),
+    practicalTotalMax: z.number(),
+    practicalTotalObtained: z.string().optional(),
+    gradePoint: z.string().optional(),
+    letterGrade: z.string().optional(),
+  })),
+});
+
+type CourseInstructionFormData = z.infer<typeof courseInstructionSchema>;
+
 export const CourseInstructionForm = ({ onSubmit, defaultValues, onProgressChange, studentId }: CourseInstructionFormProps) => {
- 
   const [selectedSemester, setSelectedSemester] = useState<string>("I");
-  const [courses, setCourses] = useState<Course[]>(semesterData["I"]);
- 
+
+  const form = useForm<CourseInstructionFormData>({
+    resolver: zodResolver(courseInstructionSchema),
+    defaultValues: defaultValues || {
+      semester: "I",
+      courses: semesterData["I"],
+    },
+  });
+
+  const { fields, replace } = useFieldArray({
+    control: form.control,
+    name: "courses",
+  });
+
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      let filledFields = 0;
+      const fieldsPerCourse = [
+        "universityCourseCode", "theoryAttended", "theoryPercentage", "skillLabAttended", "skillLabPercentage",
+        "clinicalAttended", "clinicalPercentage", "theoryInternalObtained", "theoryEndSemObtained", "theoryTotalObtained",
+        "practicalInternalObtained", "practicalEndSemObtained", "practicalTotalObtained", "gradePoint", "letterGrade"
+      ];
+      values.courses?.forEach((course: any) => {
+        filledFields += fieldsPerCourse.filter(
+          (field) => course[field] && course[field].toString().trim() !== "" && course[field].toString().trim() !== "-"
+        ).length;
+      });
+      const totalRequiredFields = semesterData[selectedSemester].length * fieldsPerCourse.length;
+      const progress = (filledFields / totalRequiredFields) * 100;
+      onProgressChange?.(progress);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onProgressChange, selectedSemester]);
+
   const handleSemesterChange = (semester: string) => {
     setSelectedSemester(semester);
-    setCourses(semesterData[semester] || []);
+    form.setValue("semester", semester);
+    replace(semesterData[semester] || []);
   };
- 
-  const handleInputChange = (index: number, field: keyof Course, value: string) => {
-    const updatedCourses = [...courses];
-    (updatedCourses[index] as any)[field] = value;
-    setCourses(updatedCourses);
+
+  const handleSubmit = async (data: CourseInstructionFormData) => {
+    try {
+      await apiService.createCourseInstruction(data);
+      toast.success("Course instruction saved successfully!");
+      onSubmit(data);
+    } catch (error: any) {
+      console.error("Error saving course instruction:", error);
+      toast.error(error.response?.data?.message || "Failed to save course instruction");
+    }
   };
  
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <label className="font-semibold">Select Semester:</label>
-        <Select value={selectedSemester} onValueChange={handleSemesterChange}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map((sem) => (
-              <SelectItem key={sem} value={sem}>
-                Semester {sem}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
- 
-      <div className="border rounded-lg overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-12">
-                Sl. No.
-              </TableHead>
-              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-32">
-                Course Code
-              </TableHead>
-              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-32">
-                University Course Code
-              </TableHead>
-              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-48">
-                Course Title
-              </TableHead>
-              <TableHead colSpan={3} className="border-r text-center">
-                Credits
-              </TableHead>
-              <TableHead colSpan={9} className="border-r text-center">
-                Course Instruction Hours
-              </TableHead>
-              <TableHead colSpan={12} className="border-r text-center">
-                Marks Obtained
-              </TableHead>
-              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-20">
-                Grade Point
-              </TableHead>
-              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-20">
-                Letter Grade
-              </TableHead>
-            </TableRow>
-            <TableRow className="bg-muted/50">
-              <TableHead className="border-r text-center min-w-16">Theory</TableHead>
-              <TableHead className="border-r text-center min-w-16">Skill Lab</TableHead>
-              <TableHead className="border-r text-center min-w-16">Clinical</TableHead>
-              <TableHead colSpan={3} className="border-r text-center">Theory</TableHead>
-              <TableHead colSpan={3} className="border-r text-center">Skill Lab</TableHead>
-              <TableHead colSpan={3} className="border-r text-center">Clinical</TableHead>
-              <TableHead colSpan={6} className="border-r text-center">Theory</TableHead>
-              <TableHead colSpan={6} className="border-r text-center">Practical</TableHead>
-            </TableRow>
-            <TableRow className="bg-muted/50">
-              <TableHead className="border-r text-center text-xs">P</TableHead>
-              <TableHead className="border-r text-center text-xs">A</TableHead>
-              <TableHead className="border-r text-center text-xs">%</TableHead>
-              <TableHead className="border-r text-center text-xs">P</TableHead>
-              <TableHead className="border-r text-center text-xs">A</TableHead>
-              <TableHead className="border-r text-center text-xs">%</TableHead>
-              <TableHead className="border-r text-center text-xs">P</TableHead>
-              <TableHead className="border-r text-center text-xs">A</TableHead>
-              <TableHead className="border-r text-center text-xs">%</TableHead>
-              <TableHead className="border-r text-center text-xs">Internal Max</TableHead>
-              <TableHead className="border-r text-center text-xs">Internal Obtained</TableHead>
-              <TableHead className="border-r text-center text-xs">End Sem Max</TableHead>
-              <TableHead className="border-r text-center text-xs">End Sem Obtained</TableHead>
-              <TableHead className="border-r text-center text-xs">Total Max</TableHead>
-              <TableHead className="border-r text-center text-xs">Total Obtained</TableHead>
-              <TableHead className="border-r text-center text-xs">Internal Max</TableHead>
-              <TableHead className="border-r text-center text-xs">Internal Obtained</TableHead>
-              <TableHead className="border-r text-center text-xs">End Sem Max</TableHead>
-              <TableHead className="border-r text-center text-xs">End Sem Obtained</TableHead>
-              <TableHead className="border-r text-center text-xs">Total Max</TableHead>
-              <TableHead className="border-r text-center text-xs">Total Obtained</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {courses.map((course, index) => (
-              <TableRow key={index} className="hover:bg-muted/30">
-                <TableCell className="border-r text-center">{course.slNo}</TableCell>
-                <TableCell className="border-r text-sm">{course.courseCode}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.universityCourseCode}
-                    onChange={(e) => handleInputChange(index, "universityCourseCode", e.target.value)}
-                    className="h-8 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-sm">{course.courseTitle}</TableCell>
-                <TableCell className="border-r text-center">{course.theoryCredits}</TableCell>
-                <TableCell className="border-r text-center">{course.skillLabCredits}</TableCell>
-                <TableCell className="border-r text-center">{course.clinicalCredits}</TableCell>
-                <TableCell className="border-r text-center text-sm">{course.theoryPrescribed}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.theoryAttended || ""}
-                    onChange={(e) => handleInputChange(index, "theoryAttended", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.theoryPercentage || ""}
-                    onChange={(e) => handleInputChange(index, "theoryPercentage", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.skillLabPrescribed}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.skillLabAttended || ""}
-                    onChange={(e) => handleInputChange(index, "skillLabAttended", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.skillLabPercentage || ""}
-                    onChange={(e) => handleInputChange(index, "skillLabPercentage", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.clinicalPrescribed}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.clinicalAttended || ""}
-                    onChange={(e) => handleInputChange(index, "clinicalAttended", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.clinicalPercentage || ""}
-                    onChange={(e) => handleInputChange(index, "clinicalPercentage", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.theoryInternalMax}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.theoryInternalObtained || ""}
-                    onChange={(e) => handleInputChange(index, "theoryInternalObtained", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.theoryEndSemMax}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.theoryEndSemObtained || ""}
-                    onChange={(e) => handleInputChange(index, "theoryEndSemObtained", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.theoryTotalMax}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.theoryTotalObtained || ""}
-                    onChange={(e) => handleInputChange(index, "theoryTotalObtained", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.practicalInternalMax}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.practicalInternalObtained || ""}
-                    onChange={(e) => handleInputChange(index, "practicalInternalObtained", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.practicalEndSemMax}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.practicalEndSemObtained || ""}
-                    onChange={(e) => handleInputChange(index, "practicalEndSemObtained", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.practicalTotalMax}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.practicalTotalObtained || ""}
-                    onChange={(e) => handleInputChange(index, "practicalTotalObtained", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.gradePoint || ""}
-                    onChange={(e) => handleInputChange(index, "gradePoint", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.letterGrade || ""}
-                    onChange={(e) => handleInputChange(index, "letterGrade", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
- 
-      <div className="text-sm text-muted-foreground italic">
-        Note: P = Prescribed, A = Attended, % = Percentage
-      </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <div className="flex items-center gap-4">
+          <label className="font-semibold">Select Semester:</label>
+          <Select value={selectedSemester} onValueChange={handleSemesterChange}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map((sem) => (
+                <SelectItem key={sem} value={sem}>
+                  Semester {sem}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit({ studentId, semester: selectedSemester, courses });
-      }} className="hidden">
-        <button type="submit">Submit</button>
+        <div className="border rounded-lg overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead rowSpan={3} className="border-r text-center align-middle min-w-12">
+                  Sl. No.
+                </TableHead>
+                <TableHead rowSpan={3} className="border-r text-center align-middle min-w-32">
+                  Course Code
+                </TableHead>
+                <TableHead rowSpan={3} className="border-r text-center align-middle min-w-32">
+                  University Course Code
+                </TableHead>
+                <TableHead rowSpan={3} className="border-r text-center align-middle min-w-48">
+                  Course Title
+                </TableHead>
+                <TableHead colSpan={3} className="border-r text-center">
+                  Credits
+                </TableHead>
+                <TableHead colSpan={9} className="border-r text-center">
+                  Course Instruction Hours
+                </TableHead>
+                <TableHead colSpan={12} className="border-r text-center">
+                  Marks Obtained
+                </TableHead>
+                <TableHead rowSpan={3} className="border-r text-center align-middle min-w-20">
+                  Grade Point
+                </TableHead>
+                <TableHead rowSpan={3} className="border-r text-center align-middle min-w-20">
+                  Letter Grade
+                </TableHead>
+              </TableRow>
+              <TableRow className="bg-muted/50">
+                <TableHead className="border-r text-center min-w-16">Theory</TableHead>
+                <TableHead className="border-r text-center min-w-16">Skill Lab</TableHead>
+                <TableHead className="border-r text-center min-w-16">Clinical</TableHead>
+                <TableHead colSpan={3} className="border-r text-center">Theory</TableHead>
+                <TableHead colSpan={3} className="border-r text-center">Skill Lab</TableHead>
+                <TableHead colSpan={3} className="border-r text-center">Clinical</TableHead>
+                <TableHead colSpan={6} className="border-r text-center">Theory</TableHead>
+                <TableHead colSpan={6} className="border-r text-center">Practical</TableHead>
+              </TableRow>
+              <TableRow className="bg-muted/50">
+                <TableHead className="border-r text-center text-xs">P</TableHead>
+                <TableHead className="border-r text-center text-xs">A</TableHead>
+                <TableHead className="border-r text-center text-xs">%</TableHead>
+                <TableHead className="border-r text-center text-xs">P</TableHead>
+                <TableHead className="border-r text-center text-xs">A</TableHead>
+                <TableHead className="border-r text-center text-xs">%</TableHead>
+                <TableHead className="border-r text-center text-xs">P</TableHead>
+                <TableHead className="border-r text-center text-xs">A</TableHead>
+                <TableHead className="border-r text-center text-xs">%</TableHead>
+                <TableHead className="border-r text-center text-xs">Internal Max</TableHead>
+                <TableHead className="border-r text-center text-xs">Internal Obtained</TableHead>
+                <TableHead className="border-r text-center text-xs">End Sem Max</TableHead>
+                <TableHead className="border-r text-center text-xs">End Sem Obtained</TableHead>
+                <TableHead className="border-r text-center text-xs">Total Max</TableHead>
+                <TableHead className="border-r text-center text-xs">Total Obtained</TableHead>
+                <TableHead className="border-r text-center text-xs">Internal Max</TableHead>
+                <TableHead className="border-r text-center text-xs">Internal Obtained</TableHead>
+                <TableHead className="border-r text-center text-xs">End Sem Max</TableHead>
+                <TableHead className="border-r text-center text-xs">End Sem Obtained</TableHead>
+                <TableHead className="border-r text-center text-xs">Total Max</TableHead>
+                <TableHead className="border-r text-center text-xs">Total Obtained</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {fields.map((field, index) => (
+                <TableRow key={field.id} className="hover:bg-muted/30">
+                  <TableCell className="border-r text-center">{field.slNo}</TableCell>
+                  <TableCell className="border-r text-sm">{field.courseCode}</TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.universityCourseCode`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r text-sm">{field.courseTitle}</TableCell>
+                  <TableCell className="border-r text-center">{field.theoryCredits}</TableCell>
+                  <TableCell className="border-r text-center">{field.skillLabCredits}</TableCell>
+                  <TableCell className="border-r text-center">{field.clinicalCredits}</TableCell>
+                  <TableCell className="border-r text-center text-sm">{field.theoryPrescribed}</TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.theoryAttended`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 w-16 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.theoryPercentage`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 w-16 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r text-center text-sm">{field.skillLabPrescribed}</TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.skillLabAttended`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 w-16 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.skillLabPercentage`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 w-16 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r text-center text-sm">{field.clinicalPrescribed}</TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.clinicalAttended`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 w-16 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.clinicalPercentage`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 w-16 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r text-center text-sm">{field.theoryInternalMax}</TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.theoryInternalObtained`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 w-16 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r text-center text-sm">{field.theoryEndSemMax}</TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.theoryEndSemObtained`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 w-16 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r text-center text-sm">{field.theoryTotalMax}</TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.theoryTotalObtained`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 w-16 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r text-center text-sm">{field.practicalInternalMax}</TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.practicalInternalObtained`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 w-16 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r text-center text-sm">{field.practicalEndSemMax}</TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.practicalEndSemObtained`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 w-16 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r text-center text-sm">{field.practicalTotalMax}</TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.practicalTotalObtained`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 w-16 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.gradePoint`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 w-16 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.letterGrade`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input {...field} className="h-8 w-16 text-xs" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="text-sm text-muted-foreground italic">
+          Note: P = Prescribed, A = Attended, % = Percentage
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Save Course Instruction
+          </button>
+        </div>
       </form>
-    </div>
+    </Form>
   );
 };

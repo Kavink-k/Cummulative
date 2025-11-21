@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiService } from "@/lib/api";
+import { toast } from "sonner";
 
 const clinicalRecordSchema = z.object({
   semester: z.string(),
@@ -173,9 +175,28 @@ export const ClinicalExperienceForm = ({ onSubmit, defaultValues, onProgressChan
     return [];
   };
 
+  const handleSubmit = async (data: ClinicalExperienceFormData) => {
+    try {
+      // Submit each clinical record as separate records
+      const promises = data.records.map(record =>
+        apiService.createClinicalExperience({
+          studentId: data.studentId,
+          ...record
+        })
+      );
+
+      await Promise.all(promises);
+      toast.success("Clinical experience records saved successfully!");
+      onSubmit(data);
+    } catch (error: any) {
+      console.error("Error saving clinical experience records:", error);
+      toast.error(error.response?.data?.message || "Failed to save clinical experience records");
+    }
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="overflow-x-auto border rounded-lg">
           <table className="w-full border-collapse">
             <thead>

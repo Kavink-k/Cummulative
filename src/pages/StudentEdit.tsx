@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormStepper } from "@/components/FormStepper";
@@ -16,7 +17,7 @@ import { AdditionalCoursesForm } from "@/components/AdditionalCoursesForm";
 import { CourseCompletionForm } from "@/components/CourseCompletionForm";
 import { VerificationForm } from "@/components/VerificationForm";
 import { toast } from "sonner";
-import { BookOpen, ChevronLeft, ChevronRight, CheckCircle2, ArrowLeft } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, CheckCircle2, ArrowLeft, Save, Loader2 } from "lucide-react";
 import { sampleStudents } from "@/data/sampleStudents";
 import { getStudent, updateStudent, upsertStudent } from "@/lib/data";
 import { StudentInfoDisplay } from "@/components/StudentInfoDisplay";
@@ -42,12 +43,14 @@ const StudentEdit = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [stepProgress, setStepProgress] = useState<Record<number, number>>({});
+  const [currentDefaults, setCurrentDefaults] = useState<Record<string, any>>({});
 
   const student = sampleStudents.find(s => s.id === studentId) || getStudent(studentId || "");
 
   useEffect(() => {
     if (student) {
       setFormData(student.steps);
+      setCurrentDefaults(student.steps);
       // Calculate initial progress
       const progress: Record<number, number> = {};
       for (let i = 1; i <= 12; i++) {
@@ -94,8 +97,9 @@ const StudentEdit = () => {
   const handleFormSubmit = (stepData: any) => {
     const updated = { ...formData, [`step${currentStep}`]: stepData };
     setFormData(updated);
+    setCurrentDefaults(updated);
     setStepProgress((prev) => ({ ...prev, [currentStep]: 100 }));
-    
+
     // Save to storage
     upsertStudent({
       id: student.id,
@@ -118,9 +122,23 @@ const StudentEdit = () => {
     }
   };
 
+  const handleFormChange = (step: number) => (data: any) => {
+    const updated = { ...currentDefaults, [`step${step}`]: data };
+    setCurrentDefaults(updated);
+  };
+
   const handleProgressChange = (step: number) => (progress: number) => {
     const clamped = Math.max(0, Math.min(100, progress));
     setStepProgress((prev) => ({ ...prev, [step]: clamped }));
+  };
+
+  const handleResetForm = () => {
+    if (window.confirm("Are you sure you want to reset all form data? This action cannot be undone.")) {
+      setFormData({});
+      setStepProgress({});
+      setCurrentStep(1);
+      toast.success("Form reset successfully!");
+    }
   };
 
   const triggerActiveFormSubmit = () => {
@@ -132,12 +150,13 @@ const StudentEdit = () => {
   };
 
   const renderCurrentForm = () => {
-    const studentId = formData.step1?.studentId;
-    const defaultValues = { ...formData[`step${currentStep}`], studentId };
+    const studentId = currentDefaults.step1?.studentId;
+    const defaultValues = { ...currentDefaults[`step${currentStep}`], studentId };
     const props = {
       onSubmit: handleFormSubmit,
       defaultValues,
       onProgressChange: handleProgressChange(currentStep),
+      onChange: handleFormChange(currentStep),
     };
 
     switch (currentStep) {
