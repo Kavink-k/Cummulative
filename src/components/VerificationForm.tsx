@@ -36,16 +36,19 @@ interface VerificationFormProps {
 
 export const VerificationForm = ({ onSubmit, defaultValues, onProgressChange }: VerificationFormProps) => {
   const [selectedSemester, setSelectedSemester] = useState("I");
-  
+
   const form = useForm<VerificationFormData>({
     resolver: zodResolver(verificationFormSchema),
-    defaultValues: defaultValues || {
-      verifications: semesters.map(sem => ({
-        semester: sem,
-        classTeacherName: "",
-        teacherSignature: "",
-        principalSignature: "",
-      })),
+    defaultValues: {
+      studentId: defaultValues?.studentId,
+      verifications: defaultValues?.verifications?.length
+        ? defaultValues.verifications
+        : semesters.map(sem => ({
+          semester: sem,
+          classTeacherName: "",
+          teacherSignature: "",
+          principalSignature: "",
+        })),
     },
   });
 
@@ -85,7 +88,7 @@ export const VerificationForm = ({ onSubmit, defaultValues, onProgressChange }: 
             <h3 className="text-lg font-semibold mb-4">
               Semester {selectedSemester} Verification
             </h3>
-            
+
             <FormField
               control={form.control}
               name={`verifications.${selectedIndex}.classTeacherName`}

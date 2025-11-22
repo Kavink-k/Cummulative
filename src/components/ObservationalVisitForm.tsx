@@ -4,12 +4,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
 const visitSchema = z.object({
   semester: z.string(),
   institutionPlace: z.string(),
-  date: z.string(),
+  date: z.string().optional(),
 });
 
 const observationalVisitSchema = z.object({
@@ -55,10 +55,14 @@ interface ObservationalVisitFormProps {
 }
 
 export const ObservationalVisitForm = ({ onSubmit, defaultValues, onProgressChange }: ObservationalVisitFormProps) => {
+  
   const form = useForm<ObservationalVisitFormData>({
     resolver: zodResolver(observationalVisitSchema),
-    defaultValues: defaultValues || {
-      visits: observationalVisitData,
+    defaultValues: {
+      studentId: defaultValues?.studentId || "",
+      visits: (defaultValues?.visits?.length ?? 0) > 0 
+        ? defaultValues!.visits 
+        : observationalVisitData,
     },
   });
 
@@ -67,7 +71,7 @@ export const ObservationalVisitForm = ({ onSubmit, defaultValues, onProgressChan
     name: "visits",
   });
 
-  // Group visits by semester for merged rows
+  // Group visits by semester for merged rows (visual only)
   const groupedVisits = fields.reduce((acc, field, index) => {
     if (!acc[field.semester]) {
       acc[field.semester] = [];
@@ -78,9 +82,50 @@ export const ObservationalVisitForm = ({ onSubmit, defaultValues, onProgressChan
 
   const semesterOrder = ["I", "II", "III", "IV", "V", "VI", "VII"];
 
+  // Progress Tracking
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      let filledFields = 0;
+      const fieldsPerVisit = ["date"];
+      
+      values.visits?.forEach((visit: any) => {
+        if (visit) {
+          filledFields += fieldsPerVisit.filter(
+            (field) => visit[field] && visit[field].toString().trim() !== ""
+          ).length;
+        }
+      });
+      
+      const totalRequiredFields = observationalVisitData.length; 
+      const progress = (filledFields / totalRequiredFields) * 100;
+      onProgressChange?.(progress);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onProgressChange]);
+
+  // Sync Student ID
+  useEffect(() => {
+    if (defaultValues?.studentId) {
+      const currentId = form.getValues("studentId");
+      if (!currentId) {
+        form.setValue("studentId", defaultValues.studentId);
+      }
+    }
+  }, [defaultValues, form]);
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form id="active-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        
+        {/* Hidden Student ID */}
+        <FormField
+          control={form.control}
+          name="studentId"
+          render={({ field }) => (
+            <input type="hidden" {...field} value={field.value || ""} />
+          )}
+        />
+
         <div className="overflow-x-auto border rounded-lg">
           <table className="w-full border-collapse">
             <thead>
@@ -97,13 +142,18 @@ export const ObservationalVisitForm = ({ onSubmit, defaultValues, onProgressChan
                   <tr key={visit.id} className="hover:bg-muted/50">
                     {visitIndex === 0 ? (
                       <td 
-                        className="border p-2 font-medium" 
+                        className="border p-2 font-medium text-center bg-muted/20" 
                         rowSpan={visits.length}
                       >
                         {semester}
                       </td>
                     ) : null}
-                    <td className="border p-2 font-medium">{visit.institutionPlace}</td>
+                    <td className="border p-2 font-medium">
+                      {visit.institutionPlace}
+                      {/* CRITICAL FIX: Hidden inputs to ensure data is sent */}
+                      <input type="hidden" {...form.register(`visits.${visit.index}.semester`)} defaultValue={visit.semester} />
+                      <input type="hidden" {...form.register(`visits.${visit.index}.institutionPlace`)} defaultValue={visit.institutionPlace} />
+                    </td>
                     <td className="border p-2">
                       <FormField
                         control={form.control}
@@ -122,12 +172,6 @@ export const ObservationalVisitForm = ({ onSubmit, defaultValues, onProgressChan
               })}
             </tbody>
           </table>
-        </div>
-        <p className="text-sm text-muted-foreground italic">
-          Note: This form records the observational visits and field visits conducted during each semester as per the curriculum requirements.
-        </p>
-        <div className="flex justify-end">
-          <Button type="submit">Save Observational Visits</Button>
         </div>
       </form>
     </Form>

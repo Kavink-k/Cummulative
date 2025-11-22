@@ -1,19 +1,10 @@
+
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useEffect } from "react";
-
-// Schema - Allow nulls for empty numeric fields
-const numberOrNull = z.union([
-  z.string(),
-  z.number(),
-  z.null()
-]).optional().transform(val => val === "" ? null : val); 
-// Note: Since the API now cleans data, we keep string validation but allow empty strings 
-// which we can clean in the API layer or here. keeping it simple string is safest for UI
-// but backend might want numbers. 
 
 const semesterAttendanceSchema = z.object({
   semester: z.string(),
@@ -41,7 +32,7 @@ interface AttendanceFormProps {
 }
 
 export const AttendanceForm = ({ onSubmit, defaultValues, onProgressChange }: AttendanceFormProps) => {
-  
+
   const defaultSemesterRows = semestersList.map(sem => ({
     semester: sem,
     workingDays: "",
@@ -52,14 +43,16 @@ export const AttendanceForm = ({ onSubmit, defaultValues, onProgressChange }: At
     compensationDaysHours: "",
   }));
 
+  const initialData = {
+    studentId: defaultValues?.studentId || "",
+    semesters: (defaultValues?.semesters?.length ?? 0) > 0
+      ? defaultValues!.semesters
+      : defaultSemesterRows,
+  };
+
   const form = useForm<AttendanceFormData>({
     resolver: zodResolver(attendanceSchema),
-    defaultValues: {
-      studentId: defaultValues?.studentId || "",
-      semesters: (defaultValues?.semesters?.length ?? 0) > 0 
-        ? defaultValues?.semesters 
-        : defaultSemesterRows,
-    },
+    defaultValues: initialData,
   });
 
   const { fields } = useFieldArray({
@@ -72,10 +65,10 @@ export const AttendanceForm = ({ onSubmit, defaultValues, onProgressChange }: At
     const subscription = form.watch((values) => {
       let filledFields = 0;
       const fieldsPerSemester = [
-        "workingDays", "annualLeave", "sickLeave", 
+        "workingDays", "annualLeave", "sickLeave",
         "gazettedHolidays", "otherLeave", "compensationDaysHours"
       ];
-      
+
       values.semesters?.forEach((semester: any) => {
         if (semester) {
           filledFields += fieldsPerSemester.filter(
@@ -83,8 +76,8 @@ export const AttendanceForm = ({ onSubmit, defaultValues, onProgressChange }: At
           ).length;
         }
       });
-      
-      const totalRequiredFields = semestersList.length * fieldsPerSemester.length; 
+
+      const totalRequiredFields = semestersList.length * fieldsPerSemester.length;
       const progress = (filledFields / totalRequiredFields) * 100;
       onProgressChange?.(progress);
     });
@@ -104,7 +97,7 @@ export const AttendanceForm = ({ onSubmit, defaultValues, onProgressChange }: At
   return (
     <Form {...form}>
       <form id="active-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        
+
         {/* Hidden Student ID Field */}
         <FormField
           control={form.control}
@@ -132,36 +125,42 @@ export const AttendanceForm = ({ onSubmit, defaultValues, onProgressChange }: At
                 <tr key={field.id} className="hover:bg-muted/50">
                   <td className="border p-2 font-medium text-center bg-muted/20">
                     {field.semester}
+                    {/* CRITICAL FIX: Hidden input ensures 'semester' is sent to API */}
+                    <input
+                      type="hidden"
+                      {...form.register(`semesters.${index}.semester`)}
+                      defaultValue={field.semester}
+                    />
                   </td>
-                  
+
                   <td className="border p-1">
                     <FormField control={form.control} name={`semesters.${index}.workingDays`} render={({ field }) => (
-                        <FormItem><FormControl><Input type="number" {...field} className="h-8 text-xs" /></FormControl></FormItem>
+                      <FormItem><FormControl><Input type="number" {...field} className="h-8 text-xs" /></FormControl></FormItem>
                     )} />
                   </td>
                   <td className="border p-1">
                     <FormField control={form.control} name={`semesters.${index}.annualLeave`} render={({ field }) => (
-                        <FormItem><FormControl><Input type="number" {...field} className="h-8 text-xs" /></FormControl></FormItem>
+                      <FormItem><FormControl><Input type="number" {...field} className="h-8 text-xs" /></FormControl></FormItem>
                     )} />
                   </td>
                   <td className="border p-1">
                     <FormField control={form.control} name={`semesters.${index}.sickLeave`} render={({ field }) => (
-                        <FormItem><FormControl><Input type="number" {...field} className="h-8 text-xs" /></FormControl></FormItem>
+                      <FormItem><FormControl><Input type="number" {...field} className="h-8 text-xs" /></FormControl></FormItem>
                     )} />
                   </td>
                   <td className="border p-1">
                     <FormField control={form.control} name={`semesters.${index}.gazettedHolidays`} render={({ field }) => (
-                        <FormItem><FormControl><Input type="number" {...field} className="h-8 text-xs" /></FormControl></FormItem>
+                      <FormItem><FormControl><Input type="number" {...field} className="h-8 text-xs" /></FormControl></FormItem>
                     )} />
                   </td>
                   <td className="border p-1">
                     <FormField control={form.control} name={`semesters.${index}.otherLeave`} render={({ field }) => (
-                        <FormItem><FormControl><Input type="number" {...field} className="h-8 text-xs" /></FormControl></FormItem>
+                      <FormItem><FormControl><Input type="number" {...field} className="h-8 text-xs" /></FormControl></FormItem>
                     )} />
                   </td>
                   <td className="border p-1">
                     <FormField control={form.control} name={`semesters.${index}.compensationDaysHours`} render={({ field }) => (
-                        <FormItem><FormControl><Input {...field} className="h-8 text-xs" placeholder="Days/Hrs" /></FormControl></FormItem>
+                      <FormItem><FormControl><Input {...field} className="h-8 text-xs" placeholder="Days/Hrs" /></FormControl></FormItem>
                     )} />
                   </td>
                 </tr>

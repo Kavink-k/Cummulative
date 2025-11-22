@@ -1,11 +1,10 @@
+import { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { apiService } from "@/lib/api";
-import { toast } from "sonner";
 
 const courseCompletionSchema = z.object({
   courseName: z.string(),
@@ -40,37 +39,41 @@ interface CourseCompletionFormProps {
 export const CourseCompletionForm = ({ onSubmit, defaultValues, onProgressChange }: CourseCompletionFormProps) => {
   const form = useForm<CourseCompletionFormData>({
     resolver: zodResolver(courseCompletionFormSchema),
-    defaultValues: defaultValues || {
-      completions: certificateNames.map(name => ({
-        courseName: name,
-        certificateNumber: "",
-        dateOfIssue: "",
-      })),
+    defaultValues: {
+      studentId: defaultValues?.studentId,
+      completions: defaultValues?.completions?.length
+        ? defaultValues.completions
+        : certificateNames.map(name => ({
+          courseName: name,
+          certificateNumber: "",
+          dateOfIssue: "",
+        })),
     },
   });
+
+  // Reset form when defaultValues change (e.g. loaded from backend)
+  useEffect(() => {
+    if (defaultValues) {
+      form.reset({
+        studentId: defaultValues.studentId,
+        completions: defaultValues.completions?.length
+          ? defaultValues.completions
+          : certificateNames.map(name => ({
+            courseName: name,
+            certificateNumber: "",
+            dateOfIssue: "",
+          })),
+      });
+    }
+  }, [defaultValues, form]);
 
   const { fields } = useFieldArray({
     control: form.control,
     name: "completions",
   });
 
-  const handleSubmit = async (data: CourseCompletionFormData) => {
-    try {
-      // Submit each completion record as separate records
-      const promises = data.completions.map(completion =>
-        apiService.createCourseCompletion({
-          studentId: data.studentId,
-          ...completion
-        })
-      );
-
-      await Promise.all(promises);
-      toast.success("Course completion records saved successfully!");
-      onSubmit(data);
-    } catch (error: any) {
-      console.error("Error saving course completion records:", error);
-      toast.error(error.response?.data?.message || "Failed to save course completion records");
-    }
+  const handleSubmit = (data: CourseCompletionFormData) => {
+    onSubmit(data);
   };
 
   return (
