@@ -90,6 +90,11 @@ const Index = () => {
         console.log(`Fetching data from backend for studentId: ${step1Data.studentId}`);
         const backendData = await getAllDataByStudentId(step1Data.studentId);
 
+        console.log('Backend data received:', backendData);
+        console.log('Backend step1 data:', backendData.step1);
+        console.log('Backend step1 photo:', backendData.step1?.photo);
+        console.log('Backend step1 photoUrl:', backendData.step1?.photoUrl);
+
         // Merge backend data with localStorage (localStorage takes precedence)
         const mergedData: Record<string, any> = {};
 
@@ -99,10 +104,16 @@ const Index = () => {
             // If localStorage doesn't have this step, use backend data
             if (!formData[stepKey]) {
               mergedData[stepKey] = backendData[stepKey];
+            } else {
+              // Merge: localStorage takes precedence, but fill in missing fields from backend
+              mergedData[stepKey] = { ...backendData[stepKey], ...formData[stepKey] };
             }
           }
         });
 
+        console.log('Merged data:', mergedData);
+        console.log('Merged step1:', mergedData.step1);
+        console.log('Merged step1 photo:', mergedData.step1?.photo);
         if (Object.keys(mergedData).length > 0) {
           console.log('Merging backend data with localStorage:', mergedData);
           setFormData(prev => ({ ...prev, ...mergedData }));
@@ -191,14 +202,26 @@ const Index = () => {
   };
 
   const handleClearData = () => {
-    if (confirm("Clear all local data? This will reset the form.")) {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(STEP_KEY);
-      setFormData({});
-      setStepProgress({});
-      setCurrentStep(1);
-      window.location.reload();
-    }
+    toast('Are you sure you want to reset all form  data?', {
+      description: 'This will clear all form data and cannot be undone.',
+      action: {
+        label: 'Reset',
+        onClick: () => {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(STEP_KEY);
+          setFormData({});
+          setCurrentStep(1);
+          setStepProgress({});
+          toast.success('All data has been reset');
+        },
+      },
+      cancel: {
+        label: 'Cancel',
+        onClick: () => {
+          toast.info('Reset cancelled');
+        },
+      },
+    });
   };
 
   const handleSaveDraft = () => {
@@ -263,8 +286,9 @@ const Index = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={handleClearData} title="Reset">
-              <Trash2 className="h-5 w-5 text-muted-foreground hover:text-destructive" />
+            <Button variant="outline" onClick={handleClearData} title="Reset">
+              <Trash2 className="h-5 w-5 hover:text-destructive" />
+              Reset
             </Button>
             <Button variant="outline" onClick={handleSaveDraft}>
               <Save className="h-4 w-4 mr-2" />

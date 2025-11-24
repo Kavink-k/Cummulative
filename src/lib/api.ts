@@ -507,7 +507,9 @@ export const getAllDataByStudentId = async (studentId: string) => {
     ]);
 
     return {
-      step1: step1.status === 'fulfilled' ? step1.value.data.data : null,
+      step1: step1.status === 'fulfilled' && step1.value.data.data 
+  ? { ...step1.value.data.data, photo: step1.value.data.data.photoUrl } 
+  : null,
       step2: step2.status === 'fulfilled' ? step2.value.data.data : null,
       step3: step3.status === 'fulfilled' ? step3.value.data.data : null,
       step4: step4.status === 'fulfilled' ? step4.value.data.data : null,

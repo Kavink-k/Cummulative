@@ -66,29 +66,34 @@ export const EducationalQualificationForm = ({
 
   const form = useForm<EducationalQualificationFormData>({
     resolver: zodResolver(educationalQualificationSchema),
-    defaultValues: defaultValues || {
-      studentId: "", // Will be populated by Index.tsx
-      streamGroup: "",
-      subjects: defaultSubjects.map((subject) => ({
-        subject,
-        plusOneAttempts: [createEmptyAttempt()],
-        plusTwoAttempts: [createEmptyAttempt()],
-      })),
-      totalPlusOneAttempts: [createEmptyAttempt()],
-      totalPlusTwoAttempts: [createEmptyAttempt()],
-      certificateNo: "",
-      certificateDate: "",
-      yearOfPassing: "",
-      boardOfExamination: "",
-      mediumOfInstruction: "",
-      hscVerificationNo: "",
-      hscVerificationDate: "",
+    defaultValues: {
+      studentId: defaultValues?.studentId || "",
+      streamGroup: defaultValues?.streamGroup || "",
+      subjects: defaultValues?.subjects && defaultValues.subjects.length > 0
+        ? defaultValues.subjects
+        : defaultSubjects.map((subject) => ({
+          subject,
+          plusOneAttempts: [createEmptyAttempt()],
+          plusTwoAttempts: [createEmptyAttempt()],
+        })),
+      totalPlusOneAttempts: defaultValues?.totalPlusOneAttempts || [createEmptyAttempt()],
+      totalPlusTwoAttempts: defaultValues?.totalPlusTwoAttempts || [createEmptyAttempt()],
+      certificateNo: defaultValues?.certificateNo || "",
+      certificateDate: defaultValues?.certificateDate || "",
+      yearOfPassing: defaultValues?.yearOfPassing || "",
+      boardOfExamination: defaultValues?.boardOfExamination || "",
+      mediumOfInstruction: defaultValues?.mediumOfInstruction || "",
+      hscVerificationNo: defaultValues?.hscVerificationNo || "",
+      hscVerificationDate: defaultValues?.hscVerificationDate || "",
     },
   });
 
   const { fields: subjectFields } = useFieldArray({ control: form.control, name: "subjects" });
   const { fields: totalPlusOneFields } = useFieldArray({ control: form.control, name: "totalPlusOneAttempts" });
   const { fields: totalPlusTwoFields } = useFieldArray({ control: form.control, name: "totalPlusTwoAttempts" });
+
+  console.log('Subject fields count:', subjectFields.length);
+  console.log('Subject fields:', subjectFields);
 
   useEffect(() => {
     const subscription = form.watch((values) => {
