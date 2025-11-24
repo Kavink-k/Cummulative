@@ -17,6 +17,7 @@ import Dashboard from "./pages/Dashboard";
 import StudentDetail from "./pages/StudentDetail";
 import StudentEdit from "./pages/StudentEdit";
 import StudentPrint from "./pages/StudentPrint";
+import StudentView from "./components/StudentView";
 
 const queryClient = new QueryClient();
 
@@ -42,9 +43,11 @@ const App = () => (
             <Route path="/form" element={<Index />} />
             <Route path="/bulk" element={<BulkSubmission />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/students/:studentId" element={<StudentDetail />} />
+            {/* <Route path="/students/:studentId" element={<StudentDetail />} /> */}
             <Route path="/students/:studentId/edit" element={<StudentEdit />} />
             <Route path="/students/:studentId/print" element={<StudentPrint />} />
+            <Route path="/students/:studentId" element={<StudentView />} />
+
           </Route>
 
           {/* Catch-all */}
