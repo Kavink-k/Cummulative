@@ -3,9 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect } from "react";
 
 const clinicalRecordSchema = z.object({
   semester: z.string(),
@@ -13,167 +11,187 @@ const clinicalRecordSchema = z.object({
   credits: z.string(),
   prescribedWeeks: z.string(),
   prescribedHours: z.string(),
-  completedHours: z.string(),
-  hospital: z.string(),
+  completedHours: z.string().optional(),
+  hospital: z.string().optional(),
 });
 
 const clinicalExperienceSchema = z.object({
+  studentId: z.string().optional(),
   records: z.array(clinicalRecordSchema),
 });
 
 type ClinicalExperienceFormData = z.infer<typeof clinicalExperienceSchema>;
 
-// Data from the Excel file - Record of Clinical Experience sheet
-const clinicalExperienceData = {
-  "I": [
-    { clinicalArea: "Nursing Foundation I including First Aid Module", credits: "2", prescribedWeeks: "10", prescribedHours: "160" },
-    { clinicalArea: "General Medical Ward", credits: "1", prescribedWeeks: "5", prescribedHours: "80" },
-    { clinicalArea: "General Surgical Ward", credits: "1", prescribedWeeks: "5", prescribedHours: "80" }
-  ],
-  "II": [
-    { clinicalArea: "Nursing Foundation II including Health Assessment Module", credits: "4", prescribedWeeks: "16", prescribedHours: "320" },
-    { clinicalArea: "General Medical Ward", credits: "2", prescribedWeeks: "8", prescribedHours: "160" },
-    { clinicalArea: "General Surgical Ward", credits: "2", prescribedWeeks: "8", prescribedHours: "160" }
-  ],
-  "III": [
-    { clinicalArea: "Adult Health Nursing I with integrated pathophysiology including BCLS module", credits: "6", prescribedWeeks: "18", prescribedHours: "480" },
-    { clinicalArea: "General Medical Ward", credits: "1.4", prescribedWeeks: "4", prescribedHours: "108" },
-    { clinicalArea: "General Surgical Ward", credits: "1.4", prescribedWeeks: "4", prescribedHours: "108" },
-    { clinicalArea: "Cardiology Ward", credits: "0.6", prescribedWeeks: "2", prescribedHours: "50" },
-    { clinicalArea: "Dermatology Ward", credits: "0.3", prescribedWeeks: "1", prescribedHours: "28" },
-    { clinicalArea: "Isolation Ward", credits: "0.3", prescribedWeeks: "1", prescribedHours: "28" },
-    { clinicalArea: "Orthopedic Ward", credits: "0.6", prescribedWeeks: "2", prescribedHours: "50" },
-    { clinicalArea: "Operation Theatre", credits: "0.4", prescribedWeeks: "4", prescribedHours: "108" }
-  ],
-  "IV": [
-    { clinicalArea: "Adult Health Nursing II with integrated pathophysiology including Geriatric Nursing and Palliative Care Module", credits: "6", prescribedWeeks: "20", prescribedHours: "480" },
-    { clinicalArea: "ENT Ward & OPD", credits: "0.6", prescribedWeeks: "2", prescribedHours: "48" },
-    { clinicalArea: "Ophthalmology Unit", credits: "0.6", prescribedWeeks: "2", prescribedHours: "48" },
-    { clinicalArea: "Renal / Nephrology Ward including Dialysis Unit", credits: "0.6", prescribedWeeks: "2", prescribedHours: "48" },
-    { clinicalArea: "Burns Unit / Reconstructive Surgical Unit", credits: "0.6", prescribedWeeks: "2", prescribedHours: "48" },
-    { clinicalArea: "Neurology - Medical / Surgical Ward", credits: "1", prescribedWeeks: "3", prescribedHours: "72" },
-    { clinicalArea: "Isolation Ward / Medical Ward", credits: "0.2", prescribedWeeks: "1", prescribedHours: "24" },
-    { clinicalArea: "Oncology Ward (including Day Care / Radiotherapy Unit)", credits: "1", prescribedWeeks: "3", prescribedHours: "72" },
-    { clinicalArea: "Emergency Room/Unit", credits: "0.6", prescribedWeeks: "2", prescribedHours: "48" }
-  ],
-  "V": [
-    { clinicalArea: "Child Health Nursing I", credits: "2", prescribedWeeks: "5", prescribedHours: "160" },
-    { clinicalArea: "Pediatric Medical Ward", credits: "0.8", prescribedWeeks: "2", prescribedHours: "60" },
-    { clinicalArea: "Pediatric Surgical Ward", credits: "0.8", prescribedWeeks: "2", prescribedHours: "60" },
-    { clinicalArea: "Pediatric OPD / Immunization Room", credits: "0.4", prescribedWeeks: "1", prescribedHours: "40" },
-    { clinicalArea: "Mental Health Nursing", credits: "1", prescribedWeeks: "3", prescribedHours: "80" },
-    { clinicalArea: "Psychiatric OPD", credits: "0.4", prescribedWeeks: "1", prescribedHours: "30" },
-    { clinicalArea: "Psychiatric In-patient Ward", credits: "0.6", prescribedWeeks: "2", prescribedHours: "50" },
-    { clinicalArea: "Community Health Nursing I", credits: "2", prescribedWeeks: "4", prescribedHours: "160" },
-    { clinicalArea: "Urban", credits: "1", prescribedWeeks: "2", prescribedHours: "80" },
-    { clinicalArea: "Rural", credits: "1", prescribedWeeks: "2", prescribedHours: "80" }
-  ],
-  "VI": [
-    { clinicalArea: "Child Health Nursing II", credits: "1", prescribedWeeks: "3", prescribedHours: "80" },
-    { clinicalArea: "Pediatric Medical Ward", credits: "0.4", prescribedWeeks: "1", prescribedHours: "28" },
-    { clinicalArea: "Pediatric Surgical Ward", credits: "0.3", prescribedWeeks: "1", prescribedHours: "26" },
-    { clinicalArea: "PICU and NICU", credits: "0.3", prescribedWeeks: "1", prescribedHours: "26" },
-    { clinicalArea: "Mental Health Nursing II", credits: "2", prescribedWeeks: "5", prescribedHours: "160" },
-    { clinicalArea: "Psychiatric OPD", credits: "0.4", prescribedWeeks: "1", prescribedHours: "40" },
-    { clinicalArea: "Child Guidance Clinic", credits: "0.4", prescribedWeeks: "1", prescribedHours: "30" },
-    { clinicalArea: "Psychiatric In-patient Ward", credits: "0.8", prescribedWeeks: "2", prescribedHours: "60" },
-    { clinicalArea: "Community Psychiatry & De-addiction Centre", credits: "0.4", prescribedWeeks: "1", prescribedHours: "30" },
-    { clinicalArea: "Nursing Management and Leadership", credits: "1", prescribedWeeks: "2", prescribedHours: "80" },
-    { clinicalArea: "Hospital", credits: "0.5", prescribedWeeks: "1", prescribedHours: "40" },
-    { clinicalArea: "College", credits: "0.5", prescribedWeeks: "1", prescribedHours: "40" },
-    { clinicalArea: "Midwifery & Obstetrics and Gynecology (OBG) Nursing I", credits: "3", prescribedWeeks: "6", prescribedHours: "240" },
-    { clinicalArea: "Antenatal OPD & Ward", credits: "0.5", prescribedWeeks: "1", prescribedHours: "40" },
-    { clinicalArea: "Labour Room", credits: "1.5", prescribedWeeks: "3", prescribedHours: "160" },
-    { clinicalArea: "Postnatal Ward / OP including Family Planning Unit", credits: "1", prescribedWeeks: "2", prescribedHours: "40" }
-  ],
-  "VII": [
-    { clinicalArea: "Midwifery & Obstetrics and Gynecology (OBG) Nursing II", credits: "4", prescribedWeeks: "8", prescribedHours: "320" },
-    { clinicalArea: "Antenatal OPD / Infertility Clinic / Reproductive Medicine and Antenatal Ward", credits: "1", prescribedWeeks: "2", prescribedHours: "80" },
-    { clinicalArea: "Labour Room", credits: "1", prescribedWeeks: "2", prescribedHours: "80" },
-    { clinicalArea: "Postnatal Ward", credits: "0.5", prescribedWeeks: "1", prescribedHours: "40" },
-    { clinicalArea: "NICU", credits: "0.5", prescribedWeeks: "1", prescribedHours: "40" },
-    { clinicalArea: "OBG OT / Ward", credits: "1", prescribedWeeks: "2", prescribedHours: "80" },
-    { clinicalArea: "Community Health Nursing II", credits: "2", prescribedWeeks: "4", prescribedHours: "160" },
-    { clinicalArea: "Urban", credits: "1", prescribedWeeks: "2", prescribedHours: "80" },
-    { clinicalArea: "Rural", credits: "1", prescribedWeeks: "2", prescribedHours: "80" }
-  ],
-  "VIII": [
-    { clinicalArea: "INTERNSHIP", credits: "12", prescribedWeeks: "22", prescribedHours: "1056" },
-    { clinicalArea: "Adult Health Nursing", credits: "4", prescribedWeeks: "6", prescribedHours: "288" },
-    { clinicalArea: "General Medical Ward", credits: "1", prescribedWeeks: "2", prescribedHours: "96" },
-    { clinicalArea: "General Surgical Ward", credits: "1", prescribedWeeks: "2", prescribedHours: "96" },
-    { clinicalArea: "Child Health Nursing", credits: "2", prescribedWeeks: "4", prescribedHours: "192" },
-    { clinicalArea: "Urban", credits: "1", prescribedWeeks: "2", prescribedHours: "96" },
-    { clinicalArea: "Rural", credits: "1", prescribedWeeks: "2", prescribedHours: "96" },
-    { clinicalArea: "Mental Health Nursing", credits: "2", prescribedWeeks: "4", prescribedHours: "192" },
-    { clinicalArea: "Psychiatry OPD", credits: "0.5", prescribedWeeks: "1", prescribedHours: "48" },
-    { clinicalArea: "Child Guidance Clinic / De-addiction Centre", credits: "0.5", prescribedWeeks: "1", prescribedHours: "48" },
-    { clinicalArea: "Psychiatric In-patient Ward", credits: "1", prescribedWeeks: "2", prescribedHours: "96" },
-    { clinicalArea: "Midwifery", credits: "2", prescribedWeeks: "4", prescribedHours: "192" },
-    { clinicalArea: "Antenatal OPD", credits: "0.5", prescribedWeeks: "1", prescribedHours: "48" },
-    { clinicalArea: "Antenatal Ward", credits: "0.5", prescribedWeeks: "1", prescribedHours: "48" },
-    { clinicalArea: "Labour Room / OT", credits: "0.5", prescribedWeeks: "1", prescribedHours: "48" },
-    { clinicalArea: "Postnatal Ward", credits: "0.5", prescribedWeeks: "1", prescribedHours: "48" }
-  ]
-};
+// Pre-populated data from the Excel file - all clinical areas for all semesters
+const allClinicalRecords = [
+  // Semester I
+  { semester: "I", clinicalArea: "Nursing Foundation I including First Aid Module", credits: "2", prescribedWeeks: "10", prescribedHours: "160" },
+  { semester: "I", clinicalArea: "General Medical Ward", credits: "1", prescribedWeeks: "5", prescribedHours: "80" },
+  { semester: "I", clinicalArea: "General Surgical Ward", credits: "1", prescribedWeeks: "5", prescribedHours: "80" },
+
+  // Semester II
+  { semester: "II", clinicalArea: "Nursing Foundation II including Health Assessment Module", credits: "4", prescribedWeeks: "16", prescribedHours: "320" },
+  { semester: "II", clinicalArea: "General Medical Ward", credits: "2", prescribedWeeks: "8", prescribedHours: "160" },
+  { semester: "II", clinicalArea: "General Surgical Ward", credits: "2", prescribedWeeks: "8", prescribedHours: "160" },
+
+  // Semester III
+  { semester: "III", clinicalArea: "Adult Health Nursing I with integrated pathophysiology including BCLS module", credits: "6", prescribedWeeks: "18", prescribedHours: "480" },
+  { semester: "III", clinicalArea: "General Medical Ward", credits: "1.4", prescribedWeeks: "4", prescribedHours: "108" },
+  { semester: "III", clinicalArea: "General Surgical Ward", credits: "1.4", prescribedWeeks: "4", prescribedHours: "108" },
+  { semester: "III", clinicalArea: "Cardiology Ward", credits: "0.6", prescribedWeeks: "2", prescribedHours: "50" },
+  { semester: "III", clinicalArea: "Dermatology Ward", credits: "0.3", prescribedWeeks: "1", prescribedHours: "28" },
+  { semester: "III", clinicalArea: "Isolation Ward", credits: "0.3", prescribedWeeks: "1", prescribedHours: "28" },
+  { semester: "III", clinicalArea: "Orthopedic Ward", credits: "0.6", prescribedWeeks: "2", prescribedHours: "50" },
+  { semester: "III", clinicalArea: "Operation Theatre", credits: "0.4", prescribedWeeks: "4", prescribedHours: "108" },
+
+  // Semester IV
+  { semester: "IV", clinicalArea: "Adult Health Nursing II with integrated pathophysiology including Geriatric Nursing and Palliative Care Module", credits: "6", prescribedWeeks: "20", prescribedHours: "480" },
+  { semester: "IV", clinicalArea: "ENT Ward & OPD", credits: "0.6", prescribedWeeks: "2", prescribedHours: "48" },
+  { semester: "IV", clinicalArea: "Ophthalmology Unit", credits: "0.6", prescribedWeeks: "2", prescribedHours: "48" },
+  { semester: "IV", clinicalArea: "Renal / Nephrology Ward including Dialysis Unit", credits: "0.6", prescribedWeeks: "2", prescribedHours: "48" },
+  { semester: "IV", clinicalArea: "Burns Unit / Reconstructive Surgical Unit", credits: "0.6", prescribedWeeks: "2", prescribedHours: "48" },
+  { semester: "IV", clinicalArea: "Neurology - Medical / Surgical Ward", credits: "1", prescribedWeeks: "3", prescribedHours: "72" },
+  { semester: "IV", clinicalArea: "Isolation Ward / Medical Ward", credits: "0.2", prescribedWeeks: "1", prescribedHours: "24" },
+  { semester: "IV", clinicalArea: "Oncology Ward (including Day Care / Radiotherapy Unit)", credits: "1", prescribedWeeks: "3", prescribedHours: "72" },
+  { semester: "IV", clinicalArea: "Emergency Room/Unit", credits: "0.6", prescribedWeeks: "2", prescribedHours: "48" },
+
+  // Semester V
+  { semester: "V", clinicalArea: "Child Health Nursing I", credits: "2", prescribedWeeks: "5", prescribedHours: "160" },
+  { semester: "V", clinicalArea: "Pediatric Medical Ward", credits: "0.8", prescribedWeeks: "2", prescribedHours: "60" },
+  { semester: "V", clinicalArea: "Pediatric Surgical Ward", credits: "0.8", prescribedWeeks: "2", prescribedHours: "60" },
+  { semester: "V", clinicalArea: "Pediatric OPD / Immunization Room", credits: "0.4", prescribedWeeks: "1", prescribedHours: "40" },
+  { semester: "V", clinicalArea: "Mental Health Nursing", credits: "1", prescribedWeeks: "3", prescribedHours: "80" },
+  { semester: "V", clinicalArea: "Psychiatric OPD", credits: "0.4", prescribedWeeks: "1", prescribedHours: "30" },
+  { semester: "V", clinicalArea: "Psychiatric In-patient Ward", credits: "0.6", prescribedWeeks: "2", prescribedHours: "50" },
+  { semester: "V", clinicalArea: "Community Health Nursing I", credits: "2", prescribedWeeks: "4", prescribedHours: "160" },
+  { semester: "V", clinicalArea: "Urban", credits: "1", prescribedWeeks: "2", prescribedHours: "80" },
+  { semester: "V", clinicalArea: "Rural", credits: "1", prescribedWeeks: "2", prescribedHours: "80" },
+
+  // Semester VI
+  { semester: "VI", clinicalArea: "Child Health Nursing II", credits: "1", prescribedWeeks: "3", prescribedHours: "80" },
+  { semester: "VI", clinicalArea: "Pediatric Medical Ward", credits: "0.4", prescribedWeeks: "1", prescribedHours: "28" },
+  { semester: "VI", clinicalArea: "Pediatric Surgical Ward", credits: "0.3", prescribedWeeks: "1", prescribedHours: "26" },
+  { semester: "VI", clinicalArea: "PICU and NICU", credits: "0.3", prescribedWeeks: "1", prescribedHours: "26" },
+  { semester: "VI", clinicalArea: "Mental Health Nursing II", credits: "2", prescribedWeeks: "5", prescribedHours: "160" },
+  { semester: "VI", clinicalArea: "Psychiatric OPD", credits: "0.4", prescribedWeeks: "1", prescribedHours: "40" },
+  { semester: "VI", clinicalArea: "Child Guidance Clinic", credits: "0.4", prescribedWeeks: "1", prescribedHours: "30" },
+  { semester: "VI", clinicalArea: "Psychiatric In-patient Ward", credits: "0.8", prescribedWeeks: "2", prescribedHours: "60" },
+  { semester: "VI", clinicalArea: "Community Psychiatry & De-addiction Centre", credits: "0.4", prescribedWeeks: "1", prescribedHours: "30" },
+  { semester: "VI", clinicalArea: "Nursing Management and Leadership", credits: "1", prescribedWeeks: "2", prescribedHours: "80" },
+  { semester: "VI", clinicalArea: "Hospital", credits: "0.5", prescribedWeeks: "1", prescribedHours: "40" },
+  { semester: "VI", clinicalArea: "College", credits: "0.5", prescribedWeeks: "1", prescribedHours: "40" },
+  { semester: "VI", clinicalArea: "Midwifery & Obstetrics and Gynecology (OBG) Nursing I", credits: "3", prescribedWeeks: "6", prescribedHours: "240" },
+  { semester: "VI", clinicalArea: "Antenatal OPD & Ward", credits: "0.5", prescribedWeeks: "1", prescribedHours: "40" },
+  { semester: "VI", clinicalArea: "Labour Room", credits: "1.5", prescribedWeeks: "3", prescribedHours: "160" },
+  { semester: "VI", clinicalArea: "Postnatal Ward / OP including Family Planning Unit", credits: "1", prescribedWeeks: "2", prescribedHours: "40" },
+
+  // Semester VII
+  { semester: "VII", clinicalArea: "Midwifery & Obstetrics and Gynecology (OBG) Nursing II", credits: "4", prescribedWeeks: "8", prescribedHours: "320" },
+  { semester: "VII", clinicalArea: "Antenatal OPD / Infertility Clinic / Reproductive Medicine and Antenatal Ward", credits: "1", prescribedWeeks: "2", prescribedHours: "80" },
+  { semester: "VII", clinicalArea: "Labour Room", credits: "1", prescribedWeeks: "2", prescribedHours: "80" },
+  { semester: "VII", clinicalArea: "Postnatal Ward", credits: "0.5", prescribedWeeks: "1", prescribedHours: "40" },
+  { semester: "VII", clinicalArea: "NICU", credits: "0.5", prescribedWeeks: "1", prescribedHours: "40" },
+  { semester: "VII", clinicalArea: "OBG OT / Ward", credits: "1", prescribedWeeks: "2", prescribedHours: "80" },
+  { semester: "VII", clinicalArea: "Community Health Nursing II", credits: "2", prescribedWeeks: "4", prescribedHours: "160" },
+  { semester: "VII", clinicalArea: "Urban", credits: "1", prescribedWeeks: "2", prescribedHours: "80" },
+  { semester: "VII", clinicalArea: "Rural", credits: "1", prescribedWeeks: "2", prescribedHours: "80" },
+
+  // Semester VIII
+  { semester: "VIII", clinicalArea: "INTERNSHIP", credits: "12", prescribedWeeks: "22", prescribedHours: "1056" },
+  { semester: "VIII", clinicalArea: "Adult Health Nursing", credits: "4", prescribedWeeks: "6", prescribedHours: "288" },
+  { semester: "VIII", clinicalArea: "General Medical Ward", credits: "1", prescribedWeeks: "2", prescribedHours: "96" },
+  { semester: "VIII", clinicalArea: "General Surgical Ward", credits: "1", prescribedWeeks: "2", prescribedHours: "96" },
+  { semester: "VIII", clinicalArea: "Child Health Nursing", credits: "2", prescribedWeeks: "4", prescribedHours: "192" },
+  { semester: "VIII", clinicalArea: "Urban", credits: "1", prescribedWeeks: "2", prescribedHours: "96" },
+  { semester: "VIII", clinicalArea: "Rural", credits: "1", prescribedWeeks: "2", prescribedHours: "96" },
+  { semester: "VIII", clinicalArea: "Mental Health Nursing", credits: "2", prescribedWeeks: "4", prescribedHours: "192" },
+  { semester: "VIII", clinicalArea: "Psychiatry OPD", credits: "0.5", prescribedWeeks: "1", prescribedHours: "48" },
+  { semester: "VIII", clinicalArea: "Child Guidance Clinic / De-addiction Centre", credits: "0.5", prescribedWeeks: "1", prescribedHours: "48" },
+  { semester: "VIII", clinicalArea: "Psychiatric In-patient Ward", credits: "1", prescribedWeeks: "2", prescribedHours: "96" },
+  { semester: "VIII", clinicalArea: "Midwifery", credits: "2", prescribedWeeks: "4", prescribedHours: "192" },
+  { semester: "VIII", clinicalArea: "Antenatal OPD", credits: "0.5", prescribedWeeks: "1", prescribedHours: "48" },
+  { semester: "VIII", clinicalArea: "Antenatal Ward", credits: "0.5", prescribedWeeks: "1", prescribedHours: "48" },
+  { semester: "VIII", clinicalArea: "Labour Room / OT", credits: "0.5", prescribedWeeks: "1", prescribedHours: "48" },
+  { semester: "VIII", clinicalArea: "Postnatal Ward", credits: "0.5", prescribedWeeks: "1", prescribedHours: "48" },
+];
 
 interface ClinicalExperienceFormProps {
   onSubmit: (data: ClinicalExperienceFormData) => void;
   defaultValues?: Partial<ClinicalExperienceFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const ClinicalExperienceForm = ({ onSubmit, defaultValues }: ClinicalExperienceFormProps) => {
+export const ClinicalExperienceForm = ({ onSubmit, defaultValues, onProgressChange }: ClinicalExperienceFormProps) => {
   const form = useForm<ClinicalExperienceFormData>({
     resolver: zodResolver(clinicalExperienceSchema),
-    defaultValues: defaultValues || {
-      records: [{ semester: "", clinicalArea: "", credits: "", prescribedWeeks: "", prescribedHours: "", completedHours: "", hospital: "" }],
+    defaultValues: {
+      studentId: defaultValues?.studentId || "",
+      records: (defaultValues?.records?.length ?? 0) > 0
+        ? defaultValues!.records
+        : allClinicalRecords.map(r => ({ ...r, completedHours: "", hospital: "" })),
     },
   });
 
-  const { fields, append } = useFieldArray({
+  const { fields } = useFieldArray({
     control: form.control,
     name: "records",
   });
 
-  const handleSemesterChange = (index: number, value: string) => {
-    // Update the semester field
-    form.setValue(`records.${index}.semester`, value);
-    
-    // Clear the clinical area when semester changes
-    form.setValue(`records.${index}.clinicalArea`, "");
-    form.setValue(`records.${index}.credits`, "");
-    form.setValue(`records.${index}.prescribedWeeks`, "");
-    form.setValue(`records.${index}.prescribedHours`, "");
-    form.setValue(`records.${index}.completedHours`, "");
-    form.setValue(`records.${index}.hospital`, "");
-  };
+  // Group records by semester for merged rows (visual only)
+  const groupedRecords = fields.reduce((acc, field, index) => {
+    if (!acc[field.semester]) {
+      acc[field.semester] = [];
+    }
+    acc[field.semester].push({ ...field, index });
+    return acc;
+  }, {} as Record<string, Array<any>>);
 
-  const handleClinicalAreaChange = (index: number, value: string) => {
-    const semester = form.getValues(`records.${index}.semester`);
-    if (semester && clinicalExperienceData[semester as keyof typeof clinicalExperienceData]) {
-      const selectedArea = clinicalExperienceData[semester as keyof typeof clinicalExperienceData].find(
-        area => area.clinicalArea === value
-      );
-      
-      if (selectedArea) {
-        form.setValue(`records.${index}.clinicalArea`, value);
-        form.setValue(`records.${index}.credits`, selectedArea.credits);
-        form.setValue(`records.${index}.prescribedWeeks`, selectedArea.prescribedWeeks);
-        form.setValue(`records.${index}.prescribedHours`, selectedArea.prescribedHours);
+  const semesterOrder = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+
+  // Progress Tracking
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      let filledFields = 0;
+      const fieldsPerRecord = ["completedHours", "hospital"];
+
+      values.records?.forEach((record: any) => {
+        if (record) {
+          filledFields += fieldsPerRecord.filter(
+            (field) => record[field] && record[field].toString().trim() !== ""
+          ).length;
+        }
+      });
+
+      const totalRequiredFields = allClinicalRecords.length * fieldsPerRecord.length;
+      const progress = (filledFields / totalRequiredFields) * 100;
+      onProgressChange?.(progress);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onProgressChange]);
+
+  // Sync Student ID
+  useEffect(() => {
+    if (defaultValues?.studentId) {
+      const currentId = form.getValues("studentId");
+      if (!currentId) {
+        form.setValue("studentId", defaultValues.studentId);
       }
     }
-  };
-
-  const getClinicalAreasForSemester = (semester: string) => {
-    if (semester && clinicalExperienceData[semester as keyof typeof clinicalExperienceData]) {
-      return clinicalExperienceData[semester as keyof typeof clinicalExperienceData];
-    }
-    return [];
-  };
+  }, [defaultValues, form]);
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form id="active-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+        {/* Hidden Student ID */}
+        <FormField
+          control={form.control}
+          name="studentId"
+          render={({ field }) => (
+            <input type="hidden" {...field} value={field.value || ""} />
+          )}
+        />
+
         <div className="overflow-x-auto border rounded-lg">
           <table className="w-full border-collapse">
             <thead>
@@ -188,149 +206,70 @@ export const ClinicalExperienceForm = ({ onSubmit, defaultValues }: ClinicalExpe
               </tr>
             </thead>
             <tbody>
-              {fields.map((field, index) => (
-                <tr key={field.id} className="hover:bg-muted/50">
-                  <td className="border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`records.${index}.semester`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <Select
-                            value={field.value}
-                            onValueChange={(value) => handleSemesterChange(index, value)}
-                          >
+              {semesterOrder.map((semester) => {
+                const records = groupedRecords[semester] || [];
+                return records.map((record, recordIndex) => (
+                  <tr key={record.id} className="hover:bg-muted/50">
+                    {recordIndex === 0 ? (
+                      <td
+                        className="border p-2 font-medium text-center bg-muted/20"
+                        rowSpan={records.length}
+                      >
+                        {semester}
+                      </td>
+                    ) : null}
+                    <td className="border p-2 font-medium">
+                      {record.clinicalArea}
+                      {/* Hidden inputs to ensure data is sent */}
+                      <input type="hidden" {...form.register(`records.${record.index}.semester`)} defaultValue={record.semester} />
+                      <input type="hidden" {...form.register(`records.${record.index}.clinicalArea`)} defaultValue={record.clinicalArea} />
+                      <input type="hidden" {...form.register(`records.${record.index}.credits`)} defaultValue={record.credits} />
+                      <input type="hidden" {...form.register(`records.${record.index}.prescribedWeeks`)} defaultValue={record.prescribedWeeks} />
+                      <input type="hidden" {...form.register(`records.${record.index}.prescribedHours`)} defaultValue={record.prescribedHours} />
+                    </td>
+                    <td className="border p-2 text-center">{record.credits}</td>
+                    <td className="border p-2 text-center">{record.prescribedWeeks}</td>
+                    <td className="border p-2 text-center">{record.prescribedHours}</td>
+                    <td className="border p-2">
+                      <FormField
+                        control={form.control}
+                        name={`records.${record.index}.completedHours`}
+                        render={({ field }) => (
+                          <FormItem>
                             <FormControl>
-                              <SelectTrigger className="h-9">
-                                <SelectValue placeholder="Select semester" />
-                              </SelectTrigger>
+                              <Input
+                                type="number"
+                                {...field}
+                                placeholder="Hours"
+                                className="h-9"
+                              />
                             </FormControl>
-                            <SelectContent>
-                              {Object.keys(clinicalExperienceData).map((semester) => (
-                                <SelectItem key={semester} value={semester}>
-                                  Semester {semester}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`records.${index}.clinicalArea`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <Select
-                            value={field.value}
-                            onValueChange={(value) => handleClinicalAreaChange(index, value)}
-                            disabled={!form.watch(`records.${index}.semester`)}
-                          >
+                          </FormItem>
+                        )}
+                      />
+                    </td>
+                    <td className="border p-2">
+                      <FormField
+                        control={form.control}
+                        name={`records.${record.index}.hospital`}
+                        render={({ field }) => (
+                          <FormItem>
                             <FormControl>
-                              <SelectTrigger className="h-9">
-                                <SelectValue placeholder="Select clinical area" />
-                              </SelectTrigger>
+                              <Input
+                                {...field}
+                                placeholder="Hospital name"
+                                className="h-9"
+                              />
                             </FormControl>
-                            <SelectContent>
-                              {getClinicalAreasForSemester(form.watch(`records.${index}.semester`)).map((area) => (
-                                <SelectItem key={area.clinicalArea} value={area.clinicalArea}>
-                                  {area.clinicalArea}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`records.${index}.credits`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input type="number" {...field} className="h-9" readOnly />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`records.${index}.prescribedWeeks`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input type="number" {...field} className="h-9" readOnly />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`records.${index}.prescribedHours`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input type="number" {...field} className="h-9" readOnly />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`records.${index}.completedHours`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input 
-                              placeholder="Completed Hours"
-                              type="number" 
-                              {...field} 
-                              className="h-9"
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`records.${index}.hospital`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input {...field} placeholder="Hospital name" className="h-9" />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                </tr>
-              ))}
+                          </FormItem>
+                        )}
+                      />
+                    </td>
+                  </tr>
+                ));
+              })}
             </tbody>
           </table>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => append({ semester: "", clinicalArea: "", credits: "", prescribedWeeks: "", prescribedHours: "", completedHours: "", hospital: "" })}
-          className="w-full"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Clinical Record
-        </Button>
-        <div className="flex justify-end">
-          <Button type="submit">Save Clinical Experience</Button>
         </div>
       </form>
     </Form>

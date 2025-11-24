@@ -53,3 +53,22 @@ export function searchStudents(q: string): StudentRecord[] {
     );
   });
 }
+
+export function getAllStudents(): StudentRecord[] {
+  return readDB();
+}
+
+export function getStudent(id: string): StudentRecord | null {
+  return getStudentById(id);
+}
+
+export function updateStudent(id: string, updates: Partial<StudentRecord>) {
+  const rows = readDB();
+  const idx = rows.findIndex(r => r.id === id);
+  if (idx >= 0) {
+    rows[idx] = { ...rows[idx], ...updates, updatedAt: Date.now() };
+    writeDB(rows);
+    return rows[idx];
+  }
+  return null;
+}

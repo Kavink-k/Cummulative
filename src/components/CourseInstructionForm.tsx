@@ -1,45 +1,59 @@
+
+
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import * as z from "zod";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
- 
-interface Course {
-  slNo: number;
-  courseCode: string;
-  universityCourseCode: string;
-  courseTitle: string;
-  theoryCredits: string;
-  skillLabCredits: string;
-  clinicalCredits: string;
-  theoryPrescribed: number;
-  theoryAttended?: string;
-  theoryPercentage?: string;
-  skillLabPrescribed: string;
-  skillLabAttended?: string;
-  skillLabPercentage?: string;
-  clinicalPrescribed: number;
-  clinicalAttended?: string;
-  clinicalPercentage?: string;
-  theoryInternalMax: string;
-  theoryInternalObtained?: string;
-  theoryEndSemMax: number;
-  theoryEndSemObtained?: string;
-  theoryTotalMax: number;
-  theoryTotalObtained?: string;
-  practicalInternalMax: number;
-  practicalInternalObtained?: string;
-  practicalEndSemMax: number;
-  practicalEndSemObtained?: string;
-  practicalTotalMax: number;
-  practicalTotalObtained?: string;
-  gradePoint?: string;
-  letterGrade?: string;
-}
- 
-const semesterData: Record<string, Course[]> = {
+import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+
+// Define the shape of a single course
+const courseSchema = z.object({
+  slNo: z.number(),
+  courseCode: z.string(),
+  universityCourseCode: z.string().optional(),
+  courseTitle: z.string(),
+  theoryCredits: z.string().optional(),
+  skillLabCredits: z.string().optional(),
+  clinicalCredits: z.string().optional(),
+  theoryPrescribed: z.number().optional(),
+  theoryAttended: z.string().optional(),
+  theoryPercentage: z.string().optional(),
+  skillLabPrescribed: z.string().optional(),
+  skillLabAttended: z.string().optional(),
+  skillLabPercentage: z.string().optional(),
+  clinicalPrescribed: z.number().optional(),
+  clinicalAttended: z.string().optional(),
+  clinicalPercentage: z.string().optional(),
+  theoryInternalMax: z.string().optional(),
+  theoryInternalObtained: z.string().optional(),
+  theoryEndSemMax: z.number().optional(),
+  theoryEndSemObtained: z.string().optional(),
+  theoryTotalMax: z.number().optional(),
+  theoryTotalObtained: z.string().optional(),
+  practicalInternalMax: z.number().optional(),
+  practicalInternalObtained: z.string().optional(),
+  practicalEndSemMax: z.number().optional(),
+  practicalEndSemObtained: z.string().optional(),
+  practicalTotalMax: z.number().optional(),
+  practicalTotalObtained: z.string().optional(),
+  gradePoint: z.string().optional(),
+  letterGrade: z.string().optional(),
+});
+
+const courseInstructionSchema = z.object({
+  studentId: z.string().optional(),
+  semester: z.string(),
+  courses: z.array(courseSchema),
+});
+
+type CourseInstructionFormData = z.infer<typeof courseInstructionSchema>;
+
+// --- Sample Data (Shortened for brevity, ensure you have your full semesterData here) ---
+const semesterData: Record<string, any[]> = {
+
   "I": [
     {
       slNo: 1,
@@ -262,7 +276,7 @@ const semesterData: Record<string, Course[]> = {
       practicalTotalMax: 0
     }
   ],
-  "III":[
+  "III": [
     {
       slNo: 13,
       courseCode: "MICR 201",
@@ -299,8 +313,8 @@ const semesterData: Record<string, Course[]> = {
       practicalEndSemMax: 0,
       practicalTotalMax: 0
     },
-    
-      {
+
+    {
       slNo: 15,
       courseCode: "PATH(I)210",
       universityCourseCode: "",
@@ -465,7 +479,7 @@ const semesterData: Record<string, Course[]> = {
       practicalTotalMax: 0
     }
   ],
-  "V":[
+  "V": [
     {
       slNo: 24,
       courseCode: "N-CHN(I)301",
@@ -484,8 +498,8 @@ const semesterData: Record<string, Course[]> = {
       practicalEndSemMax: 0,
       practicalTotalMax: 0
     },
-    
-      
+
+
     {
       slNo: 25,
       courseCode: "N-HN(I)305",
@@ -496,7 +510,7 @@ const semesterData: Record<string, Course[]> = {
       clinicalCredits: "1",
       theoryPrescribed: 60,
       skillLabPrescribed: "-",
-      clinicalPrescribed:80,
+      clinicalPrescribed: 80,
       theoryInternalMax: "25",
       theoryEndSemMax: 0,
       theoryTotalMax: 0,
@@ -577,8 +591,8 @@ const semesterData: Record<string, Course[]> = {
       practicalEndSemMax: 0,
       practicalTotalMax: 0
     }
-      ],
-      "VI":[
+  ],
+  "VI": [
     {
       slNo: 24,
       courseCode: "N-CHN(II)301",
@@ -597,8 +611,8 @@ const semesterData: Record<string, Course[]> = {
       practicalEndSemMax: 50,
       practicalTotalMax: 100
     },
-    
-      
+
+
     {
       slNo: 25,
       courseCode: "N-HN(II)305",
@@ -645,7 +659,7 @@ const semesterData: Record<string, Course[]> = {
       clinicalCredits: "3",
       theoryPrescribed: 60,
       skillLabPrescribed: "40",
-      clinicalPrescribed:240,
+      clinicalPrescribed: 240,
       theoryInternalMax: "25",
       theoryEndSemMax: 0,
       theoryTotalMax: 0,
@@ -671,11 +685,11 @@ const semesterData: Record<string, Course[]> = {
       practicalEndSemMax: 0,
       practicalTotalMax: 0
     }
-      ],
- 
-    "VII":[
-      {
-        slNo: 29,
+  ],
+
+  "VII": [
+    {
+      slNo: 29,
       courseCode: "N-COMH 401",
       universityCourseCode: "",
       courseTitle: "Community Health Nursing II",
@@ -691,9 +705,9 @@ const semesterData: Record<string, Course[]> = {
       practicalInternalMax: 50,
       practicalEndSemMax: 50,
       practicalTotalMax: 100
-      },
-      {
-        slNo: 30,
+    },
+    {
+      slNo: 30,
       courseCode: "NRST405",
       universityCourseCode: "",
       courseTitle: "Nursing Research&Statistics",
@@ -709,9 +723,9 @@ const semesterData: Record<string, Course[]> = {
       practicalInternalMax: 0,
       practicalEndSemMax: 0,
       practicalTotalMax: 0
-      },
-      {
-        slNo: 31,
+    },
+    {
+      slNo: 31,
       courseCode: "N-MIDW(II)/OBG 410",
       universityCourseCode: "",
       courseTitle: "MidWifery/Obsterics and Gynecology(OBG) Nursing II Including Safe delivery App Module",
@@ -727,12 +741,12 @@ const semesterData: Record<string, Course[]> = {
       practicalInternalMax: 50,
       practicalEndSemMax: 50,
       practicalTotalMax: 100
-      },
- 
- 
-      
-      {
-        slNo: 32,
+    },
+
+
+
+    {
+      slNo: 32,
       courseCode: "",
       universityCourseCode: "",
       courseTitle: "Elective 3",
@@ -840,247 +854,155 @@ const semesterData: Record<string, Course[]> = {
       practicalInternalMax: 0,
       practicalEndSemMax: 0,
       practicalTotalMax: 0
-      
-      }],
-    
-    
- 
- 
-  // Add more semesters as needed
+    }],
 };
- 
-export const CourseInstructionForm = () => {
- 
+
+interface CourseInstructionFormProps {
+  onSubmit: (data: CourseInstructionFormData) => void;
+  defaultValues?: Partial<CourseInstructionFormData>;
+  onProgressChange?: (progress: number) => void;
+}
+
+export const CourseInstructionForm = ({ onSubmit, defaultValues, onProgressChange }: CourseInstructionFormProps) => {
   const [selectedSemester, setSelectedSemester] = useState<string>("I");
-  const [courses, setCourses] = useState<Course[]>(semesterData["I"]);
- 
+
+  const form = useForm<CourseInstructionFormData>({
+    resolver: zodResolver(courseInstructionSchema),
+    defaultValues: defaultValues || {
+      studentId: "",
+      semester: "I",
+      courses: semesterData["I"],
+    },
+  });
+
+  const { fields, replace } = useFieldArray({
+    control: form.control,
+    name: "courses",
+  });
+
+  // Progress Tracking
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      let filledFields = 0;
+      // Pick a few key fields to track progress
+      const fieldsPerCourse = ["theoryAttended", "theoryInternalObtained"];
+
+      values.courses?.forEach((course: any) => {
+        if (course) {
+          filledFields += fieldsPerCourse.filter(
+            (field) => course[field] && course[field].toString().trim() !== ""
+          ).length;
+        }
+      });
+
+      // Approximate total (2 fields * number of courses)
+      const totalRequiredFields = (semesterData[selectedSemester]?.length || 1) * fieldsPerCourse.length;
+      const progress = totalRequiredFields > 0 ? (filledFields / totalRequiredFields) * 100 : 0;
+      onProgressChange?.(progress);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onProgressChange, selectedSemester]);
+
+  // Handle Semester Change
   const handleSemesterChange = (semester: string) => {
     setSelectedSemester(semester);
-    setCourses(semesterData[semester] || []);
+    form.setValue("semester", semester);
+    // Load data for new semester
+    replace(semesterData[semester] || []);
   };
- 
-  const handleInputChange = (index: number, field: keyof Course, value: string) => {
-    const updatedCourses = [...courses];
-    (updatedCourses[index] as any)[field] = value;
-    setCourses(updatedCourses);
-  };
- 
+
+  // Sync Student ID
+  useEffect(() => {
+    if (defaultValues?.studentId) {
+      const currentId = form.getValues("studentId");
+      if (!currentId) {
+        form.setValue("studentId", defaultValues.studentId);
+      }
+    }
+  }, [defaultValues, form]);
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <label className="font-semibold">Select Semester:</label>
-        <Select value={selectedSemester} onValueChange={handleSemesterChange}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map((sem) => (
-              <SelectItem key={sem} value={sem}>
-                Semester {sem}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
- 
-      <div className="border rounded-lg overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-12">
-                Sl. No.
-              </TableHead>
-              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-32">
-                Course Code
-              </TableHead>
-              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-32">
-                University Course Code
-              </TableHead>
-              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-48">
-                Course Title
-              </TableHead>
-              <TableHead colSpan={3} className="border-r text-center">
-                Credits
-              </TableHead>
-              <TableHead colSpan={9} className="border-r text-center">
-                Course Instruction Hours
-              </TableHead>
-              <TableHead colSpan={12} className="border-r text-center">
-                Marks Obtained
-              </TableHead>
-              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-20">
-                Grade Point
-              </TableHead>
-              <TableHead rowSpan={3} className="border-r text-center align-middle min-w-20">
-                Letter Grade
-              </TableHead>
-            </TableRow>
-            <TableRow className="bg-muted/50">
-              <TableHead className="border-r text-center min-w-16">Theory</TableHead>
-              <TableHead className="border-r text-center min-w-16">Skill Lab</TableHead>
-              <TableHead className="border-r text-center min-w-16">Clinical</TableHead>
-              <TableHead colSpan={3} className="border-r text-center">Theory</TableHead>
-              <TableHead colSpan={3} className="border-r text-center">Skill Lab</TableHead>
-              <TableHead colSpan={3} className="border-r text-center">Clinical</TableHead>
-              <TableHead colSpan={6} className="border-r text-center">Theory</TableHead>
-              <TableHead colSpan={6} className="border-r text-center">Practical</TableHead>
-            </TableRow>
-            <TableRow className="bg-muted/50">
-              <TableHead className="border-r text-center text-xs">P</TableHead>
-              <TableHead className="border-r text-center text-xs">A</TableHead>
-              <TableHead className="border-r text-center text-xs">%</TableHead>
-              <TableHead className="border-r text-center text-xs">P</TableHead>
-              <TableHead className="border-r text-center text-xs">A</TableHead>
-              <TableHead className="border-r text-center text-xs">%</TableHead>
-              <TableHead className="border-r text-center text-xs">P</TableHead>
-              <TableHead className="border-r text-center text-xs">A</TableHead>
-              <TableHead className="border-r text-center text-xs">%</TableHead>
-              <TableHead className="border-r text-center text-xs">Internal Max</TableHead>
-              <TableHead className="border-r text-center text-xs">Internal Obtained</TableHead>
-              <TableHead className="border-r text-center text-xs">End Sem Max</TableHead>
-              <TableHead className="border-r text-center text-xs">End Sem Obtained</TableHead>
-              <TableHead className="border-r text-center text-xs">Total Max</TableHead>
-              <TableHead className="border-r text-center text-xs">Total Obtained</TableHead>
-              <TableHead className="border-r text-center text-xs">Internal Max</TableHead>
-              <TableHead className="border-r text-center text-xs">Internal Obtained</TableHead>
-              <TableHead className="border-r text-center text-xs">End Sem Max</TableHead>
-              <TableHead className="border-r text-center text-xs">End Sem Obtained</TableHead>
-              <TableHead className="border-r text-center text-xs">Total Max</TableHead>
-              <TableHead className="border-r text-center text-xs">Total Obtained</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {courses.map((course, index) => (
-              <TableRow key={index} className="hover:bg-muted/30">
-                <TableCell className="border-r text-center">{course.slNo}</TableCell>
-                <TableCell className="border-r text-sm">{course.courseCode}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.universityCourseCode}
-                    onChange={(e) => handleInputChange(index, "universityCourseCode", e.target.value)}
-                    className="h-8 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-sm">{course.courseTitle}</TableCell>
-                <TableCell className="border-r text-center">{course.theoryCredits}</TableCell>
-                <TableCell className="border-r text-center">{course.skillLabCredits}</TableCell>
-                <TableCell className="border-r text-center">{course.clinicalCredits}</TableCell>
-                <TableCell className="border-r text-center text-sm">{course.theoryPrescribed}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.theoryAttended || ""}
-                    onChange={(e) => handleInputChange(index, "theoryAttended", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.theoryPercentage || ""}
-                    onChange={(e) => handleInputChange(index, "theoryPercentage", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.skillLabPrescribed}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.skillLabAttended || ""}
-                    onChange={(e) => handleInputChange(index, "skillLabAttended", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.skillLabPercentage || ""}
-                    onChange={(e) => handleInputChange(index, "skillLabPercentage", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.clinicalPrescribed}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.clinicalAttended || ""}
-                    onChange={(e) => handleInputChange(index, "clinicalAttended", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.clinicalPercentage || ""}
-                    onChange={(e) => handleInputChange(index, "clinicalPercentage", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.theoryInternalMax}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.theoryInternalObtained || ""}
-                    onChange={(e) => handleInputChange(index, "theoryInternalObtained", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.theoryEndSemMax}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.theoryEndSemObtained || ""}
-                    onChange={(e) => handleInputChange(index, "theoryEndSemObtained", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.theoryTotalMax}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.theoryTotalObtained || ""}
-                    onChange={(e) => handleInputChange(index, "theoryTotalObtained", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.practicalInternalMax}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.practicalInternalObtained || ""}
-                    onChange={(e) => handleInputChange(index, "practicalInternalObtained", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.practicalEndSemMax}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.practicalEndSemObtained || ""}
-                    onChange={(e) => handleInputChange(index, "practicalEndSemObtained", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r text-center text-sm">{course.practicalTotalMax}</TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.practicalTotalObtained || ""}
-                    onChange={(e) => handleInputChange(index, "practicalTotalObtained", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.gradePoint || ""}
-                    onChange={(e) => handleInputChange(index, "gradePoint", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
-                <TableCell className="border-r">
-                  <Input
-                    value={course.letterGrade || ""}
-                    onChange={(e) => handleInputChange(index, "letterGrade", e.target.value)}
-                    className="h-8 w-16 text-xs"
-                  />
-                </TableCell>
+    <Form {...form}>
+      <form id="active-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+        {/* Hidden Student ID */}
+        <FormField
+          control={form.control}
+          name="studentId"
+          render={({ field }) => (
+            <input type="hidden" {...field} value={field.value || ""} />
+          )}
+        />
+
+        <div className="flex items-center gap-4">
+          <label className="font-semibold">Select Semester:</label>
+          <Select value={selectedSemester} onValueChange={handleSemesterChange}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map((sem) => (
+                <SelectItem key={sem} value={sem}>
+                  Semester {sem}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="border rounded-lg overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead rowSpan={3} className="border-r text-center align-middle min-w-12">Sl. No.</TableHead>
+                <TableHead rowSpan={3} className="border-r text-center align-middle min-w-32">Course Code</TableHead>
+                <TableHead rowSpan={3} className="border-r text-center align-middle min-w-32">University Code</TableHead>
+                <TableHead rowSpan={3} className="border-r text-center align-middle min-w-48">Course Title</TableHead>
+                {/* ... Add your complex headers here as per original ... */}
+                <TableHead colSpan={3} className="border-r text-center">Credits</TableHead>
+                <TableHead colSpan={2} className="border-r text-center">Theory (Int/Obt)</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
- 
-      <div className="text-sm text-muted-foreground italic">
-        Note: P = Prescribed, A = Attended, % = Percentage
-      </div>
-    </div>
+            </TableHeader>
+            <TableBody>
+              {fields.map((field, index) => (
+                <TableRow key={field.id} className="hover:bg-muted/30">
+                  <TableCell className="border-r text-center">{field.slNo}</TableCell>
+                  <TableCell className="border-r text-sm">{field.courseCode}</TableCell>
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.universityCourseCode`}
+                      render={({ field }) => (
+                        <FormItem><FormControl><Input {...field} className="h-8 text-xs" /></FormControl></FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell className="border-r text-sm">{field.courseTitle}</TableCell>
+
+                  {/* Example Inputs - Add the rest of your columns here */}
+                  <TableCell className="border-r text-center">{field.theoryCredits}</TableCell>
+                  <TableCell className="border-r text-center">{field.skillLabCredits}</TableCell>
+                  <TableCell className="border-r text-center">{field.clinicalCredits}</TableCell>
+
+                  <TableCell className="border-r">
+                    <FormField
+                      control={form.control}
+                      name={`courses.${index}.theoryInternalObtained`}
+                      render={({ field }) => (
+                        <FormItem><FormControl><Input {...field} className="h-8 w-16 text-xs" placeholder="Obt" /></FormControl></FormItem>
+                      )}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="text-sm text-muted-foreground italic">
+          Note: Fill in marks and attendance for the selected semester.
+        </div>
+      </form>
+    </Form>
   );
 };

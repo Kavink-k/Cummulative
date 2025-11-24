@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -12,6 +13,7 @@ const courseCompletionSchema = z.object({
 });
 
 const courseCompletionFormSchema = z.object({
+  studentId: z.string().optional(),
   completions: z.array(courseCompletionSchema),
 });
 
@@ -31,28 +33,52 @@ const certificateNames = [
 interface CourseCompletionFormProps {
   onSubmit: (data: CourseCompletionFormData) => void;
   defaultValues?: Partial<CourseCompletionFormData>;
+  onProgressChange?: (progress: number) => void;
 }
 
-export const CourseCompletionForm = ({ onSubmit, defaultValues }: CourseCompletionFormProps) => {
+export const CourseCompletionForm = ({ onSubmit, defaultValues, onProgressChange }: CourseCompletionFormProps) => {
   const form = useForm<CourseCompletionFormData>({
     resolver: zodResolver(courseCompletionFormSchema),
-    defaultValues: defaultValues || {
-      completions: certificateNames.map(name => ({
-        courseName: name,
-        certificateNumber: "",
-        dateOfIssue: "",
-      })),
+    defaultValues: {
+      studentId: defaultValues?.studentId,
+      completions: defaultValues?.completions?.length
+        ? defaultValues.completions
+        : certificateNames.map(name => ({
+          courseName: name,
+          certificateNumber: "",
+          dateOfIssue: "",
+        })),
     },
   });
+
+  // Reset form when defaultValues change (e.g. loaded from backend)
+  useEffect(() => {
+    if (defaultValues) {
+      form.reset({
+        studentId: defaultValues.studentId,
+        completions: defaultValues.completions?.length
+          ? defaultValues.completions
+          : certificateNames.map(name => ({
+            courseName: name,
+            certificateNumber: "",
+            dateOfIssue: "",
+          })),
+      });
+    }
+  }, [defaultValues, form]);
 
   const { fields } = useFieldArray({
     control: form.control,
     name: "completions",
   });
 
+  const handleSubmit = (data: CourseCompletionFormData) => {
+    onSubmit(data);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="overflow-x-auto border rounded-lg">
           <table className="w-full border-collapse">
             <thead>

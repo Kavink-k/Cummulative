@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -5,11 +6,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { useEffect, useState, useRef } from "react";
+import { Upload, X, User } from "lucide-react";
 
 const personalProfileSchema = z.object({
+  studentId: z.string().min(1, "Student ID is required"),
   studentName: z.string().min(2, "Name must be at least 2 characters").max(100),
-  age: z.string().min(1, "Age is required"),
+  age: z.coerce.number().min(1, "Age is required"),
   gender: z.string().min(1, "Gender is required"),
   dateOfBirth: z.string().min(1, "Date of birth is required"),
   nationality: z.string().min(1, "Nationality is required"),
@@ -27,47 +31,58 @@ const personalProfileSchema = z.object({
   ociNumber: z.string().optional(),
   emisNo: z.string().min(1, "EMIS number is required"),
   mediumOfInstruction: z.string().min(1, "Medium of instruction is required"),
+  photo: z.string().optional(), // Photo URL from backend
 });
 
 type PersonalProfileFormData = z.infer<typeof personalProfileSchema>;
 
 interface PersonalProfileFormProps {
-  onSubmit: (data: PersonalProfileFormData) => void;
+  onSubmit: (data: PersonalProfileFormData & { photoFile?: File | null }) => void;
   defaultValues?: Partial<PersonalProfileFormData>;
-  onProgressChange?: (progress: number) => void; // New prop to report progress
+  onProgressChange?: (progress: number) => void;
 }
 
 export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange }: PersonalProfileFormProps) => {
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const form = useForm<PersonalProfileFormData>({
     resolver: zodResolver(personalProfileSchema),
     defaultValues: defaultValues || {},
   });
 
-  // Calculate progress based on filled fields
+  // Load saved photo from defaultValues when component mounts
+  useEffect(() => {
+    console.log('PersonalProfileForm defaultValues:', defaultValues);
+
+    // Backend returns 'photoUrl' but form uses 'photo'
+    const photoUrl = defaultValues?.photo || (defaultValues as any)?.photoUrl;
+
+    if (photoUrl) {
+      console.log('Loading saved photo:', photoUrl);
+      // If there's a saved photo URL from the backend, display it
+      const fullPhotoUrl = photoUrl.startsWith('http')
+        ? photoUrl
+        : `http://localhost:5000${photoUrl}`;
+      console.log('Setting photo preview to:', fullPhotoUrl);
+      setPhotoPreview(fullPhotoUrl);
+    } else {
+      console.log('No photo URL found in defaultValues');
+    }
+  }, [defaultValues?.photo, (defaultValues as any)?.photoUrl]);
+
   useEffect(() => {
     const subscription = form.watch((values) => {
       const requiredFields = [
-        "studentName",
-        "age",
-        "gender",
-        "dateOfBirth",
-        "nationality",
-        "religion",
-        "community",
-        "nativity",
-        "maritalStatus",
-        "parentGuardianName",
-        "motherTongue",
-        "communicationAddress",
-        "permanentAddress",
-        "contactMobile",
-        "studentEmail",
-        "aadharNo",
-        "emisNo",
-        "mediumOfInstruction",
+        "studentId", "studentName", "age", "gender", "dateOfBirth",
+        "nationality", "religion", "community", "nativity", "maritalStatus",
+        "parentGuardianName", "motherTongue", "communicationAddress",
+        "permanentAddress", "contactMobile", "studentEmail", "aadharNo",
+        "emisNo", "mediumOfInstruction"
       ];
       const filledFields = requiredFields.filter(
-        (field) => values[field] && values[field].toString().trim() !== ""
+        (field) => values[field as keyof typeof values] && values[field as keyof typeof values]?.toString().trim() !== ""
       ).length;
       const progress = (filledFields / requiredFields.length) * 100;
       onProgressChange?.(progress);
@@ -75,11 +90,123 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
     return () => subscription.unsubscribe();
   }, [form, onProgressChange]);
 
+  // Handle photo file selection
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+
+      setPhotoFile(file);
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle photo removal
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Handle form submission with photo
+  const handleFormSubmit = (data: PersonalProfileFormData) => {
+    // If photo was removed (no preview and no file), send empty photoUrl to trigger deletion
+    const submissionData = {
+      ...data,
+      photoFile,
+      photoUrl: (!photoPreview && !photoFile) ? '' : data.photo // Empty string signals deletion
+    };
+    onSubmit(submissionData);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Existing form fields remain unchanged */}
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+        {/* Photo Upload Section - Passport Size */}
+        <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed border-border rounded-lg bg-muted/20">
+          <div className="relative">
+            {photoPreview ? (
+              <div className="relative group">
+                <img
+                  src={photoPreview}
+                  alt="Passport photo preview"
+                  className="w-40 h-52 object-cover border-4 border-primary shadow-lg rounded-sm"
+                  style={{ aspectRatio: '3/4' }}
+                />
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1.5 shadow-md hover:bg-destructive/90 transition-colors"
+                  title="Remove photo"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="w-40 h-52 bg-muted border-4 border-border flex flex-col items-center justify-center rounded-sm" style={{ aspectRatio: '3/4' }}>
+                <User className="h-20 w-20 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground mt-2">Passport Size</p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handlePhotoChange}
+              className="hidden"
+              id="photo-upload"
+            />
+            <label htmlFor="photo-upload">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {photoPreview ? 'Change Photo' : 'Upload Photo'}
+              </Button>
+            </label>
+            <p className="text-xs text-muted-foreground">Max size: 5MB (JPG, PNG)</p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Added Student ID field */}
+          <FormField
+            control={form.control}
+            name="studentId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Student ID</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g. E25CY086" {...field} className="uppercase" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="studentName"
@@ -366,6 +493,10 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
               </FormItem>
             )}
           />
+        </div>
+
+        <div className="flex justify-end">
+          <Button type="submit">Save Personal Profile</Button>
         </div>
       </form>
     </Form>
