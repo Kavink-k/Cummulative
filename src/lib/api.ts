@@ -415,19 +415,15 @@ export const apiService = {
   },
 
   // Verification (Array Handling)
-  createVerification: async (data: any) => {
-    if (data.verifications && Array.isArray(data.verifications)) {
-      const promises = data.verifications.map((ver: any) => {
-        const payload = {
-          ...cleanData(ver),
-          studentId: data.studentId
-        };
-        return api.post('/verifications', payload);
-      });
-      return Promise.all(promises);
-    }
-    return api.post('/verifications', cleanData(data));
-  },
+createVerification: async (data: any) => {
+  const payload = {
+    studentId: data.studentId,
+    verifications: data.verifications.map((v: any) => cleanData(v))
+  };
+
+  return api.post('/verifications', payload);
+},
+
 };
 
 // ========== GET METHODS ==========
