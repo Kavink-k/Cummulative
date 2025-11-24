@@ -7,6 +7,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, X } from "lucide-react";
 import React, { useEffect } from "react";
 
 // --- Schemas ---
@@ -92,8 +94,15 @@ export const EducationalQualificationForm = ({
   const { fields: totalPlusOneFields } = useFieldArray({ control: form.control, name: "totalPlusOneAttempts" });
   const { fields: totalPlusTwoFields } = useFieldArray({ control: form.control, name: "totalPlusTwoAttempts" });
 
+  console.log('=== Educational Qualification Form Debug ===');
   console.log('Subject fields count:', subjectFields.length);
   console.log('Subject fields:', subjectFields);
+  console.log('Total Plus One Fields count:', totalPlusOneFields.length);
+  console.log('Total Plus One Fields:', totalPlusOneFields);
+  console.log('Total Plus Two Fields count:', totalPlusTwoFields.length);
+  console.log('Total Plus Two Fields:', totalPlusTwoFields);
+  console.log('Form values:', form.getValues());
+  console.log('==========================================');
 
   useEffect(() => {
     const subscription = form.watch((values) => {
@@ -103,6 +112,180 @@ export const EducationalQualificationForm = ({
     });
     return () => subscription.unsubscribe();
   }, [form, onProgressChange]);
+
+  // Handlers to add new attempts
+  const handleAddPlusOneAttempt = () => {
+    // Add empty attempt to all subjects for HSC+1
+    subjectFields.forEach((_, index) => {
+      const currentAttempts = form.getValues(`subjects.${index}.plusOneAttempts`);
+      form.setValue(`subjects.${index}.plusOneAttempts`, [...currentAttempts, createEmptyAttempt()]);
+    });
+    // Add to totals
+    const currentTotalAttempts = form.getValues('totalPlusOneAttempts');
+    form.setValue('totalPlusOneAttempts', [...currentTotalAttempts, createEmptyAttempt()]);
+  };
+
+  const handleAddPlusTwoAttempt = () => {
+    // Add empty attempt to all subjects for HSC+2
+    subjectFields.forEach((_, index) => {
+      const currentAttempts = form.getValues(`subjects.${index}.plusTwoAttempts`);
+      form.setValue(`subjects.${index}.plusTwoAttempts`, [...currentAttempts, createEmptyAttempt()]);
+    });
+    // Add to totals
+    const currentTotalAttempts = form.getValues('totalPlusTwoAttempts');
+    form.setValue('totalPlusTwoAttempts', [...currentTotalAttempts, createEmptyAttempt()]);
+  };
+
+  // Handlers to remove attempts
+  const handleRemovePlusOneAttempt = (attemptIndex: number) => {
+    const currentTotalAttempts = form.getValues('totalPlusOneAttempts');
+    // Prevent removing the last attempt
+    if (currentTotalAttempts.length <= 1) {
+      return;
+    }
+
+    // Remove attempt from all subjects
+    subjectFields.forEach((_, index) => {
+      const currentAttempts = form.getValues(`subjects.${index}.plusOneAttempts`);
+      const newAttempts = currentAttempts.filter((_, i) => i !== attemptIndex);
+      form.setValue(`subjects.${index}.plusOneAttempts`, newAttempts);
+    });
+    // Remove from totals
+    const newTotalAttempts = currentTotalAttempts.filter((_, i) => i !== attemptIndex);
+    form.setValue('totalPlusOneAttempts', newTotalAttempts);
+  };
+
+  const handleRemovePlusTwoAttempt = (attemptIndex: number) => {
+    const currentTotalAttempts = form.getValues('totalPlusTwoAttempts');
+    // Prevent removing the last attempt
+    if (currentTotalAttempts.length <= 1) {
+      return;
+    }
+
+    // Remove attempt from all subjects
+    subjectFields.forEach((_, index) => {
+      const currentAttempts = form.getValues(`subjects.${index}.plusTwoAttempts`);
+      const newAttempts = currentAttempts.filter((_, i) => i !== attemptIndex);
+      form.setValue(`subjects.${index}.plusTwoAttempts`, newAttempts);
+    });
+    // Remove from totals
+    const newTotalAttempts = currentTotalAttempts.filter((_, i) => i !== attemptIndex);
+    form.setValue('totalPlusTwoAttempts', newTotalAttempts);
+  };
+
+  // Auto-calculate percentage and totals
+  useEffect(() => {
+    let isUpdating = false; // Flag to prevent infinite loop
+
+    const subscription = form.watch((values) => {
+      if (!values.subjects || isUpdating) return;
+
+      isUpdating = true; // Set flag before making changes
+
+      // Calculate percentage for each subject and attempt
+      values.subjects.forEach((subject, subjectIndex) => {
+        // HSC +1 attempts
+        subject.plusOneAttempts?.forEach((attempt, attemptIndex) => {
+          const maxMarks = Number(attempt.maxMarks) || 0;
+          const score = Number(attempt.score) || 0;
+
+          // Validate: score should not exceed max marks
+          if (score > maxMarks && maxMarks > 0) {
+            const currentScore = form.getValues(`subjects.${subjectIndex}.plusOneAttempts.${attemptIndex}.score`);
+            if (Number(currentScore) !== maxMarks) {
+              form.setValue(`subjects.${subjectIndex}.plusOneAttempts.${attemptIndex}.score`, maxMarks, { shouldValidate: false });
+            }
+            return;
+          }
+
+          // Calculate percentage
+          if (maxMarks > 0) {
+            const percentage = Number(((score / maxMarks) * 100).toFixed(2));
+            const currentPercentage = form.getValues(`subjects.${subjectIndex}.plusOneAttempts.${attemptIndex}.percentage`);
+            if (Number(currentPercentage) !== percentage) {
+              form.setValue(`subjects.${subjectIndex}.plusOneAttempts.${attemptIndex}.percentage`, percentage, { shouldValidate: false });
+            }
+          }
+        });
+
+        // HSC +2 attempts
+        subject.plusTwoAttempts?.forEach((attempt, attemptIndex) => {
+          const maxMarks = Number(attempt.maxMarks) || 0;
+          const score = Number(attempt.score) || 0;
+
+          // Validate: score should not exceed max marks
+          if (score > maxMarks && maxMarks > 0) {
+            const currentScore = form.getValues(`subjects.${subjectIndex}.plusTwoAttempts.${attemptIndex}.score`);
+            if (Number(currentScore) !== maxMarks) {
+              form.setValue(`subjects.${subjectIndex}.plusTwoAttempts.${attemptIndex}.score`, maxMarks, { shouldValidate: false });
+            }
+            return;
+          }
+
+          // Calculate percentage
+          if (maxMarks > 0) {
+            const percentage = Number(((score / maxMarks) * 100).toFixed(2));
+            const currentPercentage = form.getValues(`subjects.${subjectIndex}.plusTwoAttempts.${attemptIndex}.percentage`);
+            if (Number(currentPercentage) !== percentage) {
+              form.setValue(`subjects.${subjectIndex}.plusTwoAttempts.${attemptIndex}.percentage`, percentage, { shouldValidate: false });
+            }
+          }
+        });
+      });
+
+      // Calculate totals for each attempt
+      const plusOneAttemptCount = values.totalPlusOneAttempts?.length || 0;
+      const plusTwoAttemptCount = values.totalPlusTwoAttempts?.length || 0;
+
+      // Calculate HSC +1 totals
+      for (let attemptIndex = 0; attemptIndex < plusOneAttemptCount; attemptIndex++) {
+        let totalMax = 0;
+        let totalScore = 0;
+
+        values.subjects.forEach((subject) => {
+          const attempt = subject.plusOneAttempts?.[attemptIndex];
+          if (attempt) {
+            totalMax += Number(attempt.maxMarks) || 0;
+            totalScore += Number(attempt.score) || 0;
+          }
+        });
+
+        form.setValue(`totalPlusOneAttempts.${attemptIndex}.maxMarks`, totalMax);
+        form.setValue(`totalPlusOneAttempts.${attemptIndex}.score`, totalScore);
+
+        if (totalMax > 0) {
+          const totalPercentage = ((totalScore / totalMax) * 100).toFixed(2);
+          form.setValue(`totalPlusOneAttempts.${attemptIndex}.percentage`, Number(totalPercentage));
+        }
+      }
+
+      // Calculate HSC +2 totals
+      for (let attemptIndex = 0; attemptIndex < plusTwoAttemptCount; attemptIndex++) {
+        let totalMax = 0;
+        let totalScore = 0;
+
+        values.subjects.forEach((subject) => {
+          const attempt = subject.plusTwoAttempts?.[attemptIndex];
+          if (attempt) {
+            totalMax += Number(attempt.maxMarks) || 0;
+            totalScore += Number(attempt.score) || 0;
+          }
+        });
+
+        form.setValue(`totalPlusTwoAttempts.${attemptIndex}.maxMarks`, totalMax);
+        form.setValue(`totalPlusTwoAttempts.${attemptIndex}.score`, totalScore);
+
+        if (totalMax > 0) {
+          const totalPercentage = ((totalScore / totalMax) * 100).toFixed(2);
+          form.setValue(`totalPlusTwoAttempts.${attemptIndex}.percentage`, Number(totalPercentage));
+        }
+      }
+
+      isUpdating = false; // Reset flag after all updates
+    });
+
+    return () => subscription.unsubscribe();
+  }, [form, subjectFields]);
 
   return (
     <Form {...form}>
@@ -141,6 +324,26 @@ export const EducationalQualificationForm = ({
           />
         </div>
 
+        {/* Add Attempt Button */}
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="outline" size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Attempt
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={handleAddPlusOneAttempt}>
+                Add HSC +1 Attempt
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleAddPlusTwoAttempt}>
+                Add HSC +2 Attempt
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         {/* Marks Table */}
         <div className="border rounded-lg p-4 overflow-x-auto">
           <table className="w-full border-collapse min-w-[900px]">
@@ -149,6 +352,43 @@ export const EducationalQualificationForm = ({
                 <th className="border p-2 text-left w-40">Subject</th>
                 <th className="border p-2 text-center" colSpan={3 * totalPlusOneFields.length}>H.S.C (+1)</th>
                 <th className="border p-2 text-center" colSpan={3 * totalPlusTwoFields.length}>H.S.C (+2)</th>
+              </tr>
+              <tr className="bg-muted/70 text-xs">
+                <th className="border p-2"></th>
+                {totalPlusOneFields.map((_, i) => (
+                  <th key={`h1-header-${i}`} className="border p-2 relative" colSpan={3}>
+                    <div className="flex items-center justify-center gap-2">
+                      <span>Attempt {i + 1}</span>
+                      {totalPlusOneFields.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePlusOneAttempt(i)}
+                          className="text-destructive hover:bg-destructive/10 rounded p-0.5 transition-colors"
+                          title="Remove this attempt"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  </th>
+                ))}
+                {totalPlusTwoFields.map((_, i) => (
+                  <th key={`h2-header-${i}`} className="border p-2 relative" colSpan={3}>
+                    <div className="flex items-center justify-center gap-2">
+                      <span>Attempt {i + 1}</span>
+                      {totalPlusTwoFields.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePlusTwoAttempt(i)}
+                          className="text-destructive hover:bg-destructive/10 rounded p-0.5 transition-colors"
+                          title="Remove this attempt"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  </th>
+                ))}
               </tr>
               <tr className="bg-muted/50 text-xs">
                 <th className="border p-2"></th>
@@ -166,16 +406,16 @@ export const EducationalQualificationForm = ({
                   <td className="border p-2 text-sm font-medium">{field.subject}</td>
                   {totalPlusOneFields.map((_, attemptIdx) => (
                     <React.Fragment key={`s${index}-a1-${attemptIdx}`}>
-                      <td className="border p-1"><FormField control={form.control} name={`subjects.${index}.plusOneAttempts.${attemptIdx}.maxMarks`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs" />} /></td>
-                      <td className="border p-1"><FormField control={form.control} name={`subjects.${index}.plusOneAttempts.${attemptIdx}.score`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs" />} /></td>
-                      <td className="border p-1"><FormField control={form.control} name={`subjects.${index}.plusOneAttempts.${attemptIdx}.percentage`} render={({ field }) => <Input {...field} type="number" step="0.01" className="h-8 text-xs" />} /></td>
+                      <td className="border p-1"><FormField control={form.control} name={`subjects.${index}.plusOneAttempts.${attemptIdx}.maxMarks`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs" placeholder="Max" />} /></td>
+                      <td className="border p-1"><FormField control={form.control} name={`subjects.${index}.plusOneAttempts.${attemptIdx}.score`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs" placeholder="Score" />} /></td>
+                      <td className="border p-1"><FormField control={form.control} name={`subjects.${index}.plusOneAttempts.${attemptIdx}.percentage`} render={({ field }) => <Input {...field} type="number" step="0.01" className="h-8 text-xs bg-muted" placeholder="%" readOnly />} /></td>
                     </React.Fragment>
                   ))}
                   {totalPlusTwoFields.map((_, attemptIdx) => (
                     <React.Fragment key={`s${index}-a2-${attemptIdx}`}>
-                      <td className="border p-1"><FormField control={form.control} name={`subjects.${index}.plusTwoAttempts.${attemptIdx}.maxMarks`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs" />} /></td>
-                      <td className="border p-1"><FormField control={form.control} name={`subjects.${index}.plusTwoAttempts.${attemptIdx}.score`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs" />} /></td>
-                      <td className="border p-1"><FormField control={form.control} name={`subjects.${index}.plusTwoAttempts.${attemptIdx}.percentage`} render={({ field }) => <Input {...field} type="number" step="0.01" className="h-8 text-xs" />} /></td>
+                      <td className="border p-1"><FormField control={form.control} name={`subjects.${index}.plusTwoAttempts.${attemptIdx}.maxMarks`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs" placeholder="Max" />} /></td>
+                      <td className="border p-1"><FormField control={form.control} name={`subjects.${index}.plusTwoAttempts.${attemptIdx}.score`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs" placeholder="Score" />} /></td>
+                      <td className="border p-1"><FormField control={form.control} name={`subjects.${index}.plusTwoAttempts.${attemptIdx}.percentage`} render={({ field }) => <Input {...field} type="number" step="0.01" className="h-8 text-xs bg-muted" placeholder="%" readOnly />} /></td>
                     </React.Fragment>
                   ))}
                 </tr>
@@ -184,16 +424,16 @@ export const EducationalQualificationForm = ({
                 <td className="border p-2 text-sm">TOTAL</td>
                 {totalPlusOneFields.map((field, idx) => (
                   <React.Fragment key={`t1-${field.id}`}>
-                    <td className="border p-1"><FormField control={form.control} name={`totalPlusOneAttempts.${idx}.maxMarks`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs font-bold" />} /></td>
-                    <td className="border p-1"><FormField control={form.control} name={`totalPlusOneAttempts.${idx}.score`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs font-bold" />} /></td>
-                    <td className="border p-1"><FormField control={form.control} name={`totalPlusOneAttempts.${idx}.percentage`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs font-bold" />} /></td>
+                    <td className="border p-1"><FormField control={form.control} name={`totalPlusOneAttempts.${idx}.maxMarks`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs font-bold bg-muted" readOnly />} /></td>
+                    <td className="border p-1"><FormField control={form.control} name={`totalPlusOneAttempts.${idx}.score`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs font-bold bg-muted" readOnly />} /></td>
+                    <td className="border p-1"><FormField control={form.control} name={`totalPlusOneAttempts.${idx}.percentage`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs font-bold bg-muted" readOnly />} /></td>
                   </React.Fragment>
                 ))}
                 {totalPlusTwoFields.map((field, idx) => (
                   <React.Fragment key={`t2-${field.id}`}>
-                    <td className="border p-1"><FormField control={form.control} name={`totalPlusTwoAttempts.${idx}.maxMarks`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs font-bold" />} /></td>
-                    <td className="border p-1"><FormField control={form.control} name={`totalPlusTwoAttempts.${idx}.score`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs font-bold" />} /></td>
-                    <td className="border p-1"><FormField control={form.control} name={`totalPlusTwoAttempts.${idx}.percentage`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs font-bold" />} /></td>
+                    <td className="border p-1"><FormField control={form.control} name={`totalPlusTwoAttempts.${idx}.maxMarks`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs font-bold bg-muted" readOnly />} /></td>
+                    <td className="border p-1"><FormField control={form.control} name={`totalPlusTwoAttempts.${idx}.score`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs font-bold bg-muted" readOnly />} /></td>
+                    <td className="border p-1"><FormField control={form.control} name={`totalPlusTwoAttempts.${idx}.percentage`} render={({ field }) => <Input {...field} type="number" className="h-8 text-xs font-bold bg-muted" readOnly />} /></td>
                   </React.Fragment>
                 ))}
               </tr>
@@ -228,6 +468,6 @@ export const EducationalQualificationForm = ({
           <Button type="submit">Save Educational Details</Button>
         </div>
       </form>
-    </Form>
+    </Form >
   );
 };
