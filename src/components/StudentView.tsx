@@ -1,131 +1,3 @@
-// import { useEffect, useState } from "react";
-// import { useParams, useNavigate } from "react-router-dom";
-// import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-// import { Button } from "@/components/ui/button";
-// import { ArrowLeft } from "lucide-react";
-// import { getAllDataByStudentId } from "@/lib/api";
-
-// const SectionCard = ({ title, children }: any) => (
-//   <Card className="mb-6 shadow-md border rounded-xl">
-//     <CardHeader className="bg-primary/5 rounded-t-xl">
-//       <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-//     </CardHeader>
-//     <CardContent className="pt-4">{children}</CardContent>
-//   </Card>
-// );
-
-// const FieldRow = ({ label, value }: any) => (
-//   <div className="grid grid-cols-3 py-2 border-b last:border-b-0">
-//     <p className="font-medium text-gray-500">{label}</p>
-//     <p className="col-span-2 font-semibold">{value || "—"}</p>
-//   </div>
-// );
-
-// const StudentView = () => {
-//   const { studentId } = useParams();
-//   const navigate = useNavigate();
-
-//   const [data, setData] = useState<any>(null);
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     const load = async () => {
-//       try {
-//         const res = await getAllDataByStudentId(studentId!);
-//         setData(res);
-//       } catch (err) {
-//         console.error("Error:", err);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-//     load();
-//   }, [studentId]);
-
-//   if (loading) return <p className="text-center mt-10">Loading student record...</p>;
-//   if (!data || !data.step1) return <p className="text-center mt-10">Student record not found.</p>;
-
-//   const step1 = data.step1;
-
-//   return (
-//     <div className="container mx-auto px-4 py-10 max-w-4xl">
-
-//       {/* Back Button */}
-//       <Button variant="outline" className="mb-6" onClick={() => navigate(-1)}>
-//         <ArrowLeft className="h-4 w-4 mr-2" />
-//         Back
-//       </Button>
-
-//       {/* Student Header Card */}
-//       <Card className="shadow-lg border rounded-xl mb-8">
-//         <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-t-xl">
-//           <CardTitle className="text-xl font-semibold">Student Profile</CardTitle>
-//         </CardHeader>
-
-//         <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-
-//           <div className="space-y-2">
-//             <p><b>Name:</b> {step1.studentName}</p>
-//             <p><b>Student ID:</b> {step1.studentId}</p>
-//             {/* <p><b>Registration No:</b> {step1.regNo || "—"}</p> */}
-//             <p><b>Email:</b> {step1.studentEmail || "—"}</p>
-//             <p><b>Gender:</b> {step1.gender || "—"}</p>
-//             <p><b>Age:</b> {step1.age || "—"}</p>
-//           </div>
-
-//           {step1.photo && (
-//             <div className="flex justify-center">
-//               <img
-//                 src={step1.photo}
-//                 alt="Profile"
-//                 className="w-40 h-40 object-cover rounded-xl border shadow"
-//               />
-//             </div>
-//           )}
-//         </CardContent>
-//       </Card>
-
-//       {/* Step Sections */}
-//       {Object.entries(data).map(([key, value]: any) => {
-//         if (!value || key === "step1") return null; // skip profile (already shown)
-
-//         return (
-//           <SectionCard key={key} title={key.replace("step", "Step ")}>
-//             {Array.isArray(value) ? (
-//               <div className="space-y-4">
-//                 {value.length === 0 ? (
-//                   <p className="text-gray-500">No records.</p>
-//                 ) : (
-//                   value.map((row: any, idx: number) => (
-//                     <Card key={idx} className="border p-4 rounded-lg shadow-sm">
-//                       {Object.entries(row).map(([field, val]: any) => (
-//                         <FieldRow key={field} label={field} value={String(val) || "—"} />
-//                       ))}
-//                     </Card>
-//                   ))
-//                 )}
-//               </div>
-//             ) : typeof value === "object" ? (
-//               <div>
-//                 {Object.keys(value).length === 0 ? (
-//                   <p className="text-gray-500">No data available.</p>
-//                 ) : (
-//                   Object.entries(value).map(([field, val]: any) => (
-//                     <FieldRow key={field} label={field} value={String(val) || "—"} />
-//                   ))
-//                 )}
-//               </div>
-//             ) : (
-//               <p>{String(value)}</p>
-//             )}
-//           </SectionCard>
-//         );
-//       })}
-//     </div>
-//   );
-// };
-
-// export default StudentView;
 
 
 import { useEffect, useState } from "react";
@@ -135,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { getAllDataByStudentId } from "@/lib/api";
+import { EducationalMarksTable } from "@/components/EducationalMarksTable";
 
 const StudentView = () => {
   const { studentId } = useParams();
@@ -205,8 +78,63 @@ const StudentView = () => {
     </div>
   );
 
-  const renderSection = (section: any) => {
+  const renderSection = (section: any, stepId?: string) => {
     if (!section) return <p className="text-muted-foreground">No data available.</p>;
+
+    // Special handling for Educational Qualification (step2)
+    if (stepId === 'step2') {
+      const clean = filterData(section);
+
+      return (
+        <div className="space-y-4">
+          {/* Basic Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {clean.streamGroup && (
+              <div className="p-3 border rounded-md bg-muted">
+                <p className="font-semibold">Stream Group</p>
+                <p className="text-sm text-muted-foreground">{clean.streamGroup}</p>
+              </div>
+            )}
+            {clean.boardOfExamination && (
+              <div className="p-3 border rounded-md bg-muted">
+                <p className="font-semibold">Board Of Examination</p>
+                <p className="text-sm text-muted-foreground">{clean.boardOfExamination}</p>
+              </div>
+            )}
+            {clean.yearOfPassing && (
+              <div className="p-3 border rounded-md bg-muted">
+                <p className="font-semibold">Year Of Passing</p>
+                <p className="text-sm text-muted-foreground">{clean.yearOfPassing}</p>
+              </div>
+            )}
+            {clean.certificateNo && (
+              <div className="p-3 border rounded-md bg-muted">
+                <p className="font-semibold">Certificate No</p>
+                <p className="text-sm text-muted-foreground">{clean.certificateNo}</p>
+              </div>
+            )}
+            {clean.mediumOfInstruction && (
+              <div className="p-3 border rounded-md bg-muted">
+                <p className="font-semibold">Medium Of Instruction</p>
+                <p className="text-sm text-muted-foreground">{clean.mediumOfInstruction}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Marks Table */}
+          {clean.subjects && clean.subjects.length > 0 && (
+            <div className="mt-6">
+              <h4 className="font-semibold mb-3">Marks Details</h4>
+              <EducationalMarksTable
+                subjects={clean.subjects}
+                totalPlusOneAttempts={clean.totalPlusOneAttempts || []}
+                totalPlusTwoAttempts={clean.totalPlusTwoAttempts || []}
+              />
+            </div>
+          )}
+        </div>
+      );
+    }
 
     const clean = filterData(section);
 
@@ -230,7 +158,7 @@ const StudentView = () => {
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-5xl">
-      
+
       {/* Back Button */}
       <Button variant="outline" className="mb-6" onClick={() => navigate(-1)}>
         <ArrowLeft className="h-4 w-4 mr-2" />
@@ -240,11 +168,22 @@ const StudentView = () => {
       {/* TOP PROFILE CARD */}
       <Card className="mb-6 border-2 shadow">
         <CardHeader className="flex flex-row items-center gap-4">
-          <img
-            src={data.step1?.photo || "/placeholder-avatar.png"}
-            alt="profile"
-            className="w-24 h-24 rounded-full border object-cover"
-          />
+          {data.step1?.photoUrl || data.step1?.photo ? (
+            <img
+              src={
+                (data.step1?.photoUrl || data.step1?.photo)?.startsWith('http')
+                  ? (data.step1?.photoUrl || data.step1?.photo)
+                  : `http://localhost:5000${data.step1?.photoUrl || data.step1?.photo}`
+              }
+              alt="profile"
+              className="w-32 h-40 object-cover rounded-sm border-2 border-border shadow-md"
+              style={{ aspectRatio: '3/4' }}
+            />
+          ) : (
+            <div className="w-32 h-40 bg-muted border-2 border-border rounded-sm flex items-center justify-center" style={{ aspectRatio: '3/4' }}>
+              <p className="text-xs text-muted-foreground">No Photo</p>
+            </div>
+          )}
           <div>
             <CardTitle className="text-xl">{data.step1?.studentName}</CardTitle>
             <p className="text-muted-foreground text-sm">Student ID: {studentId}</p>
@@ -255,8 +194,8 @@ const StudentView = () => {
 
       {/* TABS */}
       <Tabs defaultValue="step1" className="w-full">
-   <TabsList
-  className="
+        <TabsList
+          className="
     flex flex-wrap 
     justify-center
     gap-4
@@ -266,14 +205,14 @@ const StudentView = () => {
     bg-muted 
     w-full
     auto-rows-auto
-    min-h-[130px]
+    min-h-[170px]
   "
->
-  {tabs.map(t => (
-    <TabsTrigger
-      key={t.id}
-      value={t.id}
-      className="
+        >
+          {tabs.map(t => (
+            <TabsTrigger
+              key={t.id}
+              value={t.id}
+              className="
         px-4 py-2 
         text-xs md:text-sm 
         rounded-md 
@@ -284,11 +223,11 @@ const StudentView = () => {
         font-medium
         h-auto
       "
-    >
-      {t.title}
-    </TabsTrigger>
-  ))}
-</TabsList>
+            >
+              {t.title}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
 
 
@@ -301,7 +240,7 @@ const StudentView = () => {
                 <CardTitle>{t.title}</CardTitle>
               </CardHeader>
               <CardContent>
-                {renderSection(data[t.id])}
+                {renderSection(data[t.id], t.id)}
               </CardContent>
             </Card>
           </TabsContent>

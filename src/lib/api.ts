@@ -230,14 +230,14 @@ export const apiService = {
   },
 
   // Verification (Array Handling)
-createVerification: async (data: any) => {
-  const payload = {
-    studentId: data.studentId,
-    verifications: data.verifications.map((v: any) => cleanData(v))
-  };
+  createVerification: async (data: any) => {
+    const payload = {
+      studentId: data.studentId,
+      verifications: data.verifications.map((v: any) => cleanData(v))
+    };
 
-  return api.post('/verifications', payload);
-},
+    return api.post('/verifications', payload);
+  },
 
 };
 
@@ -322,9 +322,9 @@ export const getAllDataByStudentId = async (studentId: string) => {
     ]);
 
     return {
-      step1: step1.status === 'fulfilled' && step1.value.data.data 
-  ? { ...step1.value.data.data, photo: step1.value.data.data.photoUrl } 
-  : null,
+      step1: step1.status === 'fulfilled' && step1.value.data.data
+        ? { ...step1.value.data.data, photo: step1.value.data.data.photoUrl }
+        : null,
       step2: step2.status === 'fulfilled' ? step2.value.data.data : null,
       step3: step3.status === 'fulfilled' ? step3.value.data.data : null,
       step4: step4.status === 'fulfilled' ? step4.value.data.data : null,
@@ -361,7 +361,11 @@ export const getAllDataByStudentId = async (studentId: string) => {
 // Now uses POST for create, relies on backend upsert logic
 export const saveDataToBackend = async (step: number, data: any) => {
   switch (step) {
-    case 1: return apiService.createPersonalProfile(data);
+    case 1: {
+      // Extract photoFile from data if it exists
+      const { photoFile, ...restData } = data;
+      return apiService.createPersonalProfile(restData, photoFile);
+    }
     case 2: return apiService.createEducationalQualification(data);
     case 3: return apiService.createAdmissionDetail(data);
     case 4: return apiService.createAttendanceRecord(data);

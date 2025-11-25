@@ -31,8 +31,10 @@ const personalProfileSchema = z.object({
   ociNumber: z.string().optional(),
   emisNo: z.string().min(1, "EMIS number is required"),
   mediumOfInstruction: z.string().min(1, "Medium of instruction is required"),
-  photo: z.string().optional(), // Photo URL from backend
-});
+  photo: z.union([z.string(), z.null(), z.undefined()]).optional(), // Photo URL from backend - can be string, null, or undefined
+  id: z.number().optional(), // Database ID from backend
+  photoUrl: z.string().optional().nullable(), // Alternative photo field name from backend
+}).passthrough(); // Allow extra fields from backend without validation errors
 
 type PersonalProfileFormData = z.infer<typeof personalProfileSchema>;
 
@@ -50,9 +52,23 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
   const form = useForm<PersonalProfileFormData>({
     resolver: zodResolver(personalProfileSchema),
     defaultValues: defaultValues || {},
+    mode: 'onSubmit', // Only validate on submit
   });
 
-  // Load saved photo from defaultValues when component mounts
+  // Log form state for debugging
+  useEffect(() => {
+    console.log('PersonalProfileForm mounted/updated');
+    console.log('defaultValues:', defaultValues);
+    console.log('form.formState.isSubmitting:', form.formState.isSubmitting);
+    console.log('form.formState.isValid:', form.formState.isValid);
+    console.log('form.formState.errors:', form.formState.errors);
+    
+    // Log all form values
+    const values = form.getValues();
+    console.log('Current form values:', values);
+  }, [defaultValues, form.formState.isSubmitting, form.formState.isValid, form.formState.errors]);
+
+  // Load saved photo from defaultValues when component mounts or defaultValues changes
   useEffect(() => {
     console.log('PersonalProfileForm defaultValues:', defaultValues);
 
@@ -67,10 +83,14 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
         : `http://localhost:5000${photoUrl}`;
       console.log('Setting photo preview to:', fullPhotoUrl);
       setPhotoPreview(fullPhotoUrl);
+      // Clear photoFile since we're showing a saved photo from backend
+      setPhotoFile(null);
     } else {
       console.log('No photo URL found in defaultValues');
+      setPhotoPreview(null);
+      setPhotoFile(null);
     }
-  }, [defaultValues?.photo, (defaultValues as any)?.photoUrl]);
+  }, [defaultValues]);
 
   useEffect(() => {
     const subscription = form.watch((values) => {
@@ -127,18 +147,38 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
 
   // Handle form submission with photo
   const handleFormSubmit = (data: PersonalProfileFormData) => {
+    console.log('✅ PersonalProfileForm handleFormSubmit called - VALIDATION PASSED!');
+    console.log('Form data:', data);
+    console.log('Photo file:', photoFile);
+    console.log('Photo preview:', photoPreview);
+    
     // If photo was removed (no preview and no file), send empty photoUrl to trigger deletion
     const submissionData = {
       ...data,
       photoFile,
       photoUrl: (!photoPreview && !photoFile) ? '' : data.photo // Empty string signals deletion
     };
+    
+    console.log('Calling onSubmit with:', submissionData);
     onSubmit(submissionData);
+  };
+
+  // Handle form errors
+  const handleFormError = (errors: any) => {
+    console.error('❌ Form validation FAILED!');
+    console.error('Validation errors:', errors);
+    
+    // Log detailed error information
+    Object.keys(errors).forEach(fieldName => {
+      console.error(`Field "${fieldName}" error:`, errors[fieldName]);
+      console.error(`  - Type: ${errors[fieldName].type}`);
+      console.error(`  - Message: ${errors[fieldName].message}`);
+    });
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleFormSubmit, handleFormError)} className="space-y-6">
         {/* Photo Upload Section - Passport Size */}
         <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed border-border rounded-lg bg-muted/20">
           <div className="relative">

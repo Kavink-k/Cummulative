@@ -18,8 +18,7 @@ import { CourseCompletionForm } from "@/components/CourseCompletionForm";
 import { VerificationForm } from "@/components/VerificationForm";
 import { toast } from "sonner";
 import { BookOpen, ChevronLeft, ChevronRight, CheckCircle2, ArrowLeft, Save, Loader2 } from "lucide-react";
-import { sampleStudents } from "@/data/sampleStudents";
-import { getStudent, updateStudent, upsertStudent } from "@/lib/data";
+import { getAllDataByStudentId, saveDataToBackend } from "@/lib/api";
 import { StudentInfoDisplay } from "@/components/StudentInfoDisplay";
 
 const steps = [
@@ -44,25 +43,71 @@ const StudentEdit = () => {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [stepProgress, setStepProgress] = useState<Record<number, number>>({});
   const [currentDefaults, setCurrentDefaults] = useState<Record<string, any>>({});
-
-  const student = sampleStudents.find(s => s.id === studentId) || getStudent(studentId || "");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [studentInfo, setStudentInfo] = useState<any>(null);
 
   useEffect(() => {
-    if (student) {
-      setFormData(student.steps);
-      setCurrentDefaults(student.steps);
-      // Calculate initial progress
-      const progress: Record<number, number> = {};
-      for (let i = 1; i <= 12; i++) {
-        if (student.steps[`step${i}` as keyof typeof student.steps]) {
-          progress[i] = 100;
-        }
+    const fetchStudentData = async () => {
+      if (!studentId) {
+        setError("No student ID provided");
+        setLoading(false);
+        return;
       }
-      setStepProgress(progress);
-    }
-  }, [student]);
 
-  if (!student) {
+      try {
+        setLoading(true);
+        const data = await getAllDataByStudentId(studentId);
+
+        // Set student info from step1
+        if (data.step1) {
+          setStudentInfo({
+            id: studentId,
+            name: data.step1.studentName || "Unknown",
+            regNo: data.step1.regNo || studentId,
+            email: data.step1.studentEmail || "",
+          });
+        }
+
+        // Set form data
+        setFormData(data);
+        setCurrentDefaults(data);
+
+        // Calculate initial progress
+        const progress: Record<number, number> = {};
+        for (let i = 1; i <= 12; i++) {
+          if (data[`step${i}`]) {
+            progress[i] = 100;
+          }
+        }
+        setStepProgress(progress);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching student data:", err);
+        setError("Failed to load student data");
+        setLoading(false);
+      }
+    };
+
+    fetchStudentData();
+  }, [studentId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-muted-foreground">Loading student data...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error || !studentInfo) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md">
@@ -70,7 +115,9 @@ const StudentEdit = () => {
             <CardTitle>Student Not Found</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4">The student record you're looking for doesn't exist.</p>
+            <p className="text-muted-foreground mb-4">
+              {error || "The student record you're looking for doesn't exist."}
+            </p>
             <Button onClick={() => navigate("/dashboard")}>Back to Dashboard</Button>
           </CardContent>
         </Card>
@@ -94,31 +141,32 @@ const StudentEdit = () => {
     });
   };
 
-  const handleFormSubmit = (stepData: any) => {
-    const updated = { ...formData, [`step${currentStep}`]: stepData };
-    setFormData(updated);
-    setCurrentDefaults(updated);
-    setStepProgress((prev) => ({ ...prev, [currentStep]: 100 }));
+  const handleFormSubmit = async (stepData: any) => {
+    try {
+      const updated = { ...formData, [`step${currentStep}`]: stepData };
+      setFormData(updated);
+      setCurrentDefaults(updated);
+      setStepProgress((prev) => ({ ...prev, [currentStep]: 100 }));
 
-    // Save to storage
-    upsertStudent({
-      id: student.id,
-      name: student.name,
-      email: student.email,
-      regNo: student.regNo,
-      steps: updated,
-    });
+      // Save to backend
+      await saveDataToBackend(currentStep, stepData);
 
-    toast.success("Section updated successfully!");
+      toast.success("Section updated successfully!");
 
-    if (currentStep < steps.length) {
-      handleNext();
-    } else {
-      toast.success("All changes saved!", {
-        description: "Student record has been updated.",
-        icon: <CheckCircle2 className="h-5 w-5" />,
+      if (currentStep < steps.length) {
+        handleNext();
+      } else {
+        toast.success("All changes saved!", {
+          description: "Student record has been updated.",
+          icon: <CheckCircle2 className="h-5 w-5" />,
+        });
+        navigate(`/students/${studentId}`);
+      }
+    } catch (error) {
+      console.error("Error saving data:", error);
+      toast.error("Failed to save changes", {
+        description: "Please try again.",
       });
-      navigate(`/students/${studentId}`);
     }
   };
 
@@ -200,7 +248,7 @@ const StudentEdit = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">Edit Student Record</h1>
-                <p className="text-sm text-muted-foreground">{student.name} - {student.regNo}</p>
+                <p className="text-sm text-muted-foreground">{studentInfo.name} - {studentInfo.regNo}</p>
               </div>
             </div>
 

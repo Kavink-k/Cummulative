@@ -1,15 +1,58 @@
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Printer } from "lucide-react";
-import { sampleStudents } from "@/data/sampleStudents";
-import { getStudent } from "@/lib/data";
+import { ArrowLeft, Printer, Loader2 } from "lucide-react";
+import { getAllDataByStudentId } from "@/lib/api";
+import { EducationalMarksPrintTable } from "@/components/EducationalMarksPrintTable";
 import "./StudentPrint.css";
 
 const StudentPrint = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const navigate = useNavigate();
+  const [student, setStudent] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const student = sampleStudents.find(s => s.id === studentId) || getStudent(studentId || "");
+  useEffect(() => {
+    const fetchStudentData = async () => {
+      if (!studentId) {
+        navigate("/dashboard");
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const data = await getAllDataByStudentId(studentId);
+
+        // Construct student object from backend data
+        const studentData = {
+          id: studentId,
+          name: data.step1?.studentName || "Unknown",
+          regNo: data.step1?.regNo || studentId,
+          email: data.step1?.studentEmail || "",
+          steps: data,
+        };
+
+        setStudent(studentData);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching student data:", err);
+        navigate("/dashboard");
+      }
+    };
+
+    fetchStudentData();
+  }, [studentId, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading student data for printing...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!student) {
     return (
@@ -55,8 +98,8 @@ const StudentPrint = () => {
             </div>
             {student.steps.step1?.photoUrl && (
               <div className="student-photo">
-                <img 
-                  src={student.steps.step1.photoUrl} 
+                <img
+                  src={student.steps.step1.photoUrl.startsWith('http') ? student.steps.step1.photoUrl : `http://localhost:5000${student.steps.step1.photoUrl}`}
                   alt={student.name}
                 />
               </div>
@@ -126,12 +169,6 @@ const StudentPrint = () => {
                   </tr>
                 </tbody>
               </table>
-              <div className="profile-photo">
-                <img 
-                  src={student.steps.step1?.photoUrl || '/images/default-profile.svg'} 
-                  alt={student.name}
-                />
-              </div>
             </div>
           </div>
         )}
@@ -139,6 +176,8 @@ const StudentPrint = () => {
         {student.steps.step2 && (
           <div className="print-section">
             <h3 className="section-title">2. EDUCATIONAL QUALIFICATION</h3>
+
+            {/* Basic Information */}
             <table className="info-table">
               <tbody>
                 <tr>
@@ -162,31 +201,17 @@ const StudentPrint = () => {
               </tbody>
             </table>
 
-            <h4 className="subsection-title">Academic Performance</h4>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Class</th>
-                  <th>Total Max Marks</th>
-                  <th>Total Score</th>
-                  <th>Percentage</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Plus One</td>
-                  <td>{student.steps.step2.totalPlusOneMaxMarks}</td>
-                  <td>{student.steps.step2.totalPlusOneScore}</td>
-                  <td>{student.steps.step2.totalPlusOnePercentage}%</td>
-                </tr>
-                <tr>
-                  <td>Plus Two</td>
-                  <td>{student.steps.step2.totalPlusTwoMaxMarks}</td>
-                  <td>{student.steps.step2.totalPlusTwoScore}</td>
-                  <td>{student.steps.step2.totalPlusTwoPercentage}%</td>
-                </tr>
-              </tbody>
-            </table>
+            {/* Marks Table */}
+            {student.steps.step2.subjects && student.steps.step2.subjects.length > 0 && (
+              <>
+                <h4 className="subsection-title">Academic Performance</h4>
+                <EducationalMarksPrintTable
+                  subjects={student.steps.step2.subjects}
+                  totalPlusOneAttempts={student.steps.step2.totalPlusOneAttempts || []}
+                  totalPlusTwoAttempts={student.steps.step2.totalPlusTwoAttempts || []}
+                />
+              </>
+            )}
           </div>
         )}
 
@@ -288,10 +313,10 @@ const StudentPrint = () => {
 
         <div className="print-footer">
           <p>This is a computer-generated document. No signature is required.</p>
-          <p>Generated on: {new Date().toLocaleDateString("en-IN", { 
-            year: "numeric", 
-            month: "long", 
-            day: "numeric" 
+          <p>Generated on: {new Date().toLocaleDateString("en-IN", {
+            year: "numeric",
+            month: "long",
+            day: "numeric"
           })}</p>
         </div>
       </div>

@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormStepper } from "@/components/FormStepper";
@@ -16,7 +15,7 @@ import { AdditionalCoursesForm } from "@/components/AdditionalCoursesForm";
 import { CourseCompletionForm } from "@/components/CourseCompletionForm";
 import { VerificationForm } from "@/components/VerificationForm";
 import { toast } from "sonner";
-import { BookOpen, ChevronLeft, ChevronRight, Save, CheckCircle2, Trash2, Database } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Save, CheckCircle2, Trash2, Database, FilePlus } from "lucide-react";
 import { saveDataToBackend, getAllDataByStudentId } from "@/lib/api";
 
 const steps = [
@@ -78,11 +77,20 @@ const Index = () => {
   }, [currentStep]);
 
   // 3. Fetch data from backend when studentId is available
+  // Use a ref to track if we've already fetched for this studentId
+  const fetchedStudentIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     const fetchBackendData = async () => {
       const step1Data = formData.step1;
       if (!step1Data?.studentId) {
         console.log('No studentId found, skipping backend fetch');
+        return;
+      }
+
+      // Skip if we've already fetched for this studentId
+      if (fetchedStudentIdRef.current === step1Data.studentId) {
+        console.log('Already fetched data for this studentId, skipping');
         return;
       }
 
@@ -130,6 +138,9 @@ const Index = () => {
           });
           setStepProgress(prev => ({ ...prev, ...newProgress }));
         }
+
+        // Mark this studentId as fetched
+        fetchedStudentIdRef.current = step1Data.studentId;
       } catch (error) {
         console.error('Error fetching backend data:', error);
         // Don't show error toast, just log it - data might not exist yet
@@ -157,8 +168,9 @@ const Index = () => {
   const handleFormSubmit = async (stepData: any) => {
     setIsSaving(true);
 
-    // Update Local State
-    setFormData(prev => ({ ...prev, [`step${currentStep}`]: stepData }));
+    // Update Local State immediately with the new data
+    const updatedFormData = { ...formData, [`step${currentStep}`]: stepData };
+    setFormData(updatedFormData);
     setStepProgress(prev => ({ ...prev, [currentStep]: 100 }));
 
     try {
@@ -202,17 +214,15 @@ const Index = () => {
   };
 
   const handleClearData = () => {
-    toast('Are you sure you want to reset all form  data?', {
-      description: 'This will clear all form data and cannot be undone.',
+    toast('Reset all form data?', {
+      description: 'This will clear all form data (saved and unsaved). This cannot be undone.',
       action: {
         label: 'Reset',
         onClick: () => {
           localStorage.removeItem(STORAGE_KEY);
           localStorage.removeItem(STEP_KEY);
-          setFormData({});
-          setCurrentStep(1);
-          setStepProgress({});
-          toast.success('All data has been reset');
+          // Reload page immediately to clear all form state
+          window.location.reload();
         },
       },
       cancel: {
@@ -224,9 +234,41 @@ const Index = () => {
     });
   };
 
+  const handleNewForm = () => {
+    toast('Start a new form?', {
+      description: 'This will clear all current data (saved and unsaved) to start fresh.',
+      action: {
+        label: 'New Form',
+        onClick: () => {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(STEP_KEY);
+          // Reload page immediately to clear all form state
+          window.location.reload();
+        },
+      },
+      cancel: {
+        label: 'Cancel',
+        onClick: () => toast.info('Cancelled'),
+      },
+    });
+  };
+
   const handleSaveDraft = () => {
-    // Data is already in localStorage via useEffect, just notify user
-    toast.info("Draft saved locally!");
+    const hasData = Object.keys(formData).length > 0;
+
+    if (!hasData) {
+      toast.info('No data to save as draft');
+      return;
+    }
+
+    // Data is already auto-saved to localStorage
+    const studentId = formData.step1?.studentId || 'Unknown';
+    const completedSteps = Object.keys(formData).length;
+
+    toast.success('Draft saved successfully!', {
+      description: `Student ID: ${studentId} | ${completedSteps} section(s) saved`,
+      icon: <Save className="h-4 w-4" />,
+    });
   };
 
   const handleProgressChange = (step: number) => (progress: number) => {
@@ -249,10 +291,12 @@ const Index = () => {
   };
 
   const renderCurrentForm = () => {
+    const defaultValues = getStepDefaultValues(currentStep);
     const commonProps = {
       onSubmit: handleFormSubmit,
-      defaultValues: getStepDefaultValues(currentStep),
+      defaultValues: defaultValues,
       onProgressChange: handleProgressChange(currentStep),
+      key: `step-${currentStep}-${JSON.stringify(defaultValues)}`, // Force remount when data changes
     };
 
     switch (currentStep) {
@@ -286,11 +330,29 @@ const Index = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleClearData} title="Reset">
-              <Trash2 className="h-5 w-5 hover:text-destructive" />
+            <Button
+              variant="outline"
+              onClick={handleNewForm}
+              title="Start a new student form"
+            >
+              <FilePlus className="h-4 w-4 mr-2" />
+              New Form
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleClearData}
+              title="Reset all form data"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
               Reset
             </Button>
-            <Button variant="outline" onClick={handleSaveDraft}>
+
+            <Button
+              variant="outline"
+              onClick={handleSaveDraft}
+              title="Save current progress as draft"
+            >
               <Save className="h-4 w-4 mr-2" />
               Draft
             </Button>
@@ -327,14 +389,25 @@ const Index = () => {
                 <ChevronLeft className="h-4 w-4 mr-2" /> Previous
               </Button>
 
-              {/* This button finds the first form element on the page and dispatches a submit event.
+              {/* This button finds the first form element on the page and triggers submission.
                   This allows the button to live outside the form component while still controlling it.
               */}
               <Button
                 onClick={() => {
+                  console.log('Save & Next button clicked, currentStep:', currentStep);
                   const form = document.querySelector("form");
+                  console.log('Form element found:', form);
+                  
                   if (form) {
-                    form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+                    // Use requestSubmit() to properly trigger form validation
+                    if (typeof form.requestSubmit === 'function') {
+                      console.log('Using requestSubmit()');
+                      form.requestSubmit();
+                    } else {
+                      // Fallback for older browsers
+                      console.log('Using dispatchEvent fallback');
+                      form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+                    }
                   } else {
                     console.error("No form found to submit");
                   }
