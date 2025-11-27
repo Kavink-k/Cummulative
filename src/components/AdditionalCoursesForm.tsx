@@ -8,16 +8,18 @@ import { Plus, X } from "lucide-react";
 import { useEffect } from "react";
 
 const courseSchema = z.object({
-  id: z.number().optional(), // Database ID for updates
-  courseId: z.string(),
-  courseName: z.string(),
-  from: z.string(),
-  to: z.string(),
+  id: z.number().optional(),          // DB ID (keep optional)
+  courseId: z.string().min(1),        // Auto-generated → must exist, but has no error message
+  courseName: z.string().min(1, "Course name is required"),
+  from: z.string().min(1, "Start date is required"),
+  to: z.string().min(1, "End date is required"),
 });
 
 const additionalCoursesSchema = z.object({
-  studentId: z.string().optional(),
-  courses: z.array(courseSchema),
+  studentId: z.string().min(1, "Student ID is required"),
+  courses: z
+    .array(courseSchema)
+    .min(1, "At least one course must be added"),
 });
 
 type AdditionalCoursesFormData = z.infer<typeof additionalCoursesSchema>;

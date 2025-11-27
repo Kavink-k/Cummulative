@@ -1,9 +1,10 @@
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem,FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 const clinicalRecordSchema = z.object({
   semester: z.string(),
@@ -11,8 +12,14 @@ const clinicalRecordSchema = z.object({
   credits: z.string(),
   prescribedWeeks: z.string(),
   prescribedHours: z.string(),
-  completedHours: z.string().optional(),
-  hospital: z.string().optional(),
+  completedHours: z
+  .string()
+  .min(1, "")
+  .regex(/^\d+$/, "Completed hours must be a valid number"),
+
+hospital: z
+  .string()
+  .min(2, ""),
 });
 
 const clinicalExperienceSchema = z.object({
@@ -122,15 +129,28 @@ interface ClinicalExperienceFormProps {
 }
 
 export const ClinicalExperienceForm = ({ onSubmit, defaultValues, onProgressChange }: ClinicalExperienceFormProps) => {
-  const form = useForm<ClinicalExperienceFormData>({
-    resolver: zodResolver(clinicalExperienceSchema),
-    defaultValues: {
-      studentId: defaultValues?.studentId || "",
-      records: (defaultValues?.records?.length ?? 0) > 0
-        ? defaultValues!.records
-        : allClinicalRecords.map(r => ({ ...r, completedHours: "", hospital: "" })),
-    },
-  });
+ const form = useForm<ClinicalExperienceFormData>({
+  resolver: zodResolver(clinicalExperienceSchema),
+
+  // 🔥 Real-time validation → red border disappears immediately when fixed
+  mode: "onChange",
+  reValidateMode: "onChange",
+
+  defaultValues: {
+    studentId: defaultValues?.studentId || "",
+
+    // If editing existing data → load it
+    // If new form → load default clinical records + blank user fields
+    records:
+      defaultValues?.records?.length && defaultValues.records.length > 0
+        ? defaultValues.records
+        : allClinicalRecords.map((r) => ({
+            ...r,
+            completedHours: "",
+            hospital: "",
+          })),
+  },
+});
 
   const { fields } = useFieldArray({
     control: form.control,
@@ -231,39 +251,59 @@ export const ClinicalExperienceForm = ({ onSubmit, defaultValues, onProgressChan
                     <td className="border p-2 text-center">{record.prescribedWeeks}</td>
                     <td className="border p-2 text-center">{record.prescribedHours}</td>
                     <td className="border p-2">
-                      <FormField
-                        control={form.control}
-                        name={`records.${record.index}.completedHours`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                {...field}
-                                placeholder="Hours"
-                                className="h-9"
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
+                     {/* Completed Hours (with red border on error) */}
+<FormField
+  control={form.control}
+  name={`records.${record.index}.completedHours`}
+  render={({ field }) => {
+    const fieldError = form.formState.errors.records?.[record.index]?.completedHours;
+    return (
+      <FormItem>
+        <FormControl>
+          <Input
+            type="number"
+            {...field}
+            placeholder="Hours"
+            className={cn(
+              "h-9",
+              fieldError && "border-red-500 focus-visible:ring-red-500"
+            )}
+            aria-invalid={!!fieldError}
+          />
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    );
+  }}
+/>
+
                     </td>
                     <td className="border p-2">
-                      <FormField
-                        control={form.control}
-                        name={`records.${record.index}.hospital`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder="Hospital name"
-                                className="h-9"
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
+                     {/* Hospital / Community (with red border on error) */}
+<FormField
+  control={form.control}
+  name={`records.${record.index}.hospital`}
+  render={({ field }) => {
+    const fieldError = form.formState.errors.records?.[record.index]?.hospital;
+    return (
+      <FormItem>
+        <FormControl>
+          <Input
+            {...field}
+            placeholder="Hospital name"
+            className={cn(
+              "h-9",
+              fieldError && "border-red-500 focus-visible:ring-red-500"
+            )}
+            aria-invalid={!!fieldError}
+          />
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    );
+  }}
+/>
+
                     </td>
                   </tr>
                 ));

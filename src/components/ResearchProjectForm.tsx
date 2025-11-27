@@ -9,16 +9,19 @@ import { Plus, X } from "lucide-react";
 import { useEffect } from "react";
 
 const projectSchema = z.object({
-  semester: z.string(),
-  areaOfStudy: z.string(),
-  type: z.string(),
-  projectTitle: z.string(),
+  semester: z.string().min(1, "Semester is required"),
+  areaOfStudy: z.string().min(1, "Area of study is required"),
+  type: z.string().min(1, "Group / Individual is required"),
+  projectTitle: z.string().min(1, "Project title is required"),
 });
 
 const researchProjectSchema = z.object({
-  studentId: z.string().optional(),
-  projects: z.array(projectSchema),
+  studentId: z.string().min(1, "Student ID is required"),
+  projects: z
+    .array(projectSchema)
+    .min(1, "At least one research project is required"),
 });
+
 
 type ResearchProjectFormData = z.infer<typeof researchProjectSchema>;
 

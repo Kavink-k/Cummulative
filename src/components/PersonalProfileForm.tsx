@@ -465,18 +465,31 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
-            control={form.control}
-            name="contactMobile"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Contact Mobile Number</FormLabel>
-                <FormControl>
-                  <Input type="tel" placeholder="9876543210" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+  control={form.control}
+  name="contactMobile"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Contact Mobile Number</FormLabel>
+      <FormControl>
+        <Input
+          type="text"
+          inputMode="numeric"
+          maxLength={10}
+          pattern="[0-9]*"
+          placeholder="9876543210"
+          {...field}
+          onInput={(e) => {
+            const input = e.target as HTMLInputElement;
+            input.value = input.value.replace(/\D/g, ""); // remove non-numeric
+            field.onChange(input.value); // update RHF properly
+          }}
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+
 
           <FormField
             control={form.control}
@@ -499,7 +512,11 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
               <FormItem>
                 <FormLabel>Student Aadhar Number</FormLabel>
                 <FormControl>
-                  <Input placeholder="123456789012" maxLength={12} {...field} />
+                  <Input placeholder="123456789012" maxLength={12} {...field}  onInput={(e) => {
+            const input = e.target as HTMLInputElement;
+            input.value = input.value.replace(/\D/g, ""); // remove non-numeric
+            field.onChange(input.value); // update RHF properly
+          }}/>
                 </FormControl>
                 <FormMessage />
               </FormItem>

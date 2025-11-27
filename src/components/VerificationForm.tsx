@@ -1,20 +1,21 @@
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem,FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-
+import {cn} from "@/lib/utils";
 const verificationSchema = z.object({
   semester: z.string(),
-  classTeacherName: z.string(),
-  teacherSignature: z.string(),
-  principalSignature: z.string(),
+  classTeacherName: z.string().min(1, ""),
+  teacherSignature: z.string().min(1, ""),
+  principalSignature: z.string().min(1, ""),
 });
 
 const verificationFormSchema = z.object({
-  studentId: z.string().optional(),
+  studentId: z.string().min(1, "Student ID is required"),
   verifications: z.array(verificationSchema),
 });
+
 
 type VerificationFormData = z.infer<typeof verificationFormSchema>;
 
@@ -62,65 +63,96 @@ export const VerificationForm = ({ onSubmit, defaultValues, onProgressChange }: 
               </tr>
             </thead>
             <tbody>
-              {fields.map((field, index) => (
-                <tr key={field.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="border border-border p-3 font-medium">
-                    {field.semester}
-                  </td>
-                  <td className="border border-border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`verifications.${index}.classTeacherName`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              placeholder="Enter teacher name"
-                              className="border-0 focus-visible:ring-1"
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                  <td className="border border-border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`verifications.${index}.teacherSignature`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="date"
-                              className="border-0 focus-visible:ring-1"
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                  <td className="border border-border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`verifications.${index}.principalSignature`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="date"
-                              className="border-0 focus-visible:ring-1"
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+  {fields.map((field, index) => (
+    <tr key={field.id} className="hover:bg-muted/30 transition-colors">
+
+      {/* Semester (readonly) */}
+      <td className="border border-border p-3 font-medium">
+        {field.semester}
+        {/* Hidden field so form submits the semester */}
+        <input
+          type="hidden"
+          {...form.register(`verifications.${index}.semester`)}
+          value={field.semester}
+        />
+      </td>
+
+      {/* Class Teacher Name */}
+      <td className="border border-border p-2">
+        <FormField
+          control={form.control}
+          name={`verifications.${index}.classTeacherName`}
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Input
+                  {...field}
+                  placeholder="Enter teacher name"
+                  className={cn(
+                    "border-0 h-9 focus-visible:ring-1",
+                    form.formState.errors?.verifications?.[index]?.classTeacherName &&
+                      "border border-red-500"
+                  )}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </td>
+
+      {/* Teacher Signature Date */}
+      <td className="border border-border p-2">
+        <FormField
+          control={form.control}
+          name={`verifications.${index}.teacherSignature`}
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Input
+                  type="date"
+                  {...field}
+                  className={cn(
+                    "border-0 h-9 focus-visible:ring-1",
+                    form.formState.errors?.verifications?.[index]?.teacherSignature &&
+                      "border border-red-500"
+                  )}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </td>
+
+      {/* Principal Signature Date */}
+      <td className="border border-border p-2">
+        <FormField
+          control={form.control}
+          name={`verifications.${index}.principalSignature`}
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Input
+                  type="date"
+                  {...field}
+                  className={cn(
+                    "border-0 h-9 focus-visible:ring-1",
+                    form.formState.errors?.verifications?.[index]?.principalSignature &&
+                      "border border-red-500"
+                  )}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </td>
+
+    </tr>
+  ))}
+</tbody>
+
           </table>
         </div>
 

@@ -2,18 +2,19 @@ import { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem,FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const courseCompletionSchema = z.object({
   courseName: z.string(),
-  certificateNumber: z.string(),
-  dateOfIssue: z.string(),
+  certificateNumber: z.string().min(1, ""),
+  dateOfIssue: z.string().min(1, ""),
 });
 
 const courseCompletionFormSchema = z.object({
-  studentId: z.string().optional(),
+  studentId: z.string().min(1, "Student ID is required"),
   completions: z.array(courseCompletionSchema),
 });
 
@@ -89,38 +90,63 @@ export const CourseCompletionForm = ({ onSubmit, defaultValues, onProgressChange
               </tr>
             </thead>
             <tbody>
-              {fields.map((field, index) => (
-                <tr key={field.id} className="hover:bg-muted/50">
-                  <td className="border p-2 font-medium">{field.courseName}</td>
-                  <td className="border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`completions.${index}.certificateNumber`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input {...field} placeholder="Certificate number" className="h-9" />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <FormField
-                      control={form.control}
-                      name={`completions.${index}.dateOfIssue`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input type="date" {...field} className="h-9" />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+  {fields.map((field, index) => (
+    <tr key={field.id} className="hover:bg-muted/50">
+
+      {/* Course Name (readonly) */}
+      <td className="border p-2 font-medium">{field.courseName}</td>
+
+      {/* Certificate Number */}
+      <td className="border p-2">
+        <FormField
+          control={form.control}
+          name={`completions.${index}.certificateNumber`}
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Input
+                  {...field}
+                  placeholder="Certificate number"
+                  className={cn(
+                    "h-9",
+                    form.formState.errors?.completions?.[index]?.certificateNumber &&
+                      "border-red-500"
+                  )}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </td>
+
+      {/* Date of Issue */}
+      <td className="border p-2">
+        <FormField
+          control={form.control}
+          name={`completions.${index}.dateOfIssue`}
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Input
+                  type="date"
+                  {...field}
+                  className={cn(
+                    "h-9",
+                    form.formState.errors?.completions?.[index]?.dateOfIssue &&
+                      "border-red-500"
+                  )}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </td>
+    </tr>
+  ))}
+</tbody>
+
           </table>
         </div>
         <p className="text-sm text-muted-foreground italic">

@@ -100,23 +100,38 @@ export const apiService = {
     }
     return api.post('/activity-participation', cleanData(data));
   },
+  // Course Instruction - Updated to handle Array
+  // createCourseInstruction: async (data: any) => {
+  //   if (data.courses && Array.isArray(data.courses)) {
+  //     const promises = data.courses.map((courseData: any) => {
+  //       const payload = {
+  //         ...cleanData(courseData),
+  //         studentId: data.studentId,
+  //         semester: data.semester // Important: semester is top-level here
+  //       };
+  //       return api.post('/course-instructions', payload);
+  //     });
+  //     return Promise.all(promises);
+  //   }
+  //   return api.post('/course-instructions', cleanData(data));
+  // },
+// Course Instruction - Send full array in ONE request
+createCourseInstruction: async (data: any) => {
+  return api.post('/course-instructions', {
+    studentId: data.studentId,
+    semester: data.semester,
+    courses: data.courses.map((course: any) => cleanData(course))
+  });
+},
 
   // Course Instruction - Updated to handle Array
-  createCourseInstruction: async (data: any) => {
-    if (data.courses && Array.isArray(data.courses)) {
-      const promises = data.courses.map((courseData: any) => {
-        const payload = {
-          ...cleanData(courseData),
-          studentId: data.studentId,
-          semester: data.semester // Important: semester is top-level here
-        };
-        return api.post('/course-instructions', payload);
-      });
-      return Promise.all(promises);
-    }
-    return api.post('/course-instructions', cleanData(data));
-  },
-
+//  createCourseInstruction: async (data: any) => {
+//   return api.post('/course-instructions', {
+//     studentId: data.studentId,
+//     semester: data.semester,
+//     courses: data.courses.map((course: any) => cleanData(course))
+//   });
+// },
   // Observational Visits (Array Handling)
   createObservationalVisit: async (data: any) => {
     if (data.visits && Array.isArray(data.visits)) {

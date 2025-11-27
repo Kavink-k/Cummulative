@@ -144,7 +144,6 @@ const StudentView = () => {
           {clean.map((row, i) => (
             <Card key={i}>
               <CardHeader>
-                <CardTitle>Entry {i + 1}</CardTitle>
               </CardHeader>
               <CardContent>{renderObject(row)}</CardContent>
             </Card>
