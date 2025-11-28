@@ -1,3 +1,509 @@
+// import { useState, useEffect } from "react";
+// import { useParams, useNavigate } from "react-router-dom";
+// import { Button } from "@/components/ui/button";
+// import { ArrowLeft, Printer, Loader2 } from "lucide-react";
+// import { getAllDataByStudentId } from "@/lib/api";
+// import { EducationalMarksPrintTable } from "@/components/EducationalMarksPrintTable";
+// import "./StudentPrint.css";
+
+// const StudentPrint = () => {
+//   const { studentId } = useParams<{ studentId: string }>();
+//   const navigate = useNavigate();
+//   const [student, setStudent] = useState<any>(null);
+//   const [loading, setLoading] = useState(true);
+
+//   useEffect(() => {
+//     const fetchStudentData = async () => {
+//       if (!studentId) return navigate("/dashboard");
+
+//       try {
+//         setLoading(true);
+//         const data = await getAllDataByStudentId(studentId);
+
+//         setStudent({
+//           id: studentId,
+//           name: data.step1?.studentName || "Unknown",
+//           regNo: data.step1?.regNo || studentId,
+//           photoUrl: data.step1?.photoUrl || data.step1?.photo,
+//           steps: data,
+//         });
+//       } catch (err) {
+//         console.error(err);
+//         navigate("/dashboard");
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchStudentData();
+//   }, [studentId, navigate]);
+
+//   const formatDate = (dateStr: string | null) => {
+//     if (!dateStr) return "-";
+//     const date = new Date(dateStr);
+//     return isNaN(date.getTime()) ? "-" : date.toLocaleDateString("en-GB");
+//   };
+
+//   const handlePrint = () => window.print();
+
+//   if (loading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-10 w-10 animate-spin" /></div>;
+//   if (!student) return <div className="text-center py-20"><h2>Student Not Found</h2><Button onClick={() => navigate("/dashboard")}>Back</Button></div>;
+
+//   // Helper to safely extract array from step12
+//   const getVerifications = () => {
+//     const step12 = student.steps.step12;
+//     if (Array.isArray(step12)) return step12;
+//     if (step12?.verifications && Array.isArray(step12.verifications)) return step12.verifications;
+//     if (step12 && typeof step12 === "object") return Object.values(step12).flat();
+//     return [];
+//   };
+
+//   const verifications = getVerifications();
+
+//   return (
+//     <>
+//       <div className="no-print bg-background p-4 border-b sticky top-0 z-50">
+//         <div className="container mx-auto flex justify-between">
+//           <Button variant="outline" onClick={() => navigate(-1)}>
+//             <ArrowLeft className="h-4 w-4 mr-2" /> Back
+//           </Button>
+//           <Button onClick={handlePrint}>
+//             <Printer className="h-4 w-4 mr-2" /> Print Full Report
+//           </Button>
+//         </div>
+//       </div>
+
+//       <div className="print-container">
+//         {/* HEADER */}
+//         <div className="print-header">
+//           <h1>STUDENT CUMULATIVE RECORD</h1>
+//           <h2>B.Sc. Nursing Programme</h2>
+//           <div className="header-content">
+//             <div className="student-info">
+//               <p><strong>Name:</strong> {student.name}</p>
+//               <p><strong>Student ID:</strong> {student.id}</p>
+//               <p><strong>Registration No:</strong> {student.regNo}</p>
+//             </div>
+//             {student.photoUrl && (
+//               <div className="student-photo">
+//                 <img
+//                   src={student.photoUrl.startsWith("http") ? student.photoUrl : `http://localhost:5000${student.photoUrl}`}
+//                   alt="Student"
+//                 />
+//               </div>
+//             )}
+//           </div>
+//         </div>
+
+//         {/* 1. Personal Profile */}
+//         <div className="print-section">
+//           <h3 className="section-title">1. Personal Profile</h3>
+//           <table className="info-table">
+//             <tbody>
+//               <tr><td>Name of Student</td><td colSpan={3}>{student.steps.step1?.studentName || '-'}</td></tr>
+//               <tr><td>Age</td><td>{student.steps.step1?.age || '-'}</td><td>Date of Birth</td><td>{formatDate(student.steps.step1?.dateOfBirth)}</td></tr>
+//               <tr><td>Gender</td><td>{student.steps.step1?.gender || '-'}</td><td>Nationality</td><td>{student.steps.step1?.nationality || '-'}</td></tr>
+//               <tr><td>Religion</td><td>{student.steps.step1?.religion || '-'}</td><td>Community</td><td>{student.steps.step1?.community || '-'}</td></tr>
+//               <tr><td>Nativity</td><td>{student.steps.step1?.nativity || '-'}</td><td>Marital Status</td><td>{student.steps.step1?.maritalStatus || '-'}</td></tr>
+//               <tr><td>Mother Tongue</td><td>{student.steps.step1?.motherTongue || '-'}</td><td>Contact Mobile</td><td>{student.steps.step1?.contactMobile || '-'}</td></tr>
+//               <tr><td>Email</td><td>{student.steps.step1?.studentEmail || '-'}</td><td>Aadhar No</td><td>{student.steps.step1?.aadharNo || '-'}</td></tr>
+//               <tr><td>EMIS No</td><td>{student.steps.step1?.emisNo || '-'}</td><td colSpan={2}></td></tr>
+//               <tr><td colSpan={4}>Parent/Guardian Name: {student.steps.step1?.parentGuardianName || '-'}</td></tr>
+//               <tr><td colSpan={4}>Communication Address: {student.steps.step1?.communicationAddress || '-'}</td></tr>
+//               <tr><td colSpan={4}>Permanent Address: {student.steps.step1?.permanentAddress || '-'}</td></tr>
+//             </tbody>
+//           </table>
+//         </div>
+
+//         {/* 2. Educational Qualification */}
+//         <div className="print-section">
+//           <h3 className="section-title">2. Educational Qualification</h3>
+//           <table className="info-table">
+//             <tbody>
+//               <tr><td>Stream/Group</td><td>{student.steps.step2?.streamGroup || '-'}</td><td>Board of Examination</td><td>{student.steps.step2?.boardOfExamination || '-'}</td></tr>
+//               <tr><td>Year of Passing</td><td>{student.steps.step2?.yearOfPassing || '-'}</td><td>Medium of Instruction</td><td>{student.steps.step2?.mediumOfInstruction || '-'}</td></tr>
+//               <tr><td>Certificate No</td><td>{student.steps.step2?.certificateNo || '-'}</td><td colSpan={2}></td></tr>
+//             </tbody>
+//           </table>
+//           {student.steps.step2?.subjects?.length > 0 && (
+//             <>
+//               <h4 className="subsection-title">Marks Obtained</h4>
+//               <EducationalMarksPrintTable
+//                 subjects={student.steps.step2.subjects}
+//                 totalPlusOneAttempts={student.steps.step2.totalPlusOneAttempts || []}
+//                 totalPlusTwoAttempts={student.steps.step2.totalPlusTwoAttempts || []}
+//               />
+//             </>
+//           )}
+//         </div>
+
+//         {/* 3. Admission Details */}
+//         <div className="print-section">
+//           <h3 className="section-title">3. Admission Details</h3>
+//           <table className="info-table">
+//             <tbody>
+//               <tr><td>Date of Admission</td><td>{formatDate(student.steps.step3?.dateOfAdmission)}</td><td>Admission Number</td><td>{student.steps.step3?.admissionNumber || '-'}</td></tr>
+//               <tr><td>Roll Number</td><td>{student.steps.step3?.rollNumber || '-'}</td><td>University Registration</td><td>{student.steps.step3?.universityRegistration || '-'}</td></tr>
+//               <tr><td>Allotment Category</td><td>{student.steps.step3?.allotmentCategory || '-'}</td><td>Allotment No</td><td>{student.steps.step3?.govtAllotmentNo || student.steps.step3?.privateAllotmentNo || '-'}</td></tr>
+//               <tr><td>Scholarship Source</td><td>{student.steps.step3?.scholarshipSource || '-'}</td><td>Scholarship Amount</td><td>{student.steps.step3?.scholarshipAmount || '-'}</td></tr>
+//             </tbody>
+//           </table>
+//         </div>
+
+//         {/* 4. Attendance */}
+//         <div className="print-section">
+//           <h3 className="section-title">4. Attendance</h3>
+//           <table className="data-table">
+//             <thead>
+//               <tr>
+//                 <th>Semester</th>
+//                 <th>Working Days</th>
+//                 <th>Annual Leave</th>
+//                 <th>Sick Leave</th>
+//                 <th>Gazetted Holidays</th>
+//                 <th>Other Leave</th>
+//                 <th>Compensation (Days/Hrs)</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {["I","II","III","IV","V","VI","VII","VIII"].map(sem => {
+//                 const rec = student.steps.step4?.find((r: any) => r.semester === sem) || {};
+//                 return (
+//                   <tr key={sem}>
+//                     <td>{sem}</td>
+//                     <td>{rec.workingDays || '-'}</td>
+//                     <td>{rec.annualLeave || '-'}</td>
+//                     <td>{rec.sickLeave || '-'}</td>
+//                     <td>{rec.gazettedHolidays || '-'}</td>
+//                     <td>{rec.otherLeave || '-'}</td>
+//                     <td>{rec.compensationDaysHours || '-'}</td>
+//                   </tr>
+//                 );
+//               })}
+//             </tbody>
+//           </table>
+//         </div>
+
+//         {/* 5. Activities */}
+//         <div className="print-section">
+//           <h3 className="section-title">5. Activities</h3>
+//           <table className="data-table">
+//             <thead>
+//               <tr>
+//                 <th>Semester</th>
+//                 <th>Sports</th>
+//                 <th>Co-curricular</th>
+//                 <th>Extra-curricular</th>
+//                 <th>SNA</th>
+//                 <th>NSS/YRC/RRC</th>
+//                 <th>CNE</th>
+//                 <th>Awards/Rewards</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {["I","II","III","IV","V","VI","VII","VIII"].map(sem => {
+//                 const act = student.steps.step5?.find((a: any) => a.semester === sem) || {};
+//                 return (
+//                   <tr key={sem}>
+//                     <td>{sem}</td>
+//                     <td>{act.sports || '-'}</td>
+//                     <td>{act.coCurricular || '-'}</td>
+//                     <td>{act.extraCurricular || '-'}</td>
+//                     <td>{act.sna || '-'}</td>
+//                     <td>{act.nssYrcRrc || '-'}</td>
+//                     <td>{act.cne || '-'}</td>
+//                     <td>{act.awardsRewards || '-'}</td>
+//                   </tr>
+//                 );
+//               })}
+//             </tbody>
+//           </table>
+//         </div>
+
+//         {/* 6. Course Instruction */}
+//         <div className="print-section">
+//           <h3 className="section-title">6. Course Instruction</h3>
+//           {["I","II","III","IV","V","VI","VII","VIII"].map(sem => {
+//             const courses = student.steps.step6?.filter((c: any) => c.semester === sem) || [];
+//             if (courses.length === 0) return null;
+
+//             return (
+//               <div key={sem} className="mb-6">
+//                 <h4 className="subsection-title">Semester {sem}</h4>
+//                 <table className="data-table">
+//                   <thead>
+//                     <tr>
+//                       <th rowSpan={4}>S.No</th>
+//                       <th rowSpan={4}>Course Code</th>
+//                       <th rowSpan={4}>Univ. Code</th>
+//                       <th rowSpan={4}>Title</th>
+//                       <th colSpan={3}>Credits</th>
+//                       <th colSpan={9}>Hours</th>
+//                       <th colSpan={12}>Marks</th>
+//                       <th rowSpan={4}>Grade Pt</th>
+//                       <th rowSpan={4}>Letter Grade</th>
+//                       <th rowSpan={4}>SGPA</th>
+//                       <th rowSpan={4}>Rank</th>
+//                     </tr>
+//                     <tr>
+//                       <th rowSpan={3}>Theory</th>
+//                       <th rowSpan={3}>Skill</th>
+//                       <th rowSpan={3}>Clinical</th>
+//                       <th colSpan={3}>Theory</th>
+//                       <th colSpan={3}>Skill</th>
+//                       <th colSpan={3}>Clinical</th>
+//                       <th colSpan={6}>Theory</th>
+//                       <th colSpan={6}>Practical</th>
+//                     </tr>
+//                     <tr>
+//                       <th rowSpan={2}>Presc.</th>
+//                       <th rowSpan={2}>Att.</th>
+//                       <th rowSpan={2}>%</th>
+//                       <th rowSpan={2}>Presc.</th>
+//                       <th rowSpan={2}>Att.</th>
+//                       <th rowSpan={2}>%</th>
+//                       <th rowSpan={2}>Presc.</th>
+//                       <th rowSpan={2}>Att.</th>
+//                       <th rowSpan={2}>%</th>
+//                       <th colSpan={2}>Internal</th>
+//                       <th colSpan={2}>End Sem</th>
+//                       <th colSpan={2}>Total</th>
+//                       <th colSpan={2}>Internal</th>
+//                       <th colSpan={2}>End Sem</th>
+//                       <th colSpan={2}>Total</th>
+//                     </tr>
+//                     <tr>
+//                       <th>Max</th><th>Obt</th><th>Max</th><th>Obt</th><th>Max</th><th>Obt</th><th>Max</th><th>Obt</th><th>Max</th><th>Obt</th><th>Max</th><th>Obt</th>
+//                     </tr>
+//                   </thead>
+//                   <tbody>
+//                     {courses.map((c: any, idx: number) => (
+//                       <tr key={idx}>
+//                         <td>{c.sNo || '-'}</td>
+//                         <td>{c.courseCode || '-'}</td>
+//                         <td>{c.universityCourseCode || '-'}</td>
+//                         <td>{c.courseTitle || '-'}</td>
+//                         <td>{c.theoryCredits || '-'}</td>
+//                         <td>{c.skillLabCredits || '-'}</td>
+//                         <td>{c.clinicalCredits || '-'}</td>
+//                         <td>{c.theoryPrescribed || '-'}</td>
+//                         <td>{c.theoryAttended || '-'}</td>
+//                         <td>{c.theoryPercentage || '-'}</td>
+//                         <td>{c.skillLabPrescribed || '-'}</td>
+//                         <td>{c.skillLabAttended || '-'}</td>
+//                         <td>{c.skillLabPercentage || '-'}</td>
+//                         <td>{c.clinicalPrescribed || '-'}</td>
+//                         <td>{c.clinicalAttended || '-'}</td>
+//                         <td>{c.clinicalPercentage || '-'}</td>
+//                         <td>{c.theoryInternalMax || '-'}</td>
+//                         <td>{c.theoryInternalObtained || '-'}</td>
+//                         <td>{c.theoryEndSemMax || '-'}</td>
+//                         <td>{c.theoryEndSemObtained || '-'}</td>
+//                         <td>{c.theoryTotalMax || '-'}</td>
+//                         <td>{c.theoryTotalObtained || '-'}</td>
+//                         <td>{c.practicalInternalMax || '-'}</td>
+//                         <td>{c.practicalInternalObtained || '-'}</td>
+//                         <td>{c.practicalEndSemMax || '-'}</td>
+//                         <td>{c.practicalEndSemObtained || '-'}</td>
+//                         <td>{c.practicalTotalMax || '-'}</td>
+//                         <td>{c.practicalTotalObtained || '-'}</td>
+//                         <td>{c.gradePoint || '-'}</td>
+//                         <td>{c.letterGrade || '-'}</td>
+//                         <td>{c.sgpa || '-'}</td>
+//                         <td>{c.rank || '-'}</td>
+//                       </tr>
+//                     ))}
+//                   </tbody>
+//                 </table>
+//               </div>
+//             );
+//           })}
+//         </div>
+
+//         {/* 7. Observational Visits */}
+//         <div className="print-section">
+//           <h3 className="section-title">7. Observational Visits</h3>
+//           <table className="data-table">
+//             <thead>
+//               <tr>
+//                 <th>Semester</th>
+//                 <th>Institution & Place</th>
+//                 <th>Date</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {student.steps.step7?.map((v: any) => (
+//                 <tr key={v.id}>
+//                   <td>{v.semester}</td>
+//                   <td>{v.institutionPlace}</td>
+//                   <td>{formatDate(v.date)}</td>
+//                 </tr>
+//               ))}
+//             </tbody>
+//           </table>
+//         </div>
+
+//         {/* 8. Clinical Experience */}
+//         <div className="print-section">
+//           <h3 className="section-title">8. Clinical Experience</h3>
+//           <table className="data-table">
+//             <thead>
+//               <tr>
+//                 <th>Semester</th>
+//                 <th>Clinical Area</th>
+//                 <th>Credits</th>
+//                 <th>Weeks</th>
+//                 <th>Hours</th>
+//                 <th>Completed Hours</th>
+//                 <th>Hospital/Community</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {student.steps.step8?.map((e: any) => (
+//                 <tr key={e.id}>
+//                   <td>{e.semester}</td>
+//                   <td>{e.clinicalArea}</td>
+//                   <td>{e.credits}</td>
+//                   <td>{e.prescribedWeeks}</td>
+//                   <td>{e.prescribedHours}</td>
+//                   <td>{e.completedHours}</td>
+//                   <td>{e.hospital}</td>
+//                 </tr>
+//               ))}
+//             </tbody>
+//           </table>
+//         </div>
+
+//         {/* 9. Research Projects */}
+//         <div className="print-section">
+//           <h3 className="section-title">9. Research Projects</h3>
+//           <table className="data-table">
+//             <thead>
+//               <tr>
+//                 <th>Semester</th>
+//                 <th>Area of Study</th>
+//                 <th>Type</th>
+//                 <th>Title</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {student.steps.step9?.map((p: any) => (
+//                 <tr key={p.id}>
+//                   <td>{p.semester}</td>
+//                   <td>{p.areaOfStudy}</td>
+//                   <td>{p.type}</td>
+//                   <td>{p.projectTitle}</td>
+//                 </tr>
+//               ))}
+//             </tbody>
+//           </table>
+//         </div>
+
+//         {/* 10. Additional Courses */}
+//         <div className="print-section">
+//           <h3 className="section-title">10. Additional Courses</h3>
+//           <table className="data-table">
+//             <thead>
+//               <tr>
+//                 <th>Course ID</th>
+//                 <th>Name</th>
+//                 <th>From</th>
+//                 <th>To</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {student.steps.step10?.courses?.map((c: any) => (
+//                 <tr key={c.id}>
+//                   <td>{c.courseId}</td>
+//                   <td>{c.courseName}</td>
+//                   <td>{formatDate(c.from)}</td>
+//                   <td>{formatDate(c.to)}</td>
+//                 </tr>
+//               ))}
+//             </tbody>
+//           </table>
+//         </div>
+
+//         {/* 11. Course Completion */}
+//         <div className="print-section">
+//           <h3 className="section-title">11. Course Completion</h3>
+//           <table className="data-table">
+//             <thead>
+//               <tr>
+//                 <th>Name of Certificate</th>
+//                 <th>Certificate Number</th>
+//                 <th>Date of Issue</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {student.steps.step11?.completions?.map((comp: any) => (
+//                 <tr key={comp.id}>
+//                   <td>{comp.courseName}</td>
+//                   <td>{comp.certificateNumber}</td>
+//                   <td>{formatDate(comp.dateOfIssue)}</td>
+//                 </tr>
+//               ))}
+//             </tbody>
+//           </table>
+//         </div>
+
+//        {/* 12. VERIFICATION - FIXED & SAFE */}
+//         <div className="print-section">
+//           <h3 className="section-title">12. VERIFICATION</h3>
+//           <table className="data-table">
+//             <thead>
+//               <tr>
+//                 <th className="w-16">Semester</th>
+//                 <th>Name of Class Teacher/Coordinator</th>
+//                 <th>Signature of Class Teacher with Date</th>
+//                 <th>Signature of Principal with Date</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map((sem) => {
+//                 const record = verifications.find((v: any) => v.semester === sem) || {};
+
+//                 return (
+//                   <tr key={sem}>
+//                     <td className="text-center font-bold text-lg">{sem}</td>
+//                     <td className="font-medium">
+//                       {record.teacherName || record.classTeacherName || "-"}
+//                     </td>
+//                     <td className="text-center">
+//                       {record.teacherSignatureDate ? formatDate(record.teacherSignatureDate) : "-"}
+//                       {record.teacherSignatureDate && (
+//                         <span className="ml-4 inline-block w-40 border-b-2 border-black"></span>
+//                       )}
+//                     </td>
+//                     <td className="text-center">
+//                       {record.principalSignatureDate ? formatDate(record.principalSignatureDate) : "-"}
+//                       {record.principalSignatureDate && (
+//                         <span className="ml-4 inline-block w-40 border-b-2 border-black"></span>
+//                       )}
+//                     </td>
+//                   </tr>
+//                 );
+//               })}
+//             </tbody>
+//           </table>
+//           <p className="text-xs italic text-center mt-4">
+//             Note: This form records the verification of cumulative records by class teachers/coordinators and the principal for each semester.
+//           </p>
+//         </div>
+
+//         {/* FOOTER */}
+//         <div className="print-footer">
+//           <p className="font-semibold">This is a computer-generated document. No signature is required.</p>
+//           <p>Generated on: {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</p>
+//         </div>
+//       </div>
+//     </>
+//   );
+// };
+
+// export default StudentPrint;
+
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,310 +520,487 @@ const StudentPrint = () => {
 
   useEffect(() => {
     const fetchStudentData = async () => {
-      if (!studentId) {
-        navigate("/dashboard");
-        return;
-      }
+      if (!studentId) return navigate("/dashboard");
 
       try {
         setLoading(true);
         const data = await getAllDataByStudentId(studentId);
 
-        // Construct student object from backend data
-        const studentData = {
+        setStudent({
           id: studentId,
           name: data.step1?.studentName || "Unknown",
           regNo: data.step1?.regNo || studentId,
-          email: data.step1?.studentEmail || "",
+          photoUrl: data.step1?.photoUrl || data.step1?.photo,
           steps: data,
-        };
-
-        setStudent(studentData);
-        setLoading(false);
+        });
       } catch (err) {
-        console.error("Error fetching student data:", err);
+        console.error(err);
         navigate("/dashboard");
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchStudentData();
   }, [studentId, navigate]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading student data for printing...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!student) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Student Not Found</h2>
-          <Button onClick={() => navigate("/dashboard")}>Back to Dashboard</Button>
-        </div>
-      </div>
-    );
-  }
-
-  const handlePrint = () => {
-    window.print();
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "-";
+    const date = new Date(dateStr);
+    return isNaN(date.getTime()) ? "-" : date.toLocaleDateString("en-GB");
   };
+
+  const handlePrint = () => window.print();
+
+  if (loading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-10 w-10 animate-spin" /></div>;
+  if (!student) return <div className="text-center py-20"><h2>Student Not Found</h2><Button onClick={() => navigate("/dashboard")}>Back</Button></div>;
+
+  // Helper to safely extract array from step12
+  const getVerifications = () => {
+    const step12 = student.steps.step12;
+    if (Array.isArray(step12)) return step12;
+    if (step12?.verifications && Array.isArray(step12.verifications)) return step12.verifications;
+    if (step12 && typeof step12 === "object") return Object.values(step12).flat();
+    return [];
+  };
+
+  const verifications = getVerifications();
 
   return (
     <>
       <div className="no-print bg-background p-4 border-b sticky top-0 z-50">
-        <div className="container mx-auto flex items-center justify-between">
-          <Button variant="outline" onClick={() => navigate(`/students/${studentId}`)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+        <div className="container mx-auto flex justify-between">
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
           <Button onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-2" />
-            Print Report
+            <Printer className="h-4 w-4 mr-2" /> Print Full Report
           </Button>
         </div>
       </div>
 
       <div className="print-container">
+        {/* HEADER */}
         <div className="print-header">
+          <h1>STUDENT CUMULATIVE RECORD</h1>
+          <h2>B.Sc. Nursing Programme</h2>
           <div className="header-content">
-            <div className="header-text">
-              <h1>STUDENT CUMULATIVE RECORD</h1>
-              <h2>B.Sc. Nursing Programme</h2>
-              <div className="student-info">
-                <p><strong>Name:</strong> {student.name}</p>
-                <p><strong>Student ID:</strong> {student.id}</p>
-                <p><strong>Registration No:</strong> {student.regNo}</p>
-              </div>
+            <div className="student-info">
+              <p><strong>Name:</strong> {student.name}</p>
+              <p><strong>Student ID:</strong> {student.id}</p>
+              <p><strong>Registration No:</strong> {student.regNo}</p>
             </div>
-            {student.steps.step1?.photoUrl && (
+            {student.photoUrl && (
               <div className="student-photo">
                 <img
-                  src={student.steps.step1.photoUrl.startsWith('http') ? student.steps.step1.photoUrl : `http://localhost:5000${student.steps.step1.photoUrl}`}
-                  alt={student.name}
+                  src={student.photoUrl.startsWith("http") ? student.photoUrl : `http://localhost:5000${student.photoUrl}`}
+                  alt="Student"
                 />
               </div>
             )}
           </div>
         </div>
 
-        {student.steps.step1 && (
-          <div className="print-section">
-            <h3 className="section-title">1. PERSONAL PROFILE</h3>
-            <div className="profile-with-photo">
-              <table className="info-table">
-                <tbody>
-                  <tr>
-                    <td className="label">Name of Student</td>
-                    <td className="value">{student.steps.step1.studentName}</td>
-                    <td className="label">Age</td>
-                    <td className="value">{student.steps.step1.age}</td>
-                  </tr>
-                  <tr>
-                    <td className="label">Gender</td>
-                    <td className="value">{student.steps.step1.gender}</td>
-                    <td className="label">Date of Birth</td>
-                    <td className="value">{student.steps.step1.dateOfBirth}</td>
-                  </tr>
-                  <tr>
-                    <td className="label">Nationality</td>
-                    <td className="value">{student.steps.step1.nationality}</td>
-                    <td className="label">Religion</td>
-                    <td className="value">{student.steps.step1.religion}</td>
-                  </tr>
-                  <tr>
-                    <td className="label">Community</td>
-                    <td className="value">{student.steps.step1.community}</td>
-                    <td className="label">Nativity</td>
-                    <td className="value">{student.steps.step1.nativity}</td>
-                  </tr>
-                  <tr>
-                    <td className="label">Marital Status</td>
-                    <td className="value">{student.steps.step1.maritalStatus}</td>
-                    <td className="label">Mother Tongue</td>
-                    <td className="value">{student.steps.step1.motherTongue}</td>
-                  </tr>
-                  <tr>
-                    <td className="label">Parent/Guardian Name</td>
-                    <td className="value" colSpan={3}>{student.steps.step1.parentGuardianName}</td>
-                  </tr>
-                  <tr>
-                    <td className="label">Communication Address</td>
-                    <td className="value" colSpan={3}>{student.steps.step1.communicationAddress}</td>
-                  </tr>
-                  <tr>
-                    <td className="label">Permanent Address</td>
-                    <td className="value" colSpan={3}>{student.steps.step1.permanentAddress}</td>
-                  </tr>
-                  <tr>
-                    <td className="label">Contact Mobile</td>
-                    <td className="value">{student.steps.step1.contactMobile}</td>
-                    <td className="label">Email</td>
-                    <td className="value">{student.steps.step1.studentEmail}</td>
-                  </tr>
-                  <tr>
-                    <td className="label">Aadhar Number</td>
-                    <td className="value">{student.steps.step1.aadharNo}</td>
-                    <td className="label">EMIS Number</td>
-                    <td className="value">{student.steps.step1.emisNo}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+        {/* 1. Personal Profile */}
+        <div className="print-section">
+          <h3 className="section-title">1. Personal Profile</h3>
+          <table className="info-table">
+            <tbody>
+              <tr><td>Name of Student</td><td colSpan={3}>{student.steps.step1?.studentName || '-'}</td></tr>
+              <tr><td>Age</td><td>{student.steps.step1?.age || '-'}</td><td>Date of Birth</td><td>{formatDate(student.steps.step1?.dateOfBirth)}</td></tr>
+              <tr><td>Gender</td><td>{student.steps.step1?.gender || '-'}</td><td>Nationality</td><td>{student.steps.step1?.nationality || '-'}</td></tr>
+              <tr><td>Religion</td><td>{student.steps.step1?.religion || '-'}</td><td>Community</td><td>{student.steps.step1?.community || '-'}</td></tr>
+              <tr><td>Nativity</td><td>{student.steps.step1?.nativity || '-'}</td><td>Marital Status</td><td>{student.steps.step1?.maritalStatus || '-'}</td></tr>
+              <tr><td>Mother Tongue</td><td>{student.steps.step1?.motherTongue || '-'}</td><td>Contact Mobile</td><td>{student.steps.step1?.contactMobile || '-'}</td></tr>
+              <tr><td>Email</td><td>{student.steps.step1?.studentEmail || '-'}</td><td>Aadhar No</td><td>{student.steps.step1?.aadharNo || '-'}</td></tr>
+              <tr><td>EMIS No</td><td>{student.steps.step1?.emisNo || '-'}</td><td colSpan={2}></td></tr>
+              <tr><td colSpan={4}>Parent/Guardian Name: {student.steps.step1?.parentGuardianName || '-'}</td></tr>
+              <tr><td colSpan={4}>Communication Address: {student.steps.step1?.communicationAddress || '-'}</td></tr>
+              <tr><td colSpan={4}>Permanent Address: {student.steps.step1?.permanentAddress || '-'}</td></tr>
+            </tbody>
+          </table>
+        </div>
 
-        {student.steps.step2 && (
-          <div className="print-section">
-            <h3 className="section-title">2. EDUCATIONAL QUALIFICATION</h3>
+        {/* 2. Educational Qualification */}
+        <div className="print-section">
+          <h3 className="section-title">2. Educational Qualification</h3>
+          <table className="info-table">
+            <tbody>
+              <tr><td>Stream/Group</td><td>{student.steps.step2?.streamGroup || '-'}</td><td>Board of Examination</td><td>{student.steps.step2?.boardOfExamination || '-'}</td></tr>
+              <tr><td>Year of Passing</td><td>{student.steps.step2?.yearOfPassing || '-'}</td><td>Medium of Instruction</td><td>{student.steps.step2?.mediumOfInstruction || '-'}</td></tr>
+              <tr><td>Certificate No</td><td>{student.steps.step2?.certificateNo || '-'}</td><td colSpan={2}></td></tr>
+            </tbody>
+          </table>
+          {student.steps.step2?.subjects?.length > 0 && (
+            <>
+              <h4 className="subsection-title">Marks Obtained</h4>
+              <EducationalMarksPrintTable
+                subjects={student.steps.step2.subjects}
+                totalPlusOneAttempts={student.steps.step2.totalPlusOneAttempts || []}
+                totalPlusTwoAttempts={student.steps.step2.totalPlusTwoAttempts || []}
+              />
+            </>
+          )}
+        </div>
 
-            {/* Basic Information */}
-            <table className="info-table">
-              <tbody>
-                <tr>
-                  <td className="label">Stream/Group</td>
-                  <td className="value">{student.steps.step2.streamGroup}</td>
-                  <td className="label">Board of Examination</td>
-                  <td className="value">{student.steps.step2.boardOfExamination}</td>
-                </tr>
-                <tr>
-                  <td className="label">Year of Passing</td>
-                  <td className="value">{student.steps.step2.yearOfPassing}</td>
-                  <td className="label">Medium of Instruction</td>
-                  <td className="value">{student.steps.step2.mediumOfInstruction}</td>
-                </tr>
-                <tr>
-                  <td className="label">Certificate Number</td>
-                  <td className="value">{student.steps.step2.certificateNo}</td>
-                  <td className="label">Certificate Date</td>
-                  <td className="value">{student.steps.step2.certificateDate}</td>
-                </tr>
-              </tbody>
-            </table>
+        {/* 3. Admission Details */}
+        <div className="print-section">
+          <h3 className="section-title">3. Admission Details</h3>
+          <table className="info-table">
+            <tbody>
+              <tr><td>Date of Admission</td><td>{formatDate(student.steps.step3?.dateOfAdmission)}</td><td>Admission Number</td><td>{student.steps.step3?.admissionNumber || '-'}</td></tr>
+              <tr><td>Roll Number</td><td>{student.steps.step3?.rollNumber || '-'}</td><td>University Registration</td><td>{student.steps.step3?.universityRegistration || '-'}</td></tr>
+              <tr><td>Allotment Category</td><td>{student.steps.step3?.allotmentCategory || '-'}</td><td>Allotment No</td><td>{student.steps.step3?.govtAllotmentNo || student.steps.step3?.privateAllotmentNo || '-'}</td></tr>
+              <tr><td>Scholarship Source</td><td>{student.steps.step3?.scholarshipSource || '-'}</td><td>Scholarship Amount</td><td>{student.steps.step3?.scholarshipAmount || '-'}</td></tr>
+            </tbody>
+          </table>
+        </div>
 
-            {/* Marks Table */}
-            {student.steps.step2.subjects && student.steps.step2.subjects.length > 0 && (
-              <>
-                <h4 className="subsection-title">Academic Performance</h4>
-                <EducationalMarksPrintTable
-                  subjects={student.steps.step2.subjects}
-                  totalPlusOneAttempts={student.steps.step2.totalPlusOneAttempts || []}
-                  totalPlusTwoAttempts={student.steps.step2.totalPlusTwoAttempts || []}
-                />
-              </>
-            )}
-          </div>
-        )}
-
-        {student.steps.step3 && (
-          <div className="print-section">
-            <h3 className="section-title">3. ADMISSION DETAILS</h3>
-            <table className="info-table">
-              <tbody>
-                <tr>
-                  <td className="label">Date of Admission</td>
-                  <td className="value">{student.steps.step3.dateOfAdmission}</td>
-                  <td className="label">Admission Number</td>
-                  <td className="value">{student.steps.step3.admissionNumber}</td>
-                </tr>
-                <tr>
-                  <td className="label">Roll Number</td>
-                  <td className="value">{student.steps.step3.rollNumber}</td>
-                  <td className="label">University Registration</td>
-                  <td className="value">{student.steps.step3.universityRegistration}</td>
-                </tr>
-                <tr>
-                  <td className="label">Allotment Category</td>
-                  <td className="value">{student.steps.step3.allotmentCategory}</td>
-                  <td className="label">Allotment Number</td>
-                  <td className="value">{student.steps.step3.govtAllotmentNo || student.steps.step3.privateAllotmentNo || "-"}</td>
-                </tr>
-                {student.steps.step3.scholarshipSource && (
-                  <tr>
-                    <td className="label">Scholarship Source</td>
-                    <td className="value">{student.steps.step3.scholarshipSource}</td>
-                    <td className="label">Scholarship Amount</td>
-                    <td className="value">₹{student.steps.step3.scholarshipAmount}</td>
+        {/* 4. Attendance */}
+        <div className="print-section">
+          <h3 className="section-title">4. Attendance</h3>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Semester</th>
+                <th>Working Days</th>
+                <th>Annual Leave</th>
+                <th>Sick Leave</th>
+                <th>Gazetted Holidays</th>
+                <th>Other Leave</th>
+                <th>Compensation (Days/Hrs)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {["I","II","III","IV","V","VI","VII","VIII"].map(sem => {
+                const rec = student.steps.step4?.find((r: any) => r.semester === sem) || {};
+                return (
+                  <tr key={sem}>
+                    <td>{sem}</td>
+                    <td>{rec.workingDays || '-'}</td>
+                    <td>{rec.annualLeave || '-'}</td>
+                    <td>{rec.sickLeave || '-'}</td>
+                    <td>{rec.gazettedHolidays || '-'}</td>
+                    <td>{rec.otherLeave || '-'}</td>
+                    <td>{rec.compensationDaysHours || '-'}</td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
-        {student.steps.step4 && (
-          <div className="print-section">
-            <h3 className="section-title">4. ATTENDANCE RECORD</h3>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Semester</th>
-                  <th>Working Days</th>
-                  <th>Annual Leave</th>
-                  <th>Sick Leave</th>
-                  <th>Gazetted Holidays</th>
-                  <th>Other Leave</th>
-                </tr>
-              </thead>
-              <tbody>
-                {student.steps.step4.semesters?.map((sem: any) => (
-                  <tr key={sem.semester}>
-                    <td>{sem.semester}</td>
-                    <td>{sem.workingDays}</td>
-                    <td>{sem.annualLeave}</td>
-                    <td>{sem.sickLeave}</td>
-                    <td>{sem.gazettedHolidays}</td>
-                    <td>{sem.otherLeave}</td>
+        {/* 5. Activities */}
+        <div className="print-section">
+          <h3 className="section-title">5. Activities</h3>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Semester</th>
+                <th>Sports</th>
+                <th>Co-curricular</th>
+                <th>Extra-curricular</th>
+                <th>SNA</th>
+                <th>NSS/YRC/RRC</th>
+                <th>CNE</th>
+                <th>Awards/Rewards</th>
+              </tr>
+            </thead>
+            <tbody>
+              {["I","II","III","IV","V","VI","VII","VIII"].map(sem => {
+                const act = student.steps.step5?.find((a: any) => a.semester === sem) || {};
+                return (
+                  <tr key={sem}>
+                    <td>{sem}</td>
+                    <td>{act.sports || '-'}</td>
+                    <td>{act.coCurricular || '-'}</td>
+                    <td>{act.extraCurricular || '-'}</td>
+                    <td>{act.sna || '-'}</td>
+                    <td>{act.nssYrcRrc || '-'}</td>
+                    <td>{act.cne || '-'}</td>
+                    <td>{act.awardsRewards || '-'}</td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
-        {student.steps.step5 && (
-          <div className="print-section">
-            <h3 className="section-title">5. ACTIVITIES & PARTICIPATION</h3>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Semester</th>
-                  <th>Sports</th>
-                  <th>Co-Curricular</th>
-                  <th>Extra-Curricular</th>
-                  <th>NSS/YRC/RRC</th>
-                  <th>Awards & Rewards</th>
+        {/* 6. Course Instruction */}
+        <div className="print-section">
+          <h3 className="section-title">6. Course Instruction</h3>
+          {["I","II","III","IV","V","VI","VII","VIII"].map(sem => {
+            const courses = student.steps.step6?.filter((c: any) => c.semester === sem) || [];
+            if (courses.length === 0) return null;
+
+            return (
+              <div key={sem} className="mb-6">
+                <h4 className="subsection-title">Semester {sem}</h4>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th rowSpan={4}>S.No</th>
+                      <th rowSpan={4}>Course Code</th>
+                      <th rowSpan={4}>Univ. Code</th>
+                      <th rowSpan={4}>Title</th>
+                      <th colSpan={3}>Credits</th>
+                      <th colSpan={9}>Hours</th>
+                      <th colSpan={12}>Marks</th>
+                      <th rowSpan={4}>Grade Pt</th>
+                      <th rowSpan={4}>Letter Grade</th>
+                      <th rowSpan={4}>SGPA</th>
+                      <th rowSpan={4}>Rank</th>
+                    </tr>
+                    <tr>
+                      <th rowSpan={3}>Theory</th>
+                      <th rowSpan={3}>Skill</th>
+                      <th rowSpan={3}>Clinical</th>
+                      <th colSpan={3}>Theory</th>
+                      <th colSpan={3}>Skill</th>
+                      <th colSpan={3}>Clinical</th>
+                      <th colSpan={6}>Theory</th>
+                      <th colSpan={6}>Practical</th>
+                    </tr>
+                    <tr>
+                      <th rowSpan={2}>Presc.</th>
+                      <th rowSpan={2}>Att.</th>
+                      <th rowSpan={2}>%</th>
+                      <th rowSpan={2}>Presc.</th>
+                      <th rowSpan={2}>Att.</th>
+                      <th rowSpan={2}>%</th>
+                      <th rowSpan={2}>Presc.</th>
+                      <th rowSpan={2}>Att.</th>
+                      <th rowSpan={2}>%</th>
+                      <th colSpan={2}>Internal</th>
+                      <th colSpan={2}>End Sem</th>
+                      <th colSpan={2}>Total</th>
+                      <th colSpan={2}>Internal</th>
+                      <th colSpan={2}>End Sem</th>
+                      <th colSpan={2}>Total</th>
+                    </tr>
+                    <tr>
+                      <th>Max</th><th>Obt</th><th>Max</th><th>Obt</th><th>Max</th><th>Obt</th><th>Max</th><th>Obt</th><th>Max</th><th>Obt</th><th>Max</th><th>Obt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {courses.map((c: any, idx: number) => (
+                      <tr key={idx}>
+                        <td>{c.sNo || '-'}</td>
+                        <td>{c.courseCode || '-'}</td>
+                        <td>{c.universityCourseCode || '-'}</td>
+                        <td>{c.courseTitle || '-'}</td>
+                        <td>{c.theoryCredits || '-'}</td>
+                        <td>{c.skillLabCredits || '-'}</td>
+                        <td>{c.clinicalCredits || '-'}</td>
+                        <td>{c.theoryPrescribed || '-'}</td>
+                        <td>{c.theoryAttended || '-'}</td>
+                        <td>{c.theoryPercentage || '-'}</td>
+                        <td>{c.skillLabPrescribed || '-'}</td>
+                        <td>{c.skillLabAttended || '-'}</td>
+                        <td>{c.skillLabPercentage || '-'}</td>
+                        <td>{c.clinicalPrescribed || '-'}</td>
+                        <td>{c.clinicalAttended || '-'}</td>
+                        <td>{c.clinicalPercentage || '-'}</td>
+                        <td>{c.theoryInternalMax || '-'}</td>
+                        <td>{c.theoryInternalObtained || '-'}</td>
+                        <td>{c.theoryEndSemMax || '-'}</td>
+                        <td>{c.theoryEndSemObtained || '-'}</td>
+                        <td>{c.theoryTotalMax || '-'}</td>
+                        <td>{c.theoryTotalObtained || '-'}</td>
+                        <td>{c.practicalInternalMax || '-'}</td>
+                        <td>{c.practicalInternalObtained || '-'}</td>
+                        <td>{c.practicalEndSemMax || '-'}</td>
+                        <td>{c.practicalEndSemObtained || '-'}</td>
+                        <td>{c.practicalTotalMax || '-'}</td>
+                        <td>{c.practicalTotalObtained || '-'}</td>
+                        <td>{c.gradePoint || '-'}</td>
+                        <td>{c.letterGrade || '-'}</td>
+                        <td>{c.sgpa || '-'}</td>
+                        <td>{c.rank || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 7. Observational Visits */}
+        <div className="print-section">
+          <h3 className="section-title">7. Observational Visits</h3>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Semester</th>
+                <th>Institution & Place</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {student.steps.step7?.map((v: any) => (
+                <tr key={v.id}>
+                  <td>{v.semester}</td>
+                  <td>{v.institutionPlace}</td>
+                  <td>{formatDate(v.date)}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {student.steps.step5.semesters?.map((sem: any) => (
-                  <tr key={sem.semester}>
-                    <td>{sem.semester}</td>
-                    <td>{sem.sports}</td>
-                    <td>{sem.coCurricular}</td>
-                    <td>{sem.extraCurricular}</td>
-                    <td>{sem.nssYrcRrc}</td>
-                    <td>{sem.awardsRewards || "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              ))}
+            </tbody>
+          </table>
+        </div>
 
+        {/* 8. Clinical Experience */}
+        <div className="print-section">
+          <h3 className="section-title">8. Clinical Experience</h3>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Semester</th>
+                <th>Clinical Area</th>
+                <th>Credits</th>
+                <th>Weeks</th>
+                <th>Hours</th>
+                <th>Completed Hours</th>
+                <th>Hospital/Community</th>
+              </tr>
+            </thead>
+            <tbody>
+              {student.steps.step8?.map((e: any) => (
+                <tr key={e.id}>
+                  <td>{e.semester}</td>
+                  <td>{e.clinicalArea}</td>
+                  <td>{e.credits}</td>
+                  <td>{e.prescribedWeeks}</td>
+                  <td>{e.prescribedHours}</td>
+                  <td>{e.completedHours}</td>
+                  <td>{e.hospital}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 9. Research Projects */}
+        <div className="print-section">
+          <h3 className="section-title">9. Research Projects</h3>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Semester</th>
+                <th>Area of Study</th>
+                <th>Type</th>
+                <th>Title</th>
+              </tr>
+            </thead>
+            <tbody>
+              {student.steps.step9?.map((p: any) => (
+                <tr key={p.id}>
+                  <td>{p.semester}</td>
+                  <td>{p.areaOfStudy}</td>
+                  <td>{p.type}</td>
+                  <td>{p.projectTitle}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 10. Additional Courses */}
+        <div className="print-section">
+          <h3 className="section-title">10. Additional Courses</h3>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Course ID</th>
+                <th>Name</th>
+                <th>From</th>
+                <th>To</th>
+              </tr>
+            </thead>
+            <tbody>
+              {student.steps.step10?.courses?.map((c: any) => (
+                <tr key={c.id}>
+                  <td>{c.courseId}</td>
+                  <td>{c.courseName}</td>
+                  <td>{formatDate(c.from)}</td>
+                  <td>{formatDate(c.to)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 11. Course Completion */}
+        <div className="print-section">
+          <h3 className="section-title">11. Course Completion</h3>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Name of Certificate</th>
+                <th>Certificate Number</th>
+                <th>Date of Issue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {student.steps.step11?.completions?.map((comp: any) => (
+                <tr key={comp.id}>
+                  <td>{comp.courseName}</td>
+                  <td>{comp.certificateNumber}</td>
+                  <td>{formatDate(comp.dateOfIssue)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+       {/* 12. VERIFICATION - FIXED & SAFE */}
+        <div className="print-section">
+          <h3 className="section-title">12. VERIFICATION</h3>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th className="w-16">Semester</th>
+                <th>Name of Class Teacher/Coordinator</th>
+                <th>Signature of Class Teacher with Date</th>
+                <th>Signature of Principal with Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map((sem) => {
+                const record = verifications.find((v: any) => v.semester === sem) || {};
+
+                return (
+                  <tr key={sem}>
+                    <td className="text-center font-bold text-lg">{sem}</td>
+                    <td className="font-medium">
+                      {record.teacherName || record.classTeacherName || "-"}
+                    </td>
+                    <td className="text-center">
+                      {record.teacherSignatureDate ? formatDate(record.teacherSignatureDate) : "-"}
+                      {record.teacherSignatureDate && (
+                        <span className="ml-4 inline-block w-40 border-b-2 border-black"></span>
+                      )}
+                    </td>
+                    <td className="text-center">
+                      {record.principalSignatureDate ? formatDate(record.principalSignatureDate) : "-"}
+                      {record.principalSignatureDate && (
+                        <span className="ml-4 inline-block w-40 border-b-2 border-black"></span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="text-xs italic text-center mt-4">
+            Note: This form records the verification of cumulative records by class teachers/coordinators and the principal for each semester.
+          </p>
+        </div>
+
+        {/* FOOTER */}
         <div className="print-footer">
-          <p>This is a computer-generated document. No signature is required.</p>
-          <p>Generated on: {new Date().toLocaleDateString("en-IN", {
-            year: "numeric",
-            month: "long",
-            day: "numeric"
-          })}</p>
+          <p className="font-semibold">This is a computer-generated document. No signature is required.</p>
+          <p>Generated on: {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</p>
         </div>
       </div>
     </>

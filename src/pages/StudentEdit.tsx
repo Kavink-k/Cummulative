@@ -21,6 +21,55 @@ import { BookOpen, ChevronLeft, ChevronRight, CheckCircle2, ArrowLeft, Save, Loa
 import { getAllDataByStudentId, saveDataToBackend } from "@/lib/api";
 import { StudentInfoDisplay } from "@/components/StudentInfoDisplay";
 
+
+
+
+// ADD THIS ENTIRE FUNCTION HERE
+const transformDataForEdit = (data: any) => {
+  const transformed = { ...data };
+
+  // Transform Attendance (Step 4)
+  if (data.step4 && Array.isArray(data.step4)) {
+    const semesters: Record<string, any> = {};
+    data.step4.forEach((item: any) => {
+      const sem = item.semester?.toString().trim();
+      if (["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].includes(sem)) {
+        semesters[sem] = {
+          workingDays: item.workingDays ?? "",
+          annualLeave: item.annualLeave ?? "",
+          sickLeave: item.sickLeave ?? "",
+          gazettedHolidays: item.gazettedHolidays ?? "",
+          otherLeave: item.otherLeave ?? "",
+          compensationDaysHours: item.compensationDaysHours ?? "",
+        };
+      }
+    });
+    transformed.step4 = { semesters };
+  }
+
+  // Transform Activities (Step 5)
+  if (data.step5 && Array.isArray(data.step5)) {
+    const activities: Record<string, any> = {};
+    data.step5.forEach((item: any) => {
+      const sem = item.semester?.toString().trim();
+      if (["I", "II", "III", "IV","V","VI","VII","VIII"].includes(sem)) {
+        activities[sem] = {
+          sports: item.sports || "",
+          coCurricular: item.coCurricular || "",
+          extraCurricular: item.extraCurricular || "",
+          sna: item.sna || "",
+          nssYrcRrc: item.nssYrcRrc || "",
+          cne: item.cne || "",
+          awardsRewards: item.awardsRewards || "",
+        };
+      }
+    });
+    transformed.step5 = { activities };
+  }
+
+  return transformed;
+};
+
 const steps = [
   { id: 1, title: "Personal Profile", description: "Student's basic information" },
   { id: 2, title: "Educational Qualification", description: "Academic records" },
@@ -70,13 +119,16 @@ const StudentEdit = () => {
         }
 
         // Set form data
-        setFormData(data);
-        setCurrentDefaults(data);
+              // Transform data so AttendanceForm and ActivitiesForm can read it
+        const transformedData = transformDataForEdit(data);
 
-        // Calculate initial progress
+        setFormData(transformedData);
+        setCurrentDefaults(transformedData);
+
+        // Calculate progress based on transformed data
         const progress: Record<number, number> = {};
         for (let i = 1; i <= 12; i++) {
-          if (data[`step${i}`]) {
+          if (transformedData[`step${i}`]) {
             progress[i] = 100;
           }
         }
@@ -199,8 +251,10 @@ const StudentEdit = () => {
 
   const renderCurrentForm = () => {
     const studentId = currentDefaults.step1?.studentId;
-    const defaultValues = { ...currentDefaults[`step${currentStep}`], studentId };
-    const props = {
+const defaultValues = {
+  ...currentDefaults[`step${currentStep}`],
+  studentId: currentDefaults.step1?.studentId || studentId,
+};    const props = {
       onSubmit: handleFormSubmit,
       defaultValues,
       onProgressChange: handleProgressChange(currentStep),
@@ -252,7 +306,7 @@ const StudentEdit = () => {
               </div>
             </div>
 
-            <Button variant="outline" onClick={() => navigate(`/students/${studentId}`)}>
+            <Button variant="outline" onClick={() => navigate("/dashboard")}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Cancel
             </Button>

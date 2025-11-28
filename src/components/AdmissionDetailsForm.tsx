@@ -36,7 +36,7 @@ const admissionDetailsSchema = z.object({
   rollNumber: z.string().min(1, "Roll number is required"),
   universityRegistration: z
     .string()
-    .min(1, "University registration number is required"),
+    .optional(),
 
   // Certificates – if your form requires them, add min(1)
   migrationCertificateNo: z
@@ -85,7 +85,7 @@ const admissionDetailsSchema = z.object({
   scholarshipSource: z.string().min(1, "Scholarship source is required"),
   scholarshipAmount: numberOrNull, // keep as-is (since may be null)
   bankLoanSource: z.string().optional(),
-  bankLoanAmount: numberOrNull, // keep as-is (since may be null)
+  bankLoanAmount: z.number().optional(), // keep as-is (since may be null)
 });
 
 type AdmissionDetailsFormData = z.infer<typeof admissionDetailsSchema>;

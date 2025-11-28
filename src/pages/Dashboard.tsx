@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,44 +6,67 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Eye, Edit, Printer, BookOpen, LogOut, User2 } from "lucide-react";
 import { getUser, logout } from "@/lib/auth";
-import { fetchAllStudentsFromDB } from "@/lib/api";
+import { fetchpersonalprofileFromDB, fetchadmissionDetailsFromDB } from "@/lib/api";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const user = getUser();
 
-  const [students, setStudents] = useState([]);
+  const [personalProfiles, setPersonalProfiles] = useState([]);
+  const [admissionDetails, setAdmissionDetails] = useState([]);
+  const [students, setStudents] = useState([]); // FINAL MERGED LIST
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch backend students
+  // Fetch both datasets + merge data
   useEffect(() => {
-    const load = async () => {
+    const loadAll = async () => {
       try {
-        const res = await fetchAllStudentsFromDB();
+        setLoading(true);
 
-        console.log("RAW STUDENT RESPONSE =>", res);
+        // API calls in parallel
+        const [profileRes, admissionRes] = await Promise.all([
+          fetchpersonalprofileFromDB(),
+          fetchadmissionDetailsFromDB(),
+        ]);
 
-        let list = [];
+        // Normalize profile data
+        let profileList = Array.isArray(profileRes)
+          ? profileRes
+          : Array.isArray(profileRes?.data)
+          ? profileRes.data
+          : [profileRes];
 
-        if (Array.isArray(res)) {
-          list = res;
-        } else if (Array.isArray(res.data)) {
-          list = res.data;
-        } else {
-          list = [res];
-        }
+        // Normalize admission data
+        let admissionList = Array.isArray(admissionRes)
+          ? admissionRes
+          : Array.isArray(admissionRes?.data)
+          ? admissionRes.data
+          : [admissionRes];
 
-        setStudents(list);
-      } catch (e) {
-        console.error("Failed loading students:", e);
+        setPersonalProfiles(profileList);
+        setAdmissionDetails(admissionList);
+
+        // 🔥 MERGE DATASETS BY studentId 
+        const merged = profileList.map((p) => {
+          const admission = admissionList.find((a) => a.studentId === p.studentId);
+          return {
+            ...p,
+            universityRegistration: admission?.universityRegistration || "",
+            step3AdmissionDetails: admission || null,
+          };
+        });
+
+        setStudents(merged);
+      } catch (err) {
+        console.error("Failed loading student data:", err);
         setStudents([]);
       } finally {
         setLoading(false);
       }
     };
 
-    load();
+    loadAll();
   }, []);
 
   // Search filtering
@@ -53,7 +75,7 @@ const Dashboard = () => {
     return (
       student.studentName?.toLowerCase().includes(q) ||
       student.studentId?.toLowerCase().includes(q) ||
-      student.regNo?.toLowerCase().includes(q)
+      student.universityRegistration?.toLowerCase().includes(q)
     );
   });
 
@@ -81,9 +103,7 @@ const Dashboard = () => {
                 </span>
               </div>
 
-              <Button variant="outline" onClick={() => navigate("/")}>
-                New Record
-              </Button>
+              <Button variant="outline" onClick={() => navigate("/")}>New Record</Button>
 
               <Button
                 variant="destructive"
@@ -100,18 +120,19 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* MAIN CONTENT */}
+      {/* MAIN */}
       <main className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* SEARCH CARD */}
+        {/* SEARCH */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Search Students</CardTitle>
             <CardDescription>Search by name, registration number, or student ID</CardDescription>
           </CardHeader>
+
           <CardContent>
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search students..."
                   value={searchQuery}
@@ -123,7 +144,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* TABLE CARD */}
+        {/* TABLE */}
         <Card>
           <CardHeader>
             <CardTitle>Student Records ({filteredStudents.length})</CardTitle>
@@ -139,7 +160,7 @@ const Dashboard = () => {
                   <TableRow>
                     <TableHead>Student ID</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead>Registration No</TableHead>
+                    <TableHead>University Reg No</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -148,35 +169,28 @@ const Dashboard = () => {
                   {filteredStudents.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                        No students found matching your search.
+                        No students found.
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredStudents.map((student) => (
-                      <TableRow key={student.id} className="hover:bg-muted/50 uppercase">
-                        <TableCell className="font-medium">{student.studentId}</TableCell>
+                      <TableRow key={student.studentId} className="hover:bg-muted/50 uppercase">
+                        <TableCell>{student.studentId}</TableCell>
                         <TableCell>{student.studentName}</TableCell>
-                        <TableCell>{student.regNo || "—"}</TableCell>
+                        <TableCell>{student.universityRegistration || "—"}</TableCell>
 
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/students/${student.studentId}`)}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              View
+                            <Button variant="outline" size="sm" onClick={() => navigate(`/students/${student.studentId}`)}>
+                              <Eye className="h-4 w-4 mr-1" /> View
                             </Button>
 
                             <Button variant="outline" size="sm" onClick={() => navigate(`/students/${student.studentId}/edit`)}>
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit
+                              <Edit className="h-4 w-4 mr-1" /> Edit
                             </Button>
 
                             <Button variant="outline" size="sm" onClick={() => navigate(`/students/${student.studentId}/print`)}>
-                              <Printer className="h-4 w-4 mr-1" />
-                              Print
+                              <Printer className="h-4 w-4 mr-1" /> Print
                             </Button>
                           </div>
                         </TableCell>
