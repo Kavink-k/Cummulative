@@ -104,10 +104,10 @@ export default function FixedSidebar({
             collapsed ? "justify-center p-2" : "justify-start gap-2 p-3"
           )}
         >
-          <div className="bg-primary text-primary-foreground rounded-lg grid place-items-center"
+          {/* <div className="bg-primary text-primary-foreground rounded-lg grid place-items-center"
                style={{ width: collapsed ? 28 : 32, height: collapsed ? 28 : 32 }}>
             <BookOpen className={cn(collapsed ? "h-4 w-4" : "h-5 w-5")} />
-          </div>
+          </div> */}
           {!collapsed && (
             <div className="leading-tight">
               <div className="text-sm font-semibold">Student Record</div>

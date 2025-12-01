@@ -14,12 +14,11 @@ const clinicalRecordSchema = z.object({
   prescribedHours: z.string(),
   completedHours: z
   .string()
-  .min(1, "")
-  .regex(/^\d+$/, "Completed hours must be a valid number"),
+  .optional(),
 
 hospital: z
   .string()
-  .min(2, ""),
+  .optional(),
 });
 
 const clinicalExperienceSchema = z.object({

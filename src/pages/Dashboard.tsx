@@ -86,9 +86,9 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="bg-primary text-primary-foreground p-2 rounded-lg">
+              {/* <div className="bg-primary text-primary-foreground p-2 rounded-lg">
                 <BookOpen className="h-6 w-6" />
-              </div>
+              </div> */}
               <div>
                 <h1 className="text-2xl font-bold text-foreground">Student Records Dashboard</h1>
                 <p className="text-sm text-muted-foreground">Manage Student Cumulative Records</p>

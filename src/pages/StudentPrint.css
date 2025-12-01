@@ -197,3 +197,20 @@
 }
 
 
+/* Rotate Course Instruction table 90 degrees only in print view */
+@media print {
+  .rotate-90 {
+    transform: rotate(90deg);
+    transform-origin: top left;
+    width: 100vh !important;
+    height: 100vw !important;
+    position: relative;
+    left: 0;
+    top: 0;
+  }
+
+  /* Prevent content clipping */
+  /* .rotate-90 table {
+    max-width: none !important;
+  } */
+}
