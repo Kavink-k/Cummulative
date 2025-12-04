@@ -1,4 +1,21 @@
 /* Print-specific styles */
+
+/* Force LANDSCAPE orientation only for Course Instruction tables */
+@media print {
+  .course-instruction-page {
+    page: courseInstructionLandscape;
+  }
+}
+
+@page courseInstructionLandscape {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+
+
+
+
 @media print {
   .no-print {
     display: none !important;
@@ -196,21 +213,29 @@
   margin: 5px 0;
 }
 
-
-/* Rotate Course Instruction table 90 degrees only in print view */
+/* Rotate Entire Course Instruction Section (Step 6) Only in Print */
 @media print {
-  .rotate-90 {
+
+  .course-instruction-wrapper {
     transform: rotate(90deg);
-    transform-origin: top left;
-    width: 100vh !important;
-    height: 100vw !important;
+    transform-origin: left top;
+    width: 100vh;   /* landscape width */
+    height: 100vw;  /* landscape height */
+
     position: relative;
-    left: 0;
-    top: 0;
+    top: 100mm;      /* fine-tuned placement */
+    left: -100mm;    /* fine-tuned placement */
+
+    page-break-before: always;
+    page-break-after: always;
   }
 
-  /* Prevent content clipping */
-  /* .rotate-90 table {
-    max-width: none !important;
-  } */
+  .course-instruction-rotate-page table {
+    page-break-inside: avoid;
+  }
+
+  .course-instruction-rotate-page h4 {
+    margin-left: 20px;
+    margin-bottom: 10px;
+  }
 }

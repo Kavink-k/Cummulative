@@ -734,7 +734,7 @@ const StudentPrint = () => {
             if (courses.length === 0) return null;
 
             return (
-              <div key={sem} className="mb-6">
+<div key={sem} className="course-instruction-page">
                 <h4 className="subsection-title">Semester {sem}</h4>
                 <table className="data-table">
                   <thead>
