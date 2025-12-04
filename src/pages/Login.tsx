@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { login } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,8 +79,11 @@ export default function Login() {
               {isPending ? "Signing in..." : "Sign in"}
             </Button>
 
-            <p className="text-xs text-center text-muted-foreground">
-              Demo mode stores a token in your browser. Replace with your real API when ready.
+            <p className="text-sm text-center text-muted-foreground">
+              Don't have an account?{" "}
+              <Link to="/register" className="text-primary hover:underline font-medium">
+                Register
+              </Link>
             </p>
           </form>
         </CardContent>

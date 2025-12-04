@@ -5,6 +5,7 @@ import {
   Upload,
   LogOut,
   BookOpen,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,7 +38,7 @@ function NavItem({
   label: string;
   collapsed: boolean;
 }) {
-  // Shared link element (we’ll wrap it in a tooltip if collapsed)
+  // Shared link element (we'll wrap it in a tooltip if collapsed)
   const linkEl = (
     <NavLink
       to={to}
@@ -46,9 +47,9 @@ function NavItem({
           baseLink,
           collapsed
             ? // Collapsed: center as a square tile (no text)
-              "w-full h-10 grid place-items-center"
+            "w-full h-10 grid place-items-center"
             : // Expanded: regular horizontal pill
-              "w-full flex items-center gap-3 px-3 py-2",
+            "w-full flex items-center gap-3 px-3 py-2",
           isActive
             ? "bg-primary text-primary-foreground"
             : "text-foreground hover:bg-muted"
@@ -80,6 +81,7 @@ export default function FixedSidebar({
 }: FixedSidebarProps) {
   const navigate = useNavigate();
   const user = getUser();
+  const isAdmin = user?.role === 'admin';
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -127,14 +129,28 @@ export default function FixedSidebar({
           )}
           <nav className={cn("w-full", collapsed ? "space-y-1" : "space-y-2")}>
             <NavItem
-  to="/dashboard"
-  icon={LayoutDashboard}
-  label="Dashboard"
-  collapsed={collapsed}
-/>
+              to="/dashboard"
+              icon={LayoutDashboard}
+              label="Dashboard"
+              collapsed={collapsed}
+            />
             <NavItem to="/form" icon={ClipboardList} label="Form Submission" collapsed={collapsed} />
             <NavItem to="/bulk" icon={Upload} label="Bulk Submission" collapsed={collapsed} />
           </nav>
+
+          {/* Admin Section */}
+          {isAdmin && (
+            <>
+              {!collapsed && (
+                <h2 className="text-xs font-semibold text-muted-foreground mb-2 mt-6">
+                  Administration
+                </h2>
+              )}
+              <nav className={cn("w-full", collapsed ? "space-y-1 mt-4" : "space-y-2")}>
+                <NavItem to="/admin" icon={Shield} label="Admin Dashboard" collapsed={collapsed} />
+              </nav>
+            </>
+          )}
         </div>
 
         {/* Logout pinned bottom */}
