@@ -1,5 +1,5 @@
 // API utilities for user authentication
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://apicummulative.yugan.tech/api";
 
 export interface RegisterUserData {
     name: string;

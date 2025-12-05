@@ -62,7 +62,7 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
     console.log('form.formState.isSubmitting:', form.formState.isSubmitting);
     console.log('form.formState.isValid:', form.formState.isValid);
     console.log('form.formState.errors:', form.formState.errors);
-    
+
     // Log all form values
     const values = form.getValues();
     console.log('Current form values:', values);
@@ -80,7 +80,7 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
       // If there's a saved photo URL from the backend, display it
       const fullPhotoUrl = photoUrl.startsWith('http')
         ? photoUrl
-        : `http://localhost:5000${photoUrl}`;
+        : `https://apicummulative.yugan.tech${photoUrl}`;
       console.log('Setting photo preview to:', fullPhotoUrl);
       setPhotoPreview(fullPhotoUrl);
       // Clear photoFile since we're showing a saved photo from backend
@@ -151,14 +151,14 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
     console.log('Form data:', data);
     console.log('Photo file:', photoFile);
     console.log('Photo preview:', photoPreview);
-    
+
     // If photo was removed (no preview and no file), send empty photoUrl to trigger deletion
     const submissionData = {
       ...data,
       photoFile,
       photoUrl: (!photoPreview && !photoFile) ? '' : data.photo // Empty string signals deletion
     };
-    
+
     console.log('Calling onSubmit with:', submissionData);
     onSubmit(submissionData);
   };
@@ -167,7 +167,7 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
   const handleFormError = (errors: any) => {
     console.error('❌ Form validation FAILED!');
     console.error('Validation errors:', errors);
-    
+
     // Log detailed error information
     Object.keys(errors).forEach(fieldName => {
       console.error(`Field "${fieldName}" error:`, errors[fieldName]);
@@ -465,30 +465,30 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
-  control={form.control}
-  name="contactMobile"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Contact Mobile Number</FormLabel>
-      <FormControl>
-        <Input
-          type="text"
-          inputMode="numeric"
-          maxLength={10}
-          pattern="[0-9]*"
-          placeholder="9876543210"
-          {...field}
-          onInput={(e) => {
-            const input = e.target as HTMLInputElement;
-            input.value = input.value.replace(/\D/g, ""); // remove non-numeric
-            field.onChange(input.value); // update RHF properly
-          }}
-        />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+            control={form.control}
+            name="contactMobile"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Contact Mobile Number</FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={10}
+                    pattern="[0-9]*"
+                    placeholder="9876543210"
+                    {...field}
+                    onInput={(e) => {
+                      const input = e.target as HTMLInputElement;
+                      input.value = input.value.replace(/\D/g, ""); // remove non-numeric
+                      field.onChange(input.value); // update RHF properly
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
 
           <FormField
@@ -512,11 +512,11 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
               <FormItem>
                 <FormLabel>Student Aadhar Number</FormLabel>
                 <FormControl>
-                  <Input placeholder="123456789012" maxLength={12} {...field}  onInput={(e) => {
-            const input = e.target as HTMLInputElement;
-            input.value = input.value.replace(/\D/g, ""); // remove non-numeric
-            field.onChange(input.value); // update RHF properly
-          }}/>
+                  <Input placeholder="123456789012" maxLength={12} {...field} onInput={(e) => {
+                    const input = e.target as HTMLInputElement;
+                    input.value = input.value.replace(/\D/g, ""); // remove non-numeric
+                    field.onChange(input.value); // update RHF properly
+                  }} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

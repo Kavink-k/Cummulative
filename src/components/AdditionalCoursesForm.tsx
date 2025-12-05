@@ -82,7 +82,7 @@ export const AdditionalCoursesForm = ({ onSubmit, defaultValues, onProgressChang
     // If the course has a database ID, delete it from the backend
     if (courseToDelete.id) {
       try {
-        const response = await fetch(`http://localhost:5000/api/additional-courses/${courseToDelete.id}`, {
+        const response = await fetch(`https://apicummulative.yugan.tech/api/additional-courses/${courseToDelete.id}`, {
           method: 'DELETE',
         });
 

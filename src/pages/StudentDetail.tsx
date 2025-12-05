@@ -115,7 +115,7 @@ const StudentDetail = () => {
               {student.steps.step1?.photoUrl && (
                 <div className="ml-4">
                   <img
-                    src={student.steps.step1.photoUrl.startsWith('http') ? student.steps.step1.photoUrl : `http://localhost:5000${student.steps.step1.photoUrl}`}
+                    src={student.steps.step1.photoUrl.startsWith('http') ? student.steps.step1.photoUrl : `https://apicummulative.yugan.tech${student.steps.step1.photoUrl}`}
                     alt={student.name}
                     className="w-32 h-40 object-cover rounded-sm border-2 border-border shadow-md"
                     style={{ aspectRatio: '3/4' }}
@@ -160,7 +160,7 @@ const StudentDetail = () => {
                   <img
                     src={
                       student.steps.step1?.photoUrl
-                        ? (student.steps.step1.photoUrl.startsWith('http') ? student.steps.step1.photoUrl : `http://localhost:5000${student.steps.step1.photoUrl}`)
+                        ? (student.steps.step1.photoUrl.startsWith('http') ? student.steps.step1.photoUrl : `https://apicummulative.yugan.tech${student.steps.step1.photoUrl}`)
                         : '/images/default-profile.svg'
                     }
                     alt={student.name}

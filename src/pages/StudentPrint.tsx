@@ -87,7 +87,7 @@
 //             {student.photoUrl && (
 //               <div className="student-photo">
 //                 <img
-//                   src={student.photoUrl.startsWith("http") ? student.photoUrl : `http://localhost:5000${student.photoUrl}`}
+//                   src={student.photoUrl.startsWith("http") ? student.photoUrl : `https://apicummulative.yugan.tech${student.photoUrl}`}
 //                   alt="Student"
 //                 />
 //               </div>
@@ -593,7 +593,7 @@ const StudentPrint = () => {
             {student.photoUrl && (
               <div className="student-photo">
                 <img
-                  src={student.photoUrl.startsWith("http") ? student.photoUrl : `http://localhost:5000${student.photoUrl}`}
+                  src={student.photoUrl.startsWith("http") ? student.photoUrl : `https://apicummulative.yugan.tech${student.photoUrl}`}
                   alt="Student"
                 />
               </div>
@@ -672,7 +672,7 @@ const StudentPrint = () => {
               </tr>
             </thead>
             <tbody>
-              {["I","II","III","IV","V","VI","VII","VIII"].map(sem => {
+              {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map(sem => {
                 const rec = student.steps.step4?.find((r: any) => r.semester === sem) || {};
                 return (
                   <tr key={sem}>
@@ -707,7 +707,7 @@ const StudentPrint = () => {
               </tr>
             </thead>
             <tbody>
-              {["I","II","III","IV","V","VI","VII","VIII"].map(sem => {
+              {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map(sem => {
                 const act = student.steps.step5?.find((a: any) => a.semester === sem) || {};
                 return (
                   <tr key={sem}>
@@ -729,12 +729,12 @@ const StudentPrint = () => {
         {/* 6. Course Instruction */}
         <div className="print-section">
           <h3 className="section-title">6. Course Instruction</h3>
-          {["I","II","III","IV","V","VI","VII","VIII"].map(sem => {
+          {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map(sem => {
             const courses = student.steps.step6?.filter((c: any) => c.semester === sem) || [];
             if (courses.length === 0) return null;
 
             return (
-<div key={sem} className="course-instruction-page">
+              <div key={sem} className="course-instruction-page">
                 <h4 className="subsection-title">Semester {sem}</h4>
                 <table className="data-table">
                   <thead>
@@ -953,7 +953,7 @@ const StudentPrint = () => {
           </table>
         </div>
 
-       {/* 12. VERIFICATION - FIXED & SAFE */}
+        {/* 12. VERIFICATION - FIXED & SAFE */}
         <div className="print-section">
           <h3 className="section-title">12. VERIFICATION</h3>
           <table className="data-table">

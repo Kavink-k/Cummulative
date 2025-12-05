@@ -402,7 +402,7 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://apicummulative.yugan.tech/api';
 
 // Create axios instance
 const api = axios.create({
@@ -413,12 +413,12 @@ const api = axios.create({
 });
 
 export const fetchpersonalprofileFromDB = async () => {
-  const res = await axios.get("http://localhost:5000/api/personal-profiles/");
+  const res = await axios.get("https://apicummulative.yugan.tech/api/personal-profiles/");
   return res.data; // list of student step1 data
 };
 
 export const fetchadmissionDetailsFromDB = async () => {
-  const res = await axios.get("http://localhost:5000/api/admission-details/");
+  const res = await axios.get("https://apicummulative.yugan.tech/api/admission-details/");
   return res.data;
 };
 

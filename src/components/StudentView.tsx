@@ -56,17 +56,17 @@ const CourseInstructionView = ({ data }: { data: any[] }) => {
 
   // Calculate totals from actual courses (fallback to DB total row if needed)
   let totalTheoryCredits = 0,
-      totalSkillLabCredits = 0,
-      totalClinicalCredits = 0,
-      totalTheoryPrescribed = 0,
-      totalTheoryAttended = 0,
-      totalTheoryPercentage = 0,
-      totalSkillLabPrescribed = 0,
-      totalSkillLabAttended = 0,
-      totalSkillLabPercentage = 0,
-      totalClinicalPrescribed = 0,
-      totalClinicalAttended = 0,
-      totalClinicalPercentage = 0;
+    totalSkillLabCredits = 0,
+    totalClinicalCredits = 0,
+    totalTheoryPrescribed = 0,
+    totalTheoryAttended = 0,
+    totalTheoryPercentage = 0,
+    totalSkillLabPrescribed = 0,
+    totalSkillLabAttended = 0,
+    totalSkillLabPercentage = 0,
+    totalClinicalPrescribed = 0,
+    totalClinicalAttended = 0,
+    totalClinicalPercentage = 0;
 
   actualCourses.forEach((c: any) => {
     totalTheoryCredits += Number(c.theoryCredits || 0);
@@ -971,26 +971,26 @@ const StudentView = () => {
     <div className="container mx-auto px-4 py-10 max-w-5xl">
 
       {/* HEADER ACTIONS: Back + Edit Button */}
-<div className="flex items-center justify-between mb-6">
-  <Button variant="outline" onClick={() => navigate(-1)}>
-    <ArrowLeft className="h-4 w-4 mr-2" />
-    Back
-  </Button>
-<div className="flex gap-2">
-  <Button 
-    onClick={() => navigate(`/students/${studentId}/edit`)}
-    className="bg-blue-600 hover:bg-blue-700 text-white"
-  >
-    <Edit className="h-4 w-4 mr-2" />
-    Edit Student Record
-  </Button>
-  <Button onClick={()=>navigate(`/students/${studentId}/print`)}     className="bg-red-600 hover:bg-red-700 text-white"
->
+      <div className="flex items-center justify-between mb-6">
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => navigate(`/students/${studentId}/edit`)}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Student Record
+          </Button>
+          <Button onClick={() => navigate(`/students/${studentId}/print`)} className="bg-red-600 hover:bg-red-700 text-white"
+          >
             <Printer className="h-4 w-4" />
             Print Report
           </Button>
-          </div>
-</div>
+        </div>
+      </div>
 
 
       {/* TOP PROFILE CARD */}
@@ -1001,7 +1001,7 @@ const StudentView = () => {
               src={
                 (data.step1?.photoUrl || data.step1?.photo)?.startsWith('http')
                   ? (data.step1?.photoUrl || data.step1?.photo)
-                  : `http://localhost:5000${data.step1?.photoUrl || data.step1?.photo}`
+                  : `https://apicummulative.yugan.tech${data.step1?.photoUrl || data.step1?.photo}`
               }
               alt="profile"
               className="w-32 h-40 object-cover rounded-sm border-2 border-border shadow-md"
