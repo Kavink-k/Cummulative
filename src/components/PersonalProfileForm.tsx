@@ -55,38 +55,38 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
   //   mode: 'onSubmit', // Only validate on submit
   // });
 
-    const defaultFormValues: Partial<PersonalProfileFormData> = {
-  studentId: "",
-  studentName: "",
-  age: 0,
-  gender: "",
-  dateOfBirth: "",
-  nationality: "",
-  religion: "",
-  community: "",
-  nativity: "",
-  maritalStatus: "",
-  parentGuardianName: "",
-  motherTongue: "",
-  communicationAddress: "",
-  permanentAddress: "",
-  contactMobile: "",
-  studentEmail: "",
-  aadharNo: "",
-  ociNumber: "",
-  emisNo: "",
-  mediumOfInstruction: "",
-};
+  const defaultFormValues: Partial<PersonalProfileFormData> = {
+    studentId: "",
+    studentName: "",
+    age: 0,
+    gender: "",
+    dateOfBirth: "",
+    nationality: "",
+    religion: "",
+    community: "",
+    nativity: "",
+    maritalStatus: "",
+    parentGuardianName: "",
+    motherTongue: "",
+    communicationAddress: "",
+    permanentAddress: "",
+    contactMobile: "",
+    studentEmail: "",
+    aadharNo: "",
+    ociNumber: "",
+    emisNo: "",
+    mediumOfInstruction: "",
+  };
 
-const form = useForm<PersonalProfileFormData>({
-  resolver: zodResolver(personalProfileSchema),
-  // Merge defaults so no field is ever undefined
-  defaultValues: {
-    ...defaultFormValues,
-    ...defaultValues,
-  },
-  mode: 'onSubmit',
-});
+  const form = useForm<PersonalProfileFormData>({
+    resolver: zodResolver(personalProfileSchema),
+    // Merge defaults so no field is ever undefined
+    defaultValues: {
+      ...defaultFormValues,
+      ...defaultValues,
+    },
+    mode: 'onSubmit',
+  });
 
 
 
@@ -99,7 +99,7 @@ const form = useForm<PersonalProfileFormData>({
       // If there's a saved photo URL from the backend, display it
       const fullPhotoUrl = photoUrl.startsWith('http')
         ? photoUrl
-        : `http://localhost:5000${photoUrl}`;
+        : `https://cummulative-backend-production.up.railway.app${photoUrl}`;
       setPhotoPreview(fullPhotoUrl);
       // Clear photoFile since we're showing a saved photo from backend
       setPhotoFile(null);

@@ -1,5 +1,5 @@
 // API utilities for user authentication
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://cummulative-backend-production.up.railway.app/api";
 export interface RegisterUserData {
     name: string;
     designation: string;
