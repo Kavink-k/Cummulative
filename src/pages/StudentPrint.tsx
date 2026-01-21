@@ -124,7 +124,7 @@
 //                   src={
 //                     student.photoUrl.startsWith("http")
 //                       ? student.photoUrl
-//                       : `http://localhost:5000${student.photoUrl}`
+//                       : `https://cummulative-backend-production.up.railway.app${student.photoUrl}`
 //                   }
 //                   alt="Student"
 //                 />
@@ -686,24 +686,24 @@ const StudentPrint = () => {
     if (Array.isArray(data)) return data;
     if (arrayKey && data[arrayKey] && Array.isArray(data[arrayKey])) return data[arrayKey];
     if (typeof data === "object") {
-        if (data.records && Array.isArray(data.records)) return data.records;
-        if (data.completions && Array.isArray(data.completions)) return data.completions;
-        return Object.values(data).filter((i) => i !== null);
+      if (data.records && Array.isArray(data.records)) return data.records;
+      if (data.completions && Array.isArray(data.completions)) return data.completions;
+      return Object.values(data).filter((i) => i !== null);
     }
     return [];
   };
 
   if (loading) return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-10 w-10 animate-spin" />
-      </div>
+    <div className="flex items-center justify-center min-h-screen">
+      <Loader2 className="h-10 w-10 animate-spin" />
+    </div>
   );
 
   if (!student) return (
-      <div className="text-center py-20">
-        <h2>Student Not Found</h2>
-        <Button onClick={() => navigate("/dashboard")}>Back</Button>
-      </div>
+    <div className="text-center py-20">
+      <h2>Student Not Found</h2>
+      <Button onClick={() => navigate("/dashboard")}>Back</Button>
+    </div>
   );
 
   // --- MERGE LOGIC FOR CLINICAL EXPERIENCE ---
@@ -714,15 +714,15 @@ const StudentPrint = () => {
     // Always map from the master list to keep the full table structure
     return allClinicalRecords.map((staticRec: any) => {
       const savedMatch = savedRecords.find(
-        (s: any) => 
-          s.semester === staticRec.semester && 
+        (s: any) =>
+          s.semester === staticRec.semester &&
           s.clinicalArea === staticRec.clinicalArea
       );
 
       return {
         ...staticRec,
-        completedHours: savedMatch?.completedHours || "-", 
-        hospital: savedMatch?.hospital || "-",           
+        completedHours: savedMatch?.completedHours || "-",
+        hospital: savedMatch?.hospital || "-",
       };
     });
   })();
@@ -755,15 +755,15 @@ const StudentPrint = () => {
           <div className="header-content">
             <div className="student-info">
               <div>
-              <p><strong>Name:</strong> {student.name}</p> 
-              <p><strong>Student ID:</strong> {student.id}</p>
-              {/* <p><strong>Registration No:</strong> {student.regNo}</p> */}
+                <p><strong>Name:</strong> {student.name}</p>
+                <p><strong>Student ID:</strong> {student.id}</p>
+                {/* <p><strong>Registration No:</strong> {student.regNo}</p> */}
               </div>
             </div>
             {student.photoUrl && (
               <div className="student-photo">
                 <img
-                  src={student.photoUrl.startsWith("http") ? student.photoUrl : `http://localhost:5000${student.photoUrl}`}
+                  src={student.photoUrl.startsWith("http") ? student.photoUrl : `https://cummulative-backend-production.up.railway.app${student.photoUrl}`}
                   alt="Student"
                 />
               </div>

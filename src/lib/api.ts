@@ -1,6 +1,6 @@
 // import axios from 'axios';
 
-// const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = 'https://cummulative-backend-production.up.railway.app/api';
 
 // // Create axios instance
 // const api = axios.create({
@@ -12,7 +12,7 @@
 
 
 // export const fetchAllStudentsFromDB = async () => {
-//   const res = await axios.get("http://localhost:5000/api/personal-profiles/");
+//   const res = await axios.get("https://cummulative-backend-production.up.railway.app/api/personal-profiles/");
 //   return res.data; // list of student step1 data
 // };
 // // Helper to clean empty strings to null (prevents 400 errors on numeric/date fields)
@@ -402,7 +402,7 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://cummulative-backend-production.up.railway.app/api';
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -412,12 +412,12 @@ const api = axios.create({
 });
 
 export const fetchpersonalprofileFromDB = async () => {
-  const res = await axios.get("http://localhost:5000/api/personal-profiles/");
+  const res = await axios.get("https://cummulative-backend-production.up.railway.app/api/personal-profiles/");
   return res.data; // list of student step1 data
 };
 
 export const fetchadmissionDetailsFromDB = async () => {
-  const res = await axios.get("http://localhost:5000/api/admission-details/");
+  const res = await axios.get("https://cummulative-backend-production.up.railway.app/api/admission-details/");
   return res.data;
 };
 
@@ -723,34 +723,34 @@ export const getAllDataByStudentId = async (studentId: string) => {
       // Step 1: Personal Profile - format dateOfBirth
       step1: step1.status === 'fulfilled' && step1.value.data.data
         ? {
-            ...step1.value.data.data,
-            photo: step1.value.data.data.photoUrl,
-            dateOfBirth: parseDate(step1.value.data.data.dateOfBirth),
-            regNo:step1.value.data.data.universityRegistration,
-            
-          }
+          ...step1.value.data.data,
+          photo: step1.value.data.data.photoUrl,
+          dateOfBirth: parseDate(step1.value.data.data.dateOfBirth),
+          regNo: step1.value.data.data.universityRegistration,
+
+        }
         : null,
 
       // Step 2: Educational Qualification - format date fields
       step2: step2.status === 'fulfilled' && step2.value.data.data
         ? {
-            ...step2.value.data.data,
-            certificateDate: parseDate(step2.value.data.data.certificateDate),
-            hscVerificationDate: parseDate(step2.value.data.data.hscVerificationDate)
-          }
+          ...step2.value.data.data,
+          certificateDate: parseDate(step2.value.data.data.certificateDate),
+          hscVerificationDate: parseDate(step2.value.data.data.hscVerificationDate)
+        }
         : null,
 
       // Step 3: Admission Details - format all date fields
       step3: step3.status === 'fulfilled' && step3.value.data.data
         ? {
-            ...step3.value.data.data,
-            dateOfAdmission: parseDate(step3.value.data.data.dateOfAdmission),
-            migrationCertificateDate: parseDate(step3.value.data.data.migrationCertificateDate),
-            eligibilityCertificateDate: parseDate(step3.value.data.data.eligibilityCertificateDate),
-            communityCertificateDate: parseDate(step3.value.data.data.communityCertificateDate),
-            nativityCertificateDate: parseDate(step3.value.data.data.nativityCertificateDate),
-            dateOfDiscontinuation: parseDate(step3.value.data.data.dateOfDiscontinuation),
-          }
+          ...step3.value.data.data,
+          dateOfAdmission: parseDate(step3.value.data.data.dateOfAdmission),
+          migrationCertificateDate: parseDate(step3.value.data.data.migrationCertificateDate),
+          eligibilityCertificateDate: parseDate(step3.value.data.data.eligibilityCertificateDate),
+          communityCertificateDate: parseDate(step3.value.data.data.communityCertificateDate),
+          nativityCertificateDate: parseDate(step3.value.data.data.nativityCertificateDate),
+          dateOfDiscontinuation: parseDate(step3.value.data.data.dateOfDiscontinuation),
+        }
         : null,
 
       // Step 4: Attendance Records - no date fields
@@ -765,27 +765,27 @@ export const getAllDataByStudentId = async (studentId: string) => {
       // Step 7: Observational Visits - format date fields and wrap in visits object
       step7: step7.status === 'fulfilled' && step7.value.data.data
         ? {
-            visits: Array.isArray(step7.value.data.data)
-              ? step7.value.data.data.map((visit: any) => ({
-                  ...visit,
-                  date: parseDate(visit.date)
-                }))
-              : []
-          }
+          visits: Array.isArray(step7.value.data.data)
+            ? step7.value.data.data.map((visit: any) => ({
+              ...visit,
+              date: parseDate(visit.date)
+            }))
+            : []
+        }
         : null,
 
       // Step 8: Clinical Experience - wrap in records object
       step8: step8.status === 'fulfilled' && step8.value.data.data
         ? {
-            records: Array.isArray(step8.value.data.data) ? step8.value.data.data : []
-          }
+          records: Array.isArray(step8.value.data.data) ? step8.value.data.data : []
+        }
         : null,
 
       // Step 9: Research Projects - wrap in projects object
       step9: step9.status === 'fulfilled' && step9.value.data.data
         ? {
-            projects: Array.isArray(step9.value.data.data) ? step9.value.data.data : []
-          }
+          projects: Array.isArray(step9.value.data.data) ? step9.value.data.data : []
+        }
         : null,
 
       // Step 10: Additional Courses - format from/to dates
@@ -793,12 +793,12 @@ export const getAllDataByStudentId = async (studentId: string) => {
         ? {
           courses: Array.isArray(step10.value.data.data)
             ? step10.value.data.data.map((course: any, index: number) => ({
-                id: course.id,
-                courseId: String(index + 1),
-                courseName: course.courseName || '',
-                from: parseDate(course.from),
-                to: parseDate(course.to),
-              }))
+              id: course.id,
+              courseId: String(index + 1),
+              courseName: course.courseName || '',
+              from: parseDate(course.from),
+              to: parseDate(course.to),
+            }))
             : []
         }
         : null,
@@ -806,26 +806,26 @@ export const getAllDataByStudentId = async (studentId: string) => {
       // Step 11: Course Completion - format date fields
       step11: step11.status === 'fulfilled' && step11.value.data.data
         ? {
-            completions: Array.isArray(step11.value.data.data)
-              ? step11.value.data.data.map((comp: any) => ({
-                  ...comp,
-                  dateOfIssue: parseDate(comp.dateOfIssue)
-                }))
-              : []
-          }
+          completions: Array.isArray(step11.value.data.data)
+            ? step11.value.data.data.map((comp: any) => ({
+              ...comp,
+              dateOfIssue: parseDate(comp.dateOfIssue)
+            }))
+            : []
+        }
         : null,
 
       // Step 12: Verification - extract verifications array from record and format dates
       step12: step12.status === 'fulfilled' && step12.value.data.data
         ? {
-            verifications: Array.isArray(step12.value.data.data.verifications)
-              ? step12.value.data.data.verifications.map((ver: any) => ({
-                  ...ver,
-                  teacherSignature: parseDate(ver.teacherSignature),
-                  principalSignature: parseDate(ver.principalSignature)
-                }))
-              : []
-          }
+          verifications: Array.isArray(step12.value.data.data.verifications)
+            ? step12.value.data.data.verifications.map((ver: any) => ({
+              ...ver,
+              teacherSignature: parseDate(ver.teacherSignature),
+              principalSignature: parseDate(ver.principalSignature)
+            }))
+            : []
+        }
         : null,
     };
   } catch (error) {
