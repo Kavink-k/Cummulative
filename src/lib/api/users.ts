@@ -1,5 +1,5 @@
 // API utilities for user authentication
-const API_BASE_URL = "https://cummulative-backend-production.up.railway.app/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export interface RegisterUserData {
     name: string;
     designation: string;

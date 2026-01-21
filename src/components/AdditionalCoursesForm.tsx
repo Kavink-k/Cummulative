@@ -82,7 +82,7 @@ export const AdditionalCoursesForm = ({ onSubmit, defaultValues, onProgressChang
     // If the course has a database ID, delete it from the backend
     if (courseToDelete.id) {
       try {
-        const response = await fetch(`https://cummulative-backend-production.up.railway.app/api/additional-courses/${courseToDelete.id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/additional-courses/${courseToDelete.id}`, {
           method: 'DELETE',
         });
 

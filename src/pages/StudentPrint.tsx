@@ -763,7 +763,7 @@ const StudentPrint = () => {
             {student.photoUrl && (
               <div className="student-photo">
                 <img
-                  src={student.photoUrl.startsWith("http") ? student.photoUrl : `https://cummulative-backend-production.up.railway.app${student.photoUrl}`}
+                  src={student.photoUrl.startsWith("http") ? student.photoUrl : `${import.meta.env.VITE_BACKEND_URL}${student.photoUrl}`}
                   alt="Student"
                 />
               </div>
