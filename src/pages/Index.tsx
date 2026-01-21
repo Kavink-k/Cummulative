@@ -84,24 +84,16 @@ const Index = () => {
     const fetchBackendData = async () => {
       const step1Data = formData.step1;
       if (!step1Data?.studentId) {
-        console.log('No studentId found, skipping backend fetch');
         return;
       }
 
       // Skip if we've already fetched for this studentId
       if (fetchedStudentIdRef.current === step1Data.studentId) {
-        console.log('Already fetched data for this studentId, skipping');
         return;
       }
 
       try {
-        console.log(`Fetching data from backend for studentId: ${step1Data.studentId}`);
         const backendData = await getAllDataByStudentId(step1Data.studentId);
-
-        console.log('Backend data received:', backendData);
-        console.log('Backend step1 data:', backendData.step1);
-        console.log('Backend step1 photo:', backendData.step1?.photo);
-        console.log('Backend step1 photoUrl:', backendData.step1?.photoUrl);
 
         // Merge backend data with localStorage (localStorage takes precedence)
         const mergedData: Record<string, any> = {};
@@ -119,11 +111,7 @@ const Index = () => {
           }
         });
 
-        console.log('Merged data:', mergedData);
-        console.log('Merged step1:', mergedData.step1);
-        console.log('Merged step1 photo:', mergedData.step1?.photo);
         if (Object.keys(mergedData).length > 0) {
-          console.log('Merging backend data with localStorage:', mergedData);
           setFormData(prev => ({ ...prev, ...mergedData }));
 
           // Update progress for fetched steps
@@ -290,32 +278,62 @@ const Index = () => {
     return savedData;
   };
 
-  const renderCurrentForm = () => {
-    const defaultValues = getStepDefaultValues(currentStep);
-    const commonProps = {
-      onSubmit: handleFormSubmit,
-      defaultValues: defaultValues,
-      onProgressChange: handleProgressChange(currentStep),
-      key: `step-${currentStep}-${JSON.stringify(defaultValues)}`, // Force remount when data changes
-    };
+  // const renderCurrentForm = () => {
+  //   const defaultValues = getStepDefaultValues(currentStep);
+  //   const commonProps = {
+  //     onSubmit: handleFormSubmit,
+  //     defaultValues: defaultValues,
+  //     onProgressChange: handleProgressChange(currentStep),
+  //     key: `step-${currentStep}-${JSON.stringify(defaultValues)}`, // Force remount when data changes
+  //   };
 
-    switch (currentStep) {
-      case 1: return <PersonalProfileForm {...commonProps} />;
-      case 2: return <EducationalQualificationForm {...commonProps} />;
-      case 3: return <AdmissionDetailsForm {...commonProps} />;
-      case 4: return <AttendanceForm {...commonProps} />;
-      case 5: return <ActivitiesParticipationForm {...commonProps} />;
-      case 6: return <CourseInstructionForm {...commonProps} />;
-      case 7: return <ObservationalVisitForm {...commonProps} />;
-      case 8: return <ClinicalExperienceForm {...commonProps} />;
-      case 9: return <ResearchProjectForm {...commonProps} />;
-      case 10: return <AdditionalCoursesForm {...commonProps} />;
-      case 11: return <CourseCompletionForm {...commonProps} />;
-      case 12: return <VerificationForm {...commonProps} />;
-      default: return null;
-    }
+  //   switch (currentStep) {
+  //     case 1: return <PersonalProfileForm {...commonProps} />;
+  //     case 2: return <EducationalQualificationForm {...commonProps} />;
+  //     case 3: return <AdmissionDetailsForm {...commonProps} />;
+  //     case 4: return <AttendanceForm {...commonProps} />;
+  //     case 5: return <ActivitiesParticipationForm {...commonProps} />;
+  //     case 6: return <CourseInstructionForm {...commonProps} />;
+  //     case 7: return <ObservationalVisitForm {...commonProps} />;
+  //     case 8: return <ClinicalExperienceForm {...commonProps} />;
+  //     case 9: return <ResearchProjectForm {...commonProps} />;
+  //     case 10: return <AdditionalCoursesForm {...commonProps} />;
+  //     case 11: return <CourseCompletionForm {...commonProps} />;
+  //     case 12: return <VerificationForm {...commonProps} />;
+  //     default: return null;
+  //   }
+  // };
+// ✅ NEW CODE (FIXED)
+const renderCurrentForm = () => {
+  const defaultValues = getStepDefaultValues(currentStep);
+  
+  // 1. Remove key from the object
+  const commonProps = {
+    onSubmit: handleFormSubmit,
+    defaultValues: defaultValues,
+    onProgressChange: handleProgressChange(currentStep),
   };
 
+  // 2. Define the key separately
+  const formKey = `step-${currentStep}-${JSON.stringify(defaultValues)}`;
+
+  // 3. Pass the key explicitly to each component
+  switch (currentStep) {
+    case 1: return <PersonalProfileForm key={formKey} {...commonProps} />;
+    case 2: return <EducationalQualificationForm key={formKey} {...commonProps} />;
+    case 3: return <AdmissionDetailsForm key={formKey} {...commonProps} />;
+    case 4: return <AttendanceForm key={formKey} {...commonProps} />;
+    case 5: return <ActivitiesParticipationForm key={formKey} {...commonProps} />;
+    case 6: return <CourseInstructionForm key={formKey} {...commonProps} />;
+    case 7: return <ObservationalVisitForm key={formKey} {...commonProps} />;
+    case 8: return <ClinicalExperienceForm key={formKey} {...commonProps} />;
+    case 9: return <ResearchProjectForm key={formKey} {...commonProps} />;
+    case 10: return <AdditionalCoursesForm key={formKey} {...commonProps} />;
+    case 11: return <CourseCompletionForm key={formKey} {...commonProps} />;
+    case 12: return <VerificationForm key={formKey} {...commonProps} />;
+    default: return null;
+  }
+};
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -394,22 +412,16 @@ const Index = () => {
               */}
               <Button
                 onClick={() => {
-                  console.log('Save & Next button clicked, currentStep:', currentStep);
                   const form = document.querySelector("form");
-                  console.log('Form element found:', form);
-                  
+
                   if (form) {
                     // Use requestSubmit() to properly trigger form validation
                     if (typeof form.requestSubmit === 'function') {
-                      console.log('Using requestSubmit()');
                       form.requestSubmit();
                     } else {
                       // Fallback for older browsers
-                      console.log('Using dispatchEvent fallback');
                       form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
                     }
-                  } else {
-                    console.error("No form found to submit");
                   }
                 }}
                 disabled={isSaving}

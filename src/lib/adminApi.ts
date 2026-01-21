@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://apicummulative.yugan.tech/api/users';
-
+const API_BASE_URL = 'http://localhost:5000/api/users';
 // Get current user ID from localStorage
 const getUserId = () => {
     const user = localStorage.getItem('auth_user');

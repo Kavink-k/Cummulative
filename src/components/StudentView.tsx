@@ -348,7 +348,7 @@ const StudentView = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const FILTER_KEYS = ["id", "createdAt", "updatedAt"];
+  const FILTER_KEYS = ["id", "createdAt", "updatedAt", "regNo"];
 
   const filterData = (obj: any) => {
     if (!obj) return null;
@@ -420,7 +420,8 @@ const StudentView = () => {
 
     // === OBSERVATIONAL VISITS - STEP 7 ===
     if (stepId === "step7") {
-      const visits = Array.isArray(section) ? section : [];
+      // Handle both array format and {visits: []} format
+      const visits = Array.isArray(section) ? section : (section?.visits || []);
 
       if (visits.length === 0) {
         return <p className="text-muted-foreground">No observational visits recorded.</p>;
@@ -483,7 +484,8 @@ const StudentView = () => {
 
     // === CLINICAL EXPERIENCE - STEP 8 ===
     if (stepId === "step8") {
-      const records = Array.isArray(section) ? section : [];
+      // Handle both array format and {records: []} format
+      const records = Array.isArray(section) ? section : (section?.records || []);
 
       if (records.length === 0) {
         return <p className="text-muted-foreground">No clinical experience recorded.</p>;
@@ -558,7 +560,8 @@ const StudentView = () => {
 
     // === RESEARCH PROJECTS - STEP 9 ===
     if (stepId === "step9") {
-      const projects = Array.isArray(section) ? section : [];
+      // Handle both array format and {projects: []} format
+      const projects = Array.isArray(section) ? section : (section?.projects || []);
 
       if (projects.length === 0) {
         return <p className="text-muted-foreground">No research projects recorded.</p>;
@@ -704,14 +707,8 @@ const StudentView = () => {
 
     // === VERIFICATION - STEP 12 ===
     if (stepId === "step12") {
-      // Handle both possible structures:
-      // 1. data.step12 = array directly
-      // 2. data.step12 = { verifications: [...] }
-      const rawVerifications = Array.isArray(section)
-        ? section
-        : section?.verifications || section || [];
-
-      const verifications = Array.isArray(rawVerifications) ? rawVerifications : [];
+      // Handle both array format and {verifications: []} format
+      const verifications = Array.isArray(section) ? section : (section?.verifications || []);
 
       if (verifications.length === 0) {
         return <p className="text-muted-foreground">No verification records available.</p>;
@@ -758,20 +755,20 @@ const StudentView = () => {
                         {record.teacherName || record.classTeacherName || "-"}
                       </TableCell>
                       <TableCell className="text-center">
-                        {record.teacherSignatureDate
-                          ? formatDate(record.teacherSignatureDate)
+                        {record.teacherSignature
+                          ? formatDate(record.teacherSignature)
                           : "-"}
-                        {record.teacherSignatureDate && (
+                        {/* {record.teacherSignature && (
                           <span className="ml-2 inline-block w-8 h-8 border-b-2 border-gray-600"></span>
-                        )}
+                        )} */}
                       </TableCell>
                       <TableCell className="text-center">
-                        {record.principalSignatureDate
-                          ? formatDate(record.principalSignatureDate)
+                        {record.principalSignature
+                          ? formatDate(record.principalSignature)
                           : "-"}
-                        {record.principalSignatureDate && (
+                        {/* {record.principalSignatureDate && (
                           <span className="ml-2 inline-block w-8 h-8 border-b-2 border-gray-600"></span>
-                        )}
+                        )} */}
                       </TableCell>
                     </TableRow>
                   );
@@ -932,6 +929,23 @@ const StudentView = () => {
                 <p className="text-muted-foreground">{clean.mediumOfInstruction}</p>
               </div>
             )}
+            {clean.certificateDate && (
+              <div className="p-4 border rounded-lg bg-muted/30">
+                <p className="font-semibold text-sm">Certificate Date</p>
+                <p className="text-muted-foreground">{clean.certificateDate}</p>
+              </div>
+            )}   {clean.hscVerificationNo && (
+              <div className="p-4 border rounded-lg bg-muted/30">
+                <p className="font-semibold text-sm">HSC Verification No</p>
+                <p className="text-muted-foreground">{clean.hscVerificationNo}</p>
+              </div>
+            )}
+            {clean.hscVerificationDate && (
+              <div className="p-4 border rounded-lg bg-muted/30">
+                <p className="font-semibold text-sm">HSC Verification Date</p>
+                <p className="text-muted-foreground">{clean.hscVerificationDate}</p>
+              </div>
+            )}
           </div>
 
           {clean.subjects && Array.isArray(clean.subjects) && clean.subjects.length > 0 && (
@@ -1001,7 +1015,7 @@ const StudentView = () => {
               src={
                 (data.step1?.photoUrl || data.step1?.photo)?.startsWith('http')
                   ? (data.step1?.photoUrl || data.step1?.photo)
-                  : `https://apicummulative.yugan.tech${data.step1?.photoUrl || data.step1?.photo}`
+                  : `http://localhost:5000${data.step1?.photoUrl || data.step1?.photo}`
               }
               alt="profile"
               className="w-32 h-40 object-cover rounded-sm border-2 border-border shadow-md"

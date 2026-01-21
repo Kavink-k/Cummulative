@@ -29,7 +29,7 @@ const clinicalExperienceSchema = z.object({
 type ClinicalExperienceFormData = z.infer<typeof clinicalExperienceSchema>;
 
 // Pre-populated data from the Excel file - all clinical areas for all semesters
-const allClinicalRecords = [
+export const allClinicalRecords = [
   // Semester I
   { semester: "I", clinicalArea: "Nursing Foundation I including First Aid Module", credits: "2", prescribedWeeks: "10", prescribedHours: "160" },
   { semester: "I", clinicalArea: "General Medical Ward", credits: "1", prescribedWeeks: "5", prescribedHours: "80" },
@@ -130,18 +130,12 @@ interface ClinicalExperienceFormProps {
 export const ClinicalExperienceForm = ({ onSubmit, defaultValues, onProgressChange }: ClinicalExperienceFormProps) => {
  const form = useForm<ClinicalExperienceFormData>({
   resolver: zodResolver(clinicalExperienceSchema),
-
-  // 🔥 Real-time validation → red border disappears immediately when fixed
   mode: "onChange",
   reValidateMode: "onChange",
-
   defaultValues: {
     studentId: defaultValues?.studentId || "",
-
-    // If editing existing data → load it
-    // If new form → load default clinical records + blank user fields
     records:
-      defaultValues?.records?.length && defaultValues.records.length > 0
+      defaultValues?.records && defaultValues.records.length > 0
         ? defaultValues.records
         : allClinicalRecords.map((r) => ({
             ...r,

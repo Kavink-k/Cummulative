@@ -49,44 +49,61 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const form = useForm<PersonalProfileFormData>({
-    resolver: zodResolver(personalProfileSchema),
-    defaultValues: defaultValues || {},
-    mode: 'onSubmit', // Only validate on submit
-  });
+  // const form = useForm<PersonalProfileFormData>({
+  //   resolver: zodResolver(personalProfileSchema),
+  //   defaultValues: defaultValues || {},
+  //   mode: 'onSubmit', // Only validate on submit
+  // });
 
-  // Log form state for debugging
-  useEffect(() => {
-    console.log('PersonalProfileForm mounted/updated');
-    console.log('defaultValues:', defaultValues);
-    console.log('form.formState.isSubmitting:', form.formState.isSubmitting);
-    console.log('form.formState.isValid:', form.formState.isValid);
-    console.log('form.formState.errors:', form.formState.errors);
+    const defaultFormValues: Partial<PersonalProfileFormData> = {
+  studentId: "",
+  studentName: "",
+  age: 0,
+  gender: "",
+  dateOfBirth: "",
+  nationality: "",
+  religion: "",
+  community: "",
+  nativity: "",
+  maritalStatus: "",
+  parentGuardianName: "",
+  motherTongue: "",
+  communicationAddress: "",
+  permanentAddress: "",
+  contactMobile: "",
+  studentEmail: "",
+  aadharNo: "",
+  ociNumber: "",
+  emisNo: "",
+  mediumOfInstruction: "",
+};
 
-    // Log all form values
-    const values = form.getValues();
-    console.log('Current form values:', values);
-  }, [defaultValues, form.formState.isSubmitting, form.formState.isValid, form.formState.errors]);
+const form = useForm<PersonalProfileFormData>({
+  resolver: zodResolver(personalProfileSchema),
+  // Merge defaults so no field is ever undefined
+  defaultValues: {
+    ...defaultFormValues,
+    ...defaultValues,
+  },
+  mode: 'onSubmit',
+});
+
+
 
   // Load saved photo from defaultValues when component mounts or defaultValues changes
   useEffect(() => {
-    console.log('PersonalProfileForm defaultValues:', defaultValues);
-
     // Backend returns 'photoUrl' but form uses 'photo'
     const photoUrl = defaultValues?.photo || (defaultValues as any)?.photoUrl;
 
     if (photoUrl) {
-      console.log('Loading saved photo:', photoUrl);
       // If there's a saved photo URL from the backend, display it
       const fullPhotoUrl = photoUrl.startsWith('http')
         ? photoUrl
-        : `https://apicummulative.yugan.tech${photoUrl}`;
-      console.log('Setting photo preview to:', fullPhotoUrl);
+        : `http://localhost:5000${photoUrl}`;
       setPhotoPreview(fullPhotoUrl);
       // Clear photoFile since we're showing a saved photo from backend
       setPhotoFile(null);
     } else {
-      console.log('No photo URL found in defaultValues');
       setPhotoPreview(null);
       setPhotoFile(null);
     }
@@ -227,7 +244,7 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
                 {photoPreview ? 'Change Photo' : 'Upload Photo'}
               </Button>
             </label>
-            <p className="text-xs text-muted-foreground">Max size: 5MB (JPG, PNG)</p>
+            <p className="text-xs text-muted-foreground">Max size: 5MB (JPG,JPEG, PNG)</p>
           </div>
         </div>
 
