@@ -27,6 +27,8 @@ const numberOrNull = z.union([
   z.null(),
 ]);
 
+// AdmissionDetailsForm.tsx
+
 const admissionDetailsSchema = z.object({
   studentId: z.string().min(1, "Student ID is required"),
 
@@ -34,58 +36,35 @@ const admissionDetailsSchema = z.object({
   dateOfAdmission: z.string().min(1, "Date of admission is required"),
   admissionNumber: z.string().min(1, "Admission number is required"),
   rollNumber: z.string().min(1, "Roll number is required"),
-  universityRegistration: z
-    .string()
-    .optional(),
+  // Added .nullable() to these optional fields
+  universityRegistration: z.string().nullable().optional(),
 
-  // Certificates – if your form requires them, add min(1)
-  migrationCertificateNo: z
-    .string()
-    .min(1, "Migration certificate number is required"),
-  migrationCertificateDate: z
-    .string()
-    .min(1, "Migration certificate date is required"),
-
-  eligibilityCertificateNo: z
-    .string()
-    .min(1, "Eligibility certificate number is required"),
-  eligibilityCertificateDate: z
-    .string()
-    .min(1, "Eligibility certificate date is required"),
+  // Certificates
+  migrationCertificateNo: z.string().nullable().optional(),
+  migrationCertificateDate: z.string().nullable().optional(),
+  eligibilityCertificateNo: z.string().nullable().optional(),
+  eligibilityCertificateDate: z.string().nullable().optional(),
 
   // Allotment
   allotmentCategory: z.string().min(1, "Allotment category is required"),
-  govtAllotmentNo: z.string().min(1, "Government allotment number is required"),
-  privateAllotmentNo: z.string().min(1, "Private allotment number is required"),
+  govtAllotmentNo: z.string().nullable().optional(),
+  privateAllotmentNo: z.string().nullable().optional(),
 
   // Community / Nativity
-  communityCertificateNo: z
-    .string()
-    .min(1, "Community certificate number is required"),
-  communityCertificateDate: z
-    .string()
-    .min(1, "Community certificate date is required"),
-
-  nativityCertificateNo: z
-    .string()
-    .min(1, "Nativity certificate number is required"),
-  nativityCertificateDate: z
-    .string()
-    .min(1, "Nativity certificate date is required"),
+  communityCertificateNo: z.string().nullable().optional(),
+  communityCertificateDate: z.string().nullable().optional(),
+  nativityCertificateNo: z.string().nullable().optional(),
+  nativityCertificateDate: z.string().nullable().optional(),
 
   // Discontinuation
-  dateOfDiscontinuation: z
-    .string()
-    .optional(),
-  reasonForDiscontinuation: z
-    .string()
-    .optional(),
+  dateOfDiscontinuation: z.string().nullable().optional(),
+  reasonForDiscontinuation: z.string().nullable().optional(),
 
   // Financial Aid
-  scholarshipSource: z.string().min(1, "Scholarship source is required"),
-  scholarshipAmount: numberOrNull, // keep as-is (since may be null)
-  bankLoanSource: z.string().optional(),
-  bankLoanAmount: z.number().optional(), // keep as-is (since may be null)
+  scholarshipSource: z.string().nullable().optional(),
+  scholarshipAmount: numberOrNull.optional(),
+  bankLoanSource: z.string().nullable().optional(),
+  bankLoanAmount: numberOrNull.optional(),
 });
 
 type AdmissionDetailsFormData = z.infer<typeof admissionDetailsSchema>;

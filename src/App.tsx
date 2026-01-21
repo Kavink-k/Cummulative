@@ -8,9 +8,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import RequireAuth from "@/components/RequireAuth";
 import Shell from "@/components/Shell";
 
-import Index from "./pages/Index";            
+import Index from "./pages/Index";
 import BulkSubmission from "./pages/BulkSubmission";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 
 import Dashboard from "./pages/Dashboard";
@@ -18,6 +19,7 @@ import StudentDetail from "./pages/StudentDetail";
 import StudentEdit from "./pages/StudentEdit";
 import StudentPrint from "./pages/StudentPrint";
 import StudentView from "./components/StudentView";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +32,7 @@ const App = () => (
         <Routes>
           {/* Public */}
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
           {/* Protected area with persistent sidebar */}
           <Route
@@ -43,6 +46,7 @@ const App = () => (
             <Route path="/form" element={<Index />} />
             <Route path="/bulk" element={<BulkSubmission />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             {/* <Route path="/students/:studentId" element={<StudentDetail />} /> */}
             <Route path="/students/:studentId/edit" element={<StudentEdit />} />
             <Route path="/students/:studentId/print" element={<StudentPrint />} />

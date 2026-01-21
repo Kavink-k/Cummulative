@@ -1,5 +1,16 @@
-// Simple client-side auth helper (replace with real API later)
-export type User = { id: string; name: string; email: string };
+import { registerUser as apiRegisterUser, loginUser as apiLoginUser, type UserResponse } from "./api/users";
+
+// Updated User type to match backend response
+export type User = {
+  id: number;
+  name: string;
+  designation: string;
+  collegeName: string;
+  email: string;
+  phone: string;
+  role: 'user' | 'admin';
+  isActive: boolean;
+};
 
 const TOKEN_KEY = "auth_token";
 const USER_KEY = "auth_user";
@@ -13,21 +24,73 @@ export function getUser(): User | null {
   return raw ? (JSON.parse(raw) as User) : null;
 }
 
-export async function login(email: string, password: string) {
-  // TODO: call your real API here.
-  // Demo success if non-empty:
-  if (!email || !password) {
-    throw new Error("Please enter both email and password.");
+export function isAdmin(): boolean {
+  const user = getUser();
+  return user?.role === 'admin';
+}
+
+export async function register(
+  name: string,
+  designation: string,
+  collegeName: string,
+  email: string,
+  phone: string,
+  password: string
+): Promise<User> {
+  try {
+    const userData = await apiRegisterUser({
+      name,
+      designation,
+      collegeName,
+      email,
+      phone,
+      password,
+    });
+
+    // Store user data and token
+    const user: User = {
+      id: userData.id,
+      name: userData.name,
+      designation: userData.designation,
+      collegeName: userData.collegeName,
+      email: userData.email,
+      phone: userData.phone,
+      role: userData.role || 'user',
+      isActive: userData.isActive,
+    };
+
+    localStorage.setItem(TOKEN_KEY, "user-token-" + userData.id);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+
+    return user;
+  } catch (error) {
+    throw error;
   }
-  // Simulate a "token" + user
-  const fakeUser: User = {
-    id: "u_" + Math.random().toString(36).slice(2),
-    name: email.split("@")[0],
-    email,
-  };
-  localStorage.setItem(TOKEN_KEY, "demo-token");
-  localStorage.setItem(USER_KEY, JSON.stringify(fakeUser));
-  return fakeUser;
+}
+
+export async function login(email: string, password: string): Promise<User> {
+  try {
+    const userData = await apiLoginUser({ email, password });
+
+    // Store user data and token
+    const user: User = {
+      id: userData.id,
+      name: userData.name,
+      designation: userData.designation,
+      collegeName: userData.collegeName,
+      email: userData.email,
+      phone: userData.phone,
+      role: userData.role || 'user',
+      isActive: userData.isActive,
+    };
+
+    localStorage.setItem(TOKEN_KEY, "user-token-" + userData.id);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+
+    return user;
+  } catch (error) {
+    throw error;
+  }
 }
 
 export function logout() {

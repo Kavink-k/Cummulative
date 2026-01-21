@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { BookOpen, ChevronLeft, ChevronRight, CheckCircle2, ArrowLeft, Save, Loader2 } from "lucide-react";
 import { getAllDataByStudentId, saveDataToBackend } from "@/lib/api";
 import { StudentInfoDisplay } from "@/components/StudentInfoDisplay";
+import { allClinicalRecords } from "@/components/ClinicalExperienceForm";
 
 
 
@@ -28,47 +29,160 @@ import { StudentInfoDisplay } from "@/components/StudentInfoDisplay";
 const transformDataForEdit = (data: any) => {
   const transformed = { ...data };
 
-  // Transform Attendance (Step 4)
+
+  // StudentEdit.tsx -> inside transformDataForEdit function
+
+// Transform Admission Details (Step 3)
+if (data.step3) {
+  transformed.step3 = {
+    ...data.step3,
+    // Admission Basics
+    universityRegistration: data.step3.universityRegistration ?? "",
+    
+    // Certificates
+    migrationCertificateNo: data.step3.migrationCertificateNo ?? "",
+    migrationCertificateDate: data.step3.migrationCertificateDate ?? "",
+    eligibilityCertificateNo: data.step3.eligibilityCertificateNo ?? "",
+    eligibilityCertificateDate: data.step3.eligibilityCertificateDate ?? "",
+    govtAllotmentNo: data.step3.govtAllotmentNo ?? "",
+    privateAllotmentNo: data.step3.privateAllotmentNo ?? "",
+    communityCertificateNo: data.step3.communityCertificateNo ?? "",
+    communityCertificateDate: data.step3.communityCertificateDate ?? "",
+    nativityCertificateNo: data.step3.nativityCertificateNo ?? "",
+    nativityCertificateDate: data.step3.nativityCertificateDate ?? "",
+
+    // Discontinuation
+    dateOfDiscontinuation: data.step3.dateOfDiscontinuation ?? "",
+    reasonForDiscontinuation: data.step3.reasonForDiscontinuation ?? "",
+
+    // Financial Aid
+    scholarshipSource: data.step3.scholarshipSource ?? "",
+    bankLoanSource: data.step3.bankLoanSource ?? "",
+    // Note: Amount fields use numberOrNull helper, so null is actually okay there,
+    // but keeping them as null or 0 is safer.
+    scholarshipAmount: data.step3.scholarshipAmount ?? null,
+    bankLoanAmount: data.step3.bankLoanAmount ?? null,
+  };
+}
+
+
+
+
+  // Transform Attendance (Step 4) - Keep as array, just ensure proper structure
   if (data.step4 && Array.isArray(data.step4)) {
-    const semesters: Record<string, any> = {};
-    data.step4.forEach((item: any) => {
-      const sem = item.semester?.toString().trim();
-      if (["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].includes(sem)) {
-        semesters[sem] = {
-          workingDays: item.workingDays ?? "",
-          annualLeave: item.annualLeave ?? "",
-          sickLeave: item.sickLeave ?? "",
-          gazettedHolidays: item.gazettedHolidays ?? "",
-          otherLeave: item.otherLeave ?? "",
-          compensationDaysHours: item.compensationDaysHours ?? "",
-        };
-      }
-    });
-    transformed.step4 = { semesters };
+    transformed.step4 = {
+      semesters: data.step4.map((item: any) => ({
+        semester: item.semester?.toString().trim() || "",
+        workingDays: item.workingDays ?? "",
+        annualLeave: item.annualLeave ?? "",
+        sickLeave: item.sickLeave ?? "",
+        gazettedHolidays: item.gazettedHolidays ?? "",
+        otherLeave: item.otherLeave ?? "",
+        compensationDaysHours: item.compensationDaysHours ?? "",
+      }))
+    };
   }
 
-  // Transform Activities (Step 5)
+  // Transform Activities (Step 5) - Keep as array, just ensure proper structure
   if (data.step5 && Array.isArray(data.step5)) {
-    const activities: Record<string, any> = {};
-    data.step5.forEach((item: any) => {
-      const sem = item.semester?.toString().trim();
-      if (["I", "II", "III", "IV","V","VI","VII","VIII"].includes(sem)) {
-        activities[sem] = {
-          sports: item.sports || "",
-          coCurricular: item.coCurricular || "",
-          extraCurricular: item.extraCurricular || "",
-          sna: item.sna || "",
-          nssYrcRrc: item.nssYrcRrc || "",
-          cne: item.cne || "",
-          awardsRewards: item.awardsRewards || "",
-        };
-      }
-    });
-    transformed.step5 = { activities };
+    transformed.step5 = {
+      semesters: data.step5.map((item: any) => ({
+        semester: item.semester?.toString().trim() || "",
+        sports: item.sports || "",
+        coCurricular: item.coCurricular || "",
+        extraCurricular: item.extraCurricular || "",
+        sna: item.sna || "",
+        nssYrcRrc: item.nssYrcRrc || "",
+        cne: item.cne || "",
+        awardsRewards: item.awardsRewards || "",
+      }))
+    };
   }
+
+  // Transform Course Instruction (Step 6) - Keep as raw array
+  // Form expects array of all courses across all semesters
+  // No transformation needed
+
+
+  // Transform Clinical Experience (Step 8)
+  // if (data.step8) {
+  //   const savedRecords = Array.isArray(data.step8.records) ? data.step8.records : [];
+    
+  //   // Merge database data with the static master list
+  //   transformed.step8 = {
+  //     ...data.step8,
+  //     records: allClinicalRecords.map((staticRec: any) => {
+  //       // Find if we have saved data for this specific clinical area in this semester
+  //       const savedMatch = savedRecords.find(
+  //         (s: any) => s.semester === staticRec.semester && s.clinicalArea === staticRec.clinicalArea
+  //       );
+
+  //       return {
+  //         ...staticRec,
+  //         completedHours: savedMatch?.completedHours ?? "",
+  //         hospital: savedMatch?.hospital ?? "",
+  //       };
+  //     })
+  //   };
+  // }
+if (data.step8) {
+    // Get the actual saved array from the database
+    const savedRecords = Array.isArray(data.step8.records) ? data.step8.records : [];
+    
+    transformed.step8 = {
+      ...data.step8,
+      // Map through the MASTER list to ensure every row exists
+      records: allClinicalRecords.map((staticRec: any) => {
+        // Find if user has saved data for this specific clinical area + semester
+        const savedMatch = savedRecords.find(
+          (s: any) => s.semester === staticRec.semester && s.clinicalArea === staticRec.clinicalArea
+        );
+
+        return {
+          ...staticRec, // Prescribed values (Credits, Weeks, Hours)
+          completedHours: savedMatch?.completedHours ?? "", // Stored value or blank
+          hospital: savedMatch?.hospital ?? "", // Stored value or blank
+        };
+      })
+    };
+  }
+
+  /////////////////////////////////
+if (data.step12 && Array.isArray(data.step12.verifications)) {
+    transformed.step12 = {
+      ...data.step12,
+      verifications: data.step12.verifications.map((v: any) => ({
+        semester: v.semester || "",
+        // The null-coalescing operator (??) converts null/undefined to ""
+        classTeacherName: v.classTeacherName ?? "",
+        teacherSignature: v.teacherSignature ?? "",
+        principalSignature: v.principalSignature ?? "",
+      }))
+    };
+  }
+
+
+////////////////////////////////
+// StudentEdit.tsx -> inside transformDataForEdit function
+
+// Transform Course Completion (Step 11)
+if (data.step11 && Array.isArray(data.step11.completions)) {
+  transformed.step11 = {
+    ...data.step11,
+    completions: data.step11.completions.map((c: any) => ({
+      courseName: c.courseName || "",
+      // Convert null database values to empty strings
+      certificateNumber: c.certificateNumber ?? "",
+      dateOfIssue: c.dateOfIssue ?? "",
+    }))
+  };
+}
 
   return transformed;
 };
+
+
+
 
 const steps = [
   { id: 1, title: "Personal Profile", description: "Student's basic information" },
@@ -251,10 +365,21 @@ const StudentEdit = () => {
 
   const renderCurrentForm = () => {
     const studentId = currentDefaults.step1?.studentId;
-const defaultValues = {
-  ...currentDefaults[`step${currentStep}`],
-  studentId: currentDefaults.step1?.studentId || studentId,
-};    const props = {
+
+    // Special handling for step6 (Course Instruction) - it's an array, not an object
+    let defaultValues;
+    if (currentStep === 6 && Array.isArray(currentDefaults.step6)) {
+      // For Course Instruction, pass the array directly (form will handle merging)
+      defaultValues = currentDefaults.step6;
+    } else {
+      // For all other steps, spread the object
+      defaultValues = {
+        ...currentDefaults[`step${currentStep}`],
+        studentId: currentDefaults.step1?.studentId || studentId,
+      };
+    }
+
+    const props = {
       onSubmit: handleFormSubmit,
       defaultValues,
       onProgressChange: handleProgressChange(currentStep),

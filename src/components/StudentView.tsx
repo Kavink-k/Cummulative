@@ -56,17 +56,17 @@ const CourseInstructionView = ({ data }: { data: any[] }) => {
 
   // Calculate totals from actual courses (fallback to DB total row if needed)
   let totalTheoryCredits = 0,
-      totalSkillLabCredits = 0,
-      totalClinicalCredits = 0,
-      totalTheoryPrescribed = 0,
-      totalTheoryAttended = 0,
-      totalTheoryPercentage = 0,
-      totalSkillLabPrescribed = 0,
-      totalSkillLabAttended = 0,
-      totalSkillLabPercentage = 0,
-      totalClinicalPrescribed = 0,
-      totalClinicalAttended = 0,
-      totalClinicalPercentage = 0;
+    totalSkillLabCredits = 0,
+    totalClinicalCredits = 0,
+    totalTheoryPrescribed = 0,
+    totalTheoryAttended = 0,
+    totalTheoryPercentage = 0,
+    totalSkillLabPrescribed = 0,
+    totalSkillLabAttended = 0,
+    totalSkillLabPercentage = 0,
+    totalClinicalPrescribed = 0,
+    totalClinicalAttended = 0,
+    totalClinicalPercentage = 0;
 
   actualCourses.forEach((c: any) => {
     totalTheoryCredits += Number(c.theoryCredits || 0);
@@ -348,7 +348,7 @@ const StudentView = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const FILTER_KEYS = ["id", "createdAt", "updatedAt"];
+  const FILTER_KEYS = ["id", "createdAt", "updatedAt", "regNo"];
 
   const filterData = (obj: any) => {
     if (!obj) return null;
@@ -420,7 +420,8 @@ const StudentView = () => {
 
     // === OBSERVATIONAL VISITS - STEP 7 ===
     if (stepId === "step7") {
-      const visits = Array.isArray(section) ? section : [];
+      // Handle both array format and {visits: []} format
+      const visits = Array.isArray(section) ? section : (section?.visits || []);
 
       if (visits.length === 0) {
         return <p className="text-muted-foreground">No observational visits recorded.</p>;
@@ -483,7 +484,8 @@ const StudentView = () => {
 
     // === CLINICAL EXPERIENCE - STEP 8 ===
     if (stepId === "step8") {
-      const records = Array.isArray(section) ? section : [];
+      // Handle both array format and {records: []} format
+      const records = Array.isArray(section) ? section : (section?.records || []);
 
       if (records.length === 0) {
         return <p className="text-muted-foreground">No clinical experience recorded.</p>;
@@ -558,7 +560,8 @@ const StudentView = () => {
 
     // === RESEARCH PROJECTS - STEP 9 ===
     if (stepId === "step9") {
-      const projects = Array.isArray(section) ? section : [];
+      // Handle both array format and {projects: []} format
+      const projects = Array.isArray(section) ? section : (section?.projects || []);
 
       if (projects.length === 0) {
         return <p className="text-muted-foreground">No research projects recorded.</p>;
@@ -704,14 +707,8 @@ const StudentView = () => {
 
     // === VERIFICATION - STEP 12 ===
     if (stepId === "step12") {
-      // Handle both possible structures:
-      // 1. data.step12 = array directly
-      // 2. data.step12 = { verifications: [...] }
-      const rawVerifications = Array.isArray(section)
-        ? section
-        : section?.verifications || section || [];
-
-      const verifications = Array.isArray(rawVerifications) ? rawVerifications : [];
+      // Handle both array format and {verifications: []} format
+      const verifications = Array.isArray(section) ? section : (section?.verifications || []);
 
       if (verifications.length === 0) {
         return <p className="text-muted-foreground">No verification records available.</p>;
@@ -758,20 +755,20 @@ const StudentView = () => {
                         {record.teacherName || record.classTeacherName || "-"}
                       </TableCell>
                       <TableCell className="text-center">
-                        {record.teacherSignatureDate
-                          ? formatDate(record.teacherSignatureDate)
+                        {record.teacherSignature
+                          ? formatDate(record.teacherSignature)
                           : "-"}
-                        {record.teacherSignatureDate && (
+                        {/* {record.teacherSignature && (
                           <span className="ml-2 inline-block w-8 h-8 border-b-2 border-gray-600"></span>
-                        )}
+                        )} */}
                       </TableCell>
                       <TableCell className="text-center">
-                        {record.principalSignatureDate
-                          ? formatDate(record.principalSignatureDate)
+                        {record.principalSignature
+                          ? formatDate(record.principalSignature)
                           : "-"}
-                        {record.principalSignatureDate && (
+                        {/* {record.principalSignatureDate && (
                           <span className="ml-2 inline-block w-8 h-8 border-b-2 border-gray-600"></span>
-                        )}
+                        )} */}
                       </TableCell>
                     </TableRow>
                   );
@@ -932,6 +929,23 @@ const StudentView = () => {
                 <p className="text-muted-foreground">{clean.mediumOfInstruction}</p>
               </div>
             )}
+            {clean.certificateDate && (
+              <div className="p-4 border rounded-lg bg-muted/30">
+                <p className="font-semibold text-sm">Certificate Date</p>
+                <p className="text-muted-foreground">{clean.certificateDate}</p>
+              </div>
+            )}   {clean.hscVerificationNo && (
+              <div className="p-4 border rounded-lg bg-muted/30">
+                <p className="font-semibold text-sm">HSC Verification No</p>
+                <p className="text-muted-foreground">{clean.hscVerificationNo}</p>
+              </div>
+            )}
+            {clean.hscVerificationDate && (
+              <div className="p-4 border rounded-lg bg-muted/30">
+                <p className="font-semibold text-sm">HSC Verification Date</p>
+                <p className="text-muted-foreground">{clean.hscVerificationDate}</p>
+              </div>
+            )}
           </div>
 
           {clean.subjects && Array.isArray(clean.subjects) && clean.subjects.length > 0 && (
@@ -971,26 +985,26 @@ const StudentView = () => {
     <div className="container mx-auto px-4 py-10 max-w-5xl">
 
       {/* HEADER ACTIONS: Back + Edit Button */}
-<div className="flex items-center justify-between mb-6">
-  <Button variant="outline" onClick={() => navigate(-1)}>
-    <ArrowLeft className="h-4 w-4 mr-2" />
-    Back
-  </Button>
-<div className="flex gap-2">
-  <Button 
-    onClick={() => navigate(`/students/${studentId}/edit`)}
-    className="bg-blue-600 hover:bg-blue-700 text-white"
-  >
-    <Edit className="h-4 w-4 mr-2" />
-    Edit Student Record
-  </Button>
-  <Button onClick={()=>navigate(`/students/${studentId}/print`)}     className="bg-red-600 hover:bg-red-700 text-white"
->
+      <div className="flex items-center justify-between mb-6">
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => navigate(`/students/${studentId}/edit`)}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Student Record
+          </Button>
+          <Button onClick={() => navigate(`/students/${studentId}/print`)} className="bg-red-600 hover:bg-red-700 text-white"
+          >
             <Printer className="h-4 w-4" />
             Print Report
           </Button>
-          </div>
-</div>
+        </div>
+      </div>
 
 
       {/* TOP PROFILE CARD */}

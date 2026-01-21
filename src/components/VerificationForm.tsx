@@ -4,16 +4,19 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem,FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {cn} from "@/lib/utils";
+// VerificationForm.tsx
+
 const verificationSchema = z.object({
   semester: z.string(),
-  classTeacherName: z.string().min(1, ""),
-  teacherSignature: z.string().min(1, ""),
-  principalSignature: z.string().min(1, ""),
+  // Adding .nullable() allows the form to accept nulls from the API without crashing
+  classTeacherName: z.string().nullable().optional().or(z.literal("")),
+  teacherSignature: z.string().nullable().optional().or(z.literal("")),
+  principalSignature: z.string().nullable().optional().or(z.literal("")),
 });
 
 const verificationFormSchema = z.object({
-  studentId: z.string().min(1, "Student ID is required"),
-  verifications: z.array(verificationSchema),
+  studentId: z.string().min(1, "Student ID is required").optional(),
+  verifications: z.array(verificationSchema)
 });
 
 

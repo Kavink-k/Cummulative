@@ -403,7 +403,6 @@
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000/api';
-
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -433,35 +432,18 @@ const cleanData = (data: Record<string, any>) => {
 // ========================
 // BULK UPLOAD ADDED HERE (ONLY NEW THING)
 // ========================
-export const uploadBulkFile = async ({
-  file,
-  googleSheetUrl,
-}: {
-  file?: File | null;
-  googleSheetUrl?: string;
-}) => {
-  try {
-    if (file) {
-      const formData = new FormData();
-      formData.append('excel', file); // matches your backend multer key
+export const uploadBulkFile = async ({ file }: { file: File | null }) => {
+  if (!file) throw new Error("No file provided");
 
-      return await api.post('/bulk-upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 600000, // 10 minutes for large files
-      });
-    }
+  const formData = new FormData();
+  formData.append("excel", file);  // KEY must be "excel"
 
-    if (googleSheetUrl?.trim()) {
-      return await api.post('/bulk-upload', {
-        googleSheetUrl: googleSheetUrl.trim(),
-      });
-    }
-
-    throw new Error('Please provide a file or Google Sheet URL');
-  } catch (error: any) {
-    throw error.response?.data || error;
-  }
+  return await api.post("/bulk-upload", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 600000, // optional but good for large file uploads
+  });
 };
+
 
 // API functions for each endpoint
 export const apiService = {
@@ -707,6 +689,20 @@ export const getVerificationsByStudentId = async (studentId: string) => {
 };
 
 export const getAllDataByStudentId = async (studentId: string) => {
+  // Safe date parsing helper - converts database date to YYYY-MM-DD format
+  const parseDate = (dateValue: any): string => {
+    if (!dateValue) return '';
+    try {
+      const date = new Date(dateValue);
+      // Check if date is valid
+      if (isNaN(date.getTime())) return '';
+      return date.toISOString().split('T')[0];
+    } catch (error) {
+      console.warn('Invalid date value:', dateValue, error);
+      return '';
+    }
+  };
+
   try {
     const [step1, step2, step3, step4, step5, step6, step7, step8, step9, step10, step11, step12] = await Promise.allSettled([
       getPersonalProfileByStudentId(studentId),
@@ -724,34 +720,113 @@ export const getAllDataByStudentId = async (studentId: string) => {
     ]);
 
     return {
+      // Step 1: Personal Profile - format dateOfBirth
       step1: step1.status === 'fulfilled' && step1.value.data.data
-        ? { ...step1.value.data.data, photo: step1.value.data.data.photoUrl }
+        ? {
+            ...step1.value.data.data,
+            photo: step1.value.data.data.photoUrl,
+            dateOfBirth: parseDate(step1.value.data.data.dateOfBirth),
+            regNo:step1.value.data.data.universityRegistration,
+            
+          }
         : null,
-      step2: step2.status === 'fulfilled' ? step2.value.data.data : null,
-      step3: step3.status === 'fulfilled' ? step3.value.data.data : null,
+
+      // Step 2: Educational Qualification - format date fields
+      step2: step2.status === 'fulfilled' && step2.value.data.data
+        ? {
+            ...step2.value.data.data,
+            certificateDate: parseDate(step2.value.data.data.certificateDate),
+            hscVerificationDate: parseDate(step2.value.data.data.hscVerificationDate)
+          }
+        : null,
+
+      // Step 3: Admission Details - format all date fields
+      step3: step3.status === 'fulfilled' && step3.value.data.data
+        ? {
+            ...step3.value.data.data,
+            dateOfAdmission: parseDate(step3.value.data.data.dateOfAdmission),
+            migrationCertificateDate: parseDate(step3.value.data.data.migrationCertificateDate),
+            eligibilityCertificateDate: parseDate(step3.value.data.data.eligibilityCertificateDate),
+            communityCertificateDate: parseDate(step3.value.data.data.communityCertificateDate),
+            nativityCertificateDate: parseDate(step3.value.data.data.nativityCertificateDate),
+            dateOfDiscontinuation: parseDate(step3.value.data.data.dateOfDiscontinuation),
+          }
+        : null,
+
+      // Step 4: Attendance Records - no date fields
       step4: step4.status === 'fulfilled' ? step4.value.data.data : null,
+
+      // Step 5: Activity Participation - no date fields
       step5: step5.status === 'fulfilled' ? step5.value.data.data : null,
+
+      // Step 6: Course Instructions - no date fields
       step6: step6.status === 'fulfilled' ? step6.value.data.data : null,
-      step7: step7.status === 'fulfilled' ? step7.value.data.data : null,
-      step8: step8.status === 'fulfilled' ? step8.value.data.data : null,
-      step9: step9.status === 'fulfilled' ? step9.value.data.data : null,
+
+      // Step 7: Observational Visits - format date fields and wrap in visits object
+      step7: step7.status === 'fulfilled' && step7.value.data.data
+        ? {
+            visits: Array.isArray(step7.value.data.data)
+              ? step7.value.data.data.map((visit: any) => ({
+                  ...visit,
+                  date: parseDate(visit.date)
+                }))
+              : []
+          }
+        : null,
+
+      // Step 8: Clinical Experience - wrap in records object
+      step8: step8.status === 'fulfilled' && step8.value.data.data
+        ? {
+            records: Array.isArray(step8.value.data.data) ? step8.value.data.data : []
+          }
+        : null,
+
+      // Step 9: Research Projects - wrap in projects object
+      step9: step9.status === 'fulfilled' && step9.value.data.data
+        ? {
+            projects: Array.isArray(step9.value.data.data) ? step9.value.data.data : []
+          }
+        : null,
+
+      // Step 10: Additional Courses - format from/to dates
       step10: step10.status === 'fulfilled' && step10.value.data.data
         ? {
           courses: Array.isArray(step10.value.data.data)
             ? step10.value.data.data.map((course: any, index: number) => ({
-              id: course.id,
-              courseId: String(index + 1),
-              courseName: course.courseName || '',
-              from: course.from ? new Date(course.from).toISOString().split('T')[0] : '',
-              to: course.to ? new Date(course.to).toISOString().split('T')[0] : '',
-            }))
+                id: course.id,
+                courseId: String(index + 1),
+                courseName: course.courseName || '',
+                from: parseDate(course.from),
+                to: parseDate(course.to),
+              }))
             : []
         }
         : null,
+
+      // Step 11: Course Completion - format date fields
       step11: step11.status === 'fulfilled' && step11.value.data.data
-        ? { completions: Array.isArray(step11.value.data.data) ? step11.value.data.data : [] }
+        ? {
+            completions: Array.isArray(step11.value.data.data)
+              ? step11.value.data.data.map((comp: any) => ({
+                  ...comp,
+                  dateOfIssue: parseDate(comp.dateOfIssue)
+                }))
+              : []
+          }
         : null,
-      step12: step12.status === 'fulfilled' ? step12.value.data.data : null,
+
+      // Step 12: Verification - extract verifications array from record and format dates
+      step12: step12.status === 'fulfilled' && step12.value.data.data
+        ? {
+            verifications: Array.isArray(step12.value.data.data.verifications)
+              ? step12.value.data.data.verifications.map((ver: any) => ({
+                  ...ver,
+                  teacherSignature: parseDate(ver.teacherSignature),
+                  principalSignature: parseDate(ver.principalSignature)
+                }))
+              : []
+          }
+        : null,
     };
   } catch (error) {
     console.error('Error fetching student data:', error);

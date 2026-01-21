@@ -1225,11 +1225,43 @@ export const CourseInstructionForm = ({
     defaultValues?.semester || "I"
   );
 
-  // Helper to load and normalize data
-  const getCoursesForSemester = (sem: string) => {
-    // Ensure we handle cases where sem might not exist in data
+  // Helper to load and normalize template data from semesterData
+  const getTemplateCoursesForSemester = (sem: string) => {
     const rawData = semesterData[sem as keyof typeof semesterData] || [];
     return rawData.map((r: any) => normalizeRow(r));
+  };
+
+  // Helper to merge saved data with template data
+  const getCoursesForSemester = (sem: string, savedData?: any[]) => {
+    const templateCourses = getTemplateCoursesForSemester(sem);
+
+    // If no saved data, return template
+    if (!savedData || !Array.isArray(savedData)) {
+      return templateCourses;
+    }
+
+    // Filter saved data for this semester
+    const savedCoursesForSem = savedData.filter((c: any) => c.semester === sem);
+
+    // If no saved courses for this semester, return template
+    if (savedCoursesForSem.length === 0) {
+      return templateCourses;
+    }
+
+    // Merge: for each template course, check if there's saved data
+    return templateCourses.map((template: any) => {
+      const saved = savedCoursesForSem.find(
+        (s: any) => s.sNo === template.sNo || s.courseCode === template.courseCode
+      );
+
+      // If found saved data, merge it with template (saved data takes priority)
+      if (saved) {
+        return { ...template, ...saved };
+      }
+
+      // Otherwise return template
+      return template;
+    });
   };
 
   const form = useForm<CourseInstructionFormData>({
@@ -1237,7 +1269,7 @@ export const CourseInstructionForm = ({
     defaultValues: defaultValues || {
       studentId: "",
       semester: selectedSemester,
-      courses: getCoursesForSemester(selectedSemester),
+      courses: getCoursesForSemester(selectedSemester, defaultValues),
     },
   });
 
@@ -1251,8 +1283,8 @@ export const CourseInstructionForm = ({
     setSelectedSemester(semester);
     form.setValue("semester", semester);
 
-    // Replace current fields with new semester data
-    const newCourses = getCoursesForSemester(semester);
+    // Replace current fields with new semester data (merged with saved data if available)
+    const newCourses = getCoursesForSemester(semester, defaultValues);
     replace(newCourses);
   };
 

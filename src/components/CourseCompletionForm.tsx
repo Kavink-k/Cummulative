@@ -7,10 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+// CourseCompletionForm.tsx
+
 const courseCompletionSchema = z.object({
-  courseName: z.string(),
-  certificateNumber: z.string().min(1, ""),
-  dateOfIssue: z.string().min(1, ""),
+  courseName: z.string().optional().or(z.literal("")),
+  // Allow null from backend and convert to string for the input field
+  certificateNumber: z.string().nullable().optional().or(z.literal("")),
+  dateOfIssue: z.string().nullable().optional().or(z.literal("")),
 });
 
 const courseCompletionFormSchema = z.object({

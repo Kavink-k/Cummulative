@@ -67,9 +67,9 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {/* Header / Brand + Toggle */}
         <div className={cn("p-3 pb-2 border-b flex items-center", collapsed ? "justify-center" : "justify-between")}>
           <div className="flex items-center gap-2">
-            <div className="bg-primary text-primary-foreground p-2 rounded-lg">
+            {/* <div className="bg-primary text-primary-foreground p-2 rounded-lg">
               <BookOpen className="h-5 w-5" />
-            </div>
+            </div> */}
             {!collapsed && (
               <div className="leading-tight">
                 <div className="text-sm font-semibold">Student Record</div>
