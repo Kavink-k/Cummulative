@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormStepper } from "@/components/FormStepper";
@@ -17,6 +18,9 @@ import { VerificationForm } from "@/components/VerificationForm";
 import { toast } from "sonner";
 import { BookOpen, ChevronLeft, ChevronRight, Save, CheckCircle2, Trash2, Database, FilePlus } from "lucide-react";
 import { saveDataToBackend, getAllDataByStudentId } from "@/lib/api";
+
+
+
 
 const steps = [
   { id: 1, title: "Personal Profile", description: "Student's basic information" },
@@ -37,6 +41,7 @@ const STORAGE_KEY = "student_cumulative_data";
 const STEP_KEY = "student_cumulative_step";
 
 const Index = () => {
+  const navigate = useNavigate();
   // 1. Load initial state from Local Storage
   const [currentStep, setCurrentStep] = useState(() => {
     const savedStep = localStorage.getItem(STEP_KEY);
@@ -176,6 +181,7 @@ const Index = () => {
         handleNext();
       } else {
         toast.success("All forms completed!");
+        navigate("/dashboard");
       }
     } catch (error: any) {
       console.error("DB Save Error:", error);
@@ -289,26 +295,26 @@ const renderCurrentForm = () => {
     onProgressChange: handleProgressChange(currentStep),
   };
 
-  // 2. Define the key separately
-  const formKey = `step-${currentStep}-${JSON.stringify(defaultValues)}`;
+    // 2. Define the key separately
+    const formKey = `step-${currentStep}-${JSON.stringify(defaultValues)}`;
 
-  // 3. Pass the key explicitly to each component
-  switch (currentStep) {
-    case 1: return <PersonalProfileForm key={formKey} {...commonProps} />;
-    case 2: return <EducationalQualificationForm key={formKey} {...commonProps} />;
-    case 3: return <AdmissionDetailsForm key={formKey} {...commonProps} />;
-    case 4: return <AttendanceForm key={formKey} {...commonProps} />;
-    case 5: return <ActivitiesParticipationForm key={formKey} {...commonProps} />;
-    case 6: return <CourseInstructionForm key={formKey} {...commonProps} />;
-    case 7: return <ObservationalVisitForm key={formKey} {...commonProps} />;
-    case 8: return <ClinicalExperienceForm key={formKey} {...commonProps} />;
-    case 9: return <ResearchProjectForm key={formKey} {...commonProps} />;
-    case 10: return <AdditionalCoursesForm key={formKey} {...commonProps} />;
-    case 11: return <CourseCompletionForm key={formKey} {...commonProps} />;
-    case 12: return <VerificationForm key={formKey} {...commonProps} />;
-    default: return null;
-  }
-};
+    // 3. Pass the key explicitly to each component
+    switch (currentStep) {
+      case 1: return <PersonalProfileForm key={formKey} {...commonProps} />;
+      case 2: return <EducationalQualificationForm key={formKey} {...commonProps} />;
+      case 3: return <AdmissionDetailsForm key={formKey} {...commonProps} />;
+      case 4: return <AttendanceForm key={formKey} {...commonProps} />;
+      case 5: return <ActivitiesParticipationForm key={formKey} {...commonProps} />;
+      case 6: return <CourseInstructionForm key={formKey} {...commonProps} />;
+      case 7: return <ObservationalVisitForm key={formKey} {...commonProps} />;
+      case 8: return <ClinicalExperienceForm key={formKey} {...commonProps} />;
+      case 9: return <ResearchProjectForm key={formKey} {...commonProps} />;
+      case 10: return <AdditionalCoursesForm key={formKey} {...commonProps} />;
+      case 11: return <CourseCompletionForm key={formKey} {...commonProps} />;
+      case 12: return <VerificationForm key={formKey} {...commonProps} />;
+      default: return null;
+    }
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">

@@ -94,7 +94,7 @@
 //   };
 
 
-  
+
 //   // Helper for numbers
 //   const getNumber = (key: string) => {
 //     const val = getValue(key);
@@ -1269,7 +1269,7 @@ export const CourseInstructionForm = ({
     defaultValues: defaultValues || {
       studentId: "",
       semester: selectedSemester,
-      courses: getCoursesForSemester(selectedSemester, defaultValues),
+      courses: getCoursesForSemester(selectedSemester, defaultValues?.courses),
     },
   });
 
@@ -1284,7 +1284,7 @@ export const CourseInstructionForm = ({
     form.setValue("semester", semester);
 
     // Replace current fields with new semester data (merged with saved data if available)
-    const newCourses = getCoursesForSemester(semester, defaultValues);
+    const newCourses = getCoursesForSemester(semester, defaultValues?.courses);
     replace(newCourses);
   };
 
