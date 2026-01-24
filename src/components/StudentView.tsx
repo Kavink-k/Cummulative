@@ -348,7 +348,7 @@ const StudentView = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const FILTER_KEYS = ["id", "createdAt", "updatedAt", "regNo"];
+  const FILTER_KEYS = ["id", "createdAt", "updatedAt", "regNo", "photo", "photoUrl"];
 
   const filterData = (obj: any) => {
     if (!obj) return null;
@@ -404,7 +404,7 @@ const StudentView = () => {
       {Object.entries(obj).map(([key, value]) => (
         <div key={key} className="p-3 border rounded-md bg-muted">
           <p className="font-semibold capitalize">{key.replace(/([A-Z])/g, " $1")}</p>
-          <p className="text-sm text-muted-foreground">{String(value) || "-"}</p>
+          <p className="text-sm text-muted-foreground break-words whitespace-pre-wrap">{String(value) || "-"}</p>
         </div>
       ))}
     </div>
@@ -436,7 +436,7 @@ const StudentView = () => {
         return acc;
       }, {} as Record<string, any[]>);
 
-      const semesterOrder = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+      const semesterOrder = ["I", "II", "III", "IV", "V", "VI", "VII"];
 
       return (
         <div className="overflow-x-auto border rounded-lg">
