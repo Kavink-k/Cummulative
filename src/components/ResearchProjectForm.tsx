@@ -9,10 +9,10 @@ import { Plus, X } from "lucide-react";
 import { useEffect } from "react";
 
 const projectSchema = z.object({
-  semester: z.string().min(1, "Semester is required"),
-  areaOfStudy: z.string().min(1, "Area of study is required"),
-  type: z.string().min(1, "Group / Individual is required"),
-  projectTitle: z.string().min(1, "Project title is required"),
+  semester: z.string().optional(),
+  areaOfStudy: z.string().optional(),
+  type: z.string().optional(),
+  projectTitle: z.string().optional(),
 });
 
 const researchProjectSchema = z.object({

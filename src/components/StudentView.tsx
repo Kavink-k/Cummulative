@@ -1015,7 +1015,7 @@ const StudentView = () => {
               src={
                 (data.step1?.photoUrl || data.step1?.photo)?.startsWith('http')
                   ? (data.step1?.photoUrl || data.step1?.photo)
-                  : `https://cummulative-backend-production.up.railway.app${data.step1?.photoUrl || data.step1?.photo}`
+                  : `${import.meta.env.VITE_BACKEND_URL}${data.step1?.photoUrl || data.step1?.photo}`
               }
               alt="profile"
               className="w-32 h-40 object-cover rounded-sm border-2 border-border shadow-md"

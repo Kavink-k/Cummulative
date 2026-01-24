@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://cummulative-backend-production.up.railway.app/api/users';
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/users`;
 // Get current user ID from localStorage
 const getUserId = () => {
     const user = localStorage.getItem('auth_user');

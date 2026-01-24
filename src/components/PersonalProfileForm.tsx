@@ -99,7 +99,7 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
       // If there's a saved photo URL from the backend, display it
       const fullPhotoUrl = photoUrl.startsWith('http')
         ? photoUrl
-        : `https://cummulative-backend-production.up.railway.app${photoUrl}`;
+        : `${import.meta.env.VITE_BACKEND_URL}${photoUrl}`;
       setPhotoPreview(fullPhotoUrl);
       // Clear photoFile since we're showing a saved photo from backend
       setPhotoFile(null);

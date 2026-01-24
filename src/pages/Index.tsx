@@ -284,41 +284,16 @@ const Index = () => {
     return savedData;
   };
 
-  // const renderCurrentForm = () => {
-  //   const defaultValues = getStepDefaultValues(currentStep);
-  //   const commonProps = {
-  //     onSubmit: handleFormSubmit,
-  //     defaultValues: defaultValues,
-  //     onProgressChange: handleProgressChange(currentStep),
-  //     key: `step-${currentStep}-${JSON.stringify(defaultValues)}`, // Force remount when data changes
-  //   };
-
-  //   switch (currentStep) {
-  //     case 1: return <PersonalProfileForm {...commonProps} />;
-  //     case 2: return <EducationalQualificationForm {...commonProps} />;
-  //     case 3: return <AdmissionDetailsForm {...commonProps} />;
-  //     case 4: return <AttendanceForm {...commonProps} />;
-  //     case 5: return <ActivitiesParticipationForm {...commonProps} />;
-  //     case 6: return <CourseInstructionForm {...commonProps} />;
-  //     case 7: return <ObservationalVisitForm {...commonProps} />;
-  //     case 8: return <ClinicalExperienceForm {...commonProps} />;
-  //     case 9: return <ResearchProjectForm {...commonProps} />;
-  //     case 10: return <AdditionalCoursesForm {...commonProps} />;
-  //     case 11: return <CourseCompletionForm {...commonProps} />;
-  //     case 12: return <VerificationForm {...commonProps} />;
-  //     default: return null;
-  //   }
-  // };
-  // ✅ NEW CODE (FIXED)
-  const renderCurrentForm = () => {
-    const defaultValues = getStepDefaultValues(currentStep);
-
-    // 1. Remove key from the object
-    const commonProps = {
-      onSubmit: handleFormSubmit,
-      defaultValues: defaultValues,
-      onProgressChange: handleProgressChange(currentStep),
-    };
+// ✅ NEW CODE (FIXED)
+const renderCurrentForm = () => {
+  const defaultValues = getStepDefaultValues(currentStep);
+  
+  // 1. Remove key from the object
+  const commonProps = {
+    onSubmit: handleFormSubmit,
+    defaultValues: defaultValues,
+    onProgressChange: handleProgressChange(currentStep),
+  };
 
     // 2. Define the key separately
     const formKey = `step-${currentStep}-${JSON.stringify(defaultValues)}`;
