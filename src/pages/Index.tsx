@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormStepper } from "@/components/FormStepper";
@@ -18,6 +19,9 @@ import { toast } from "sonner";
 import { BookOpen, ChevronLeft, ChevronRight, Save, CheckCircle2, Trash2, Database, FilePlus } from "lucide-react";
 import { saveDataToBackend, getAllDataByStudentId } from "@/lib/api";
 
+
+
+
 const steps = [
   { id: 1, title: "Personal Profile", description: "Student's basic information" },
   { id: 2, title: "Educational Qualification", description: "Academic records" },
@@ -36,7 +40,9 @@ const steps = [
 const STORAGE_KEY = "student_cumulative_data";
 const STEP_KEY = "student_cumulative_step";
 
+
 const Index = () => {
+  const navigate = useNavigate();
   // 1. Load initial state from Local Storage
   const [currentStep, setCurrentStep] = useState(() => {
     const savedStep = localStorage.getItem(STEP_KEY);
@@ -64,8 +70,12 @@ const Index = () => {
     }
     return progress;
   });
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
+
+  // Ref to track whether to save to backend or just navigate after validation
+  const shouldSaveToBackendRef = useRef(true);
 
   // 2. Auto-save to Local Storage on any change
   useEffect(() => {
@@ -113,6 +123,8 @@ const Index = () => {
 
         if (Object.keys(mergedData).length > 0) {
           setFormData(prev => ({ ...prev, ...mergedData }));
+          ///
+            setIsEditMode(true);
 
           // Update progress for fetched steps
           const newProgress: Record<number, number> = {};
@@ -152,7 +164,7 @@ const Index = () => {
     }
   };
 
-  // Main Submit Handler
+  // Main Submit Handler - now supports both save and validate-only modes
   const handleFormSubmit = async (stepData: any) => {
     setIsSaving(true);
 
@@ -161,6 +173,21 @@ const Index = () => {
     setFormData(updatedFormData);
     setStepProgress(prev => ({ ...prev, [currentStep]: 100 }));
 
+    // Check if we should save to backend or just navigate
+    if (!shouldSaveToBackendRef.current) {
+      // Validate-only mode (triggered by Next button)
+      setIsSaving(false);
+      shouldSaveToBackendRef.current = true; // Reset for next time
+      toast.success("Form validated successfully!", {
+        icon: <CheckCircle2 className="h-4 w-4 text-green-500" />,
+      });
+      if (currentStep < steps.length) {
+        handleNext();
+      }
+      return;
+    }
+
+    // Save mode (triggered by Save & Continue button)
     try {
       // Debug: Log what we are sending
       console.log(`Submitting Step ${currentStep} payload:`, stepData);
@@ -176,6 +203,7 @@ const Index = () => {
         handleNext();
       } else {
         toast.success("All forms completed!");
+        navigate("/dashboard");
       }
     } catch (error: any) {
       console.error("DB Save Error:", error);
@@ -289,26 +317,26 @@ const renderCurrentForm = () => {
     onProgressChange: handleProgressChange(currentStep),
   };
 
-  // 2. Define the key separately
-  const formKey = `step-${currentStep}-${JSON.stringify(defaultValues)}`;
+    // 2. Define the key separately
+    const formKey = `step-${currentStep}-${JSON.stringify(defaultValues)}`;
 
-  // 3. Pass the key explicitly to each component
-  switch (currentStep) {
-    case 1: return <PersonalProfileForm key={formKey} {...commonProps} />;
-    case 2: return <EducationalQualificationForm key={formKey} {...commonProps} />;
-    case 3: return <AdmissionDetailsForm key={formKey} {...commonProps} />;
-    case 4: return <AttendanceForm key={formKey} {...commonProps} />;
-    case 5: return <ActivitiesParticipationForm key={formKey} {...commonProps} />;
-    case 6: return <CourseInstructionForm key={formKey} {...commonProps} />;
-    case 7: return <ObservationalVisitForm key={formKey} {...commonProps} />;
-    case 8: return <ClinicalExperienceForm key={formKey} {...commonProps} />;
-    case 9: return <ResearchProjectForm key={formKey} {...commonProps} />;
-    case 10: return <AdditionalCoursesForm key={formKey} {...commonProps} />;
-    case 11: return <CourseCompletionForm key={formKey} {...commonProps} />;
-    case 12: return <VerificationForm key={formKey} {...commonProps} />;
-    default: return null;
-  }
-};
+    // 3. Pass the key explicitly to each component
+    switch (currentStep) {
+      case 1: return <PersonalProfileForm key={formKey} {...commonProps} />;
+      case 2: return <EducationalQualificationForm key={formKey} {...commonProps} />;
+      case 3: return <AdmissionDetailsForm key={formKey} {...commonProps} />;
+      case 4: return <AttendanceForm key={formKey} {...commonProps} />;
+      case 5: return <ActivitiesParticipationForm key={formKey} {...commonProps} />;
+      case 6: return <CourseInstructionForm key={formKey} {...commonProps} />;
+      case 7: return <ObservationalVisitForm key={formKey} {...commonProps} />;
+      case 8: return <ClinicalExperienceForm key={formKey} {...commonProps} />;
+      case 9: return <ResearchProjectForm key={formKey} {...commonProps} />;
+      case 10: return <AdditionalCoursesForm key={formKey} {...commonProps} />;
+      case 11: return <CourseCompletionForm key={formKey} {...commonProps} />;
+      case 12: return <VerificationForm key={formKey} {...commonProps} />;
+      default: return null;
+    }
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -382,28 +410,58 @@ const renderCurrentForm = () => {
                 <ChevronLeft className="h-4 w-4 mr-2" /> Previous
               </Button>
 
-              {/* This button finds the first form element on the page and triggers submission.
-                  This allows the button to live outside the form component while still controlling it.
-              */}
-              <Button
-                onClick={() => {
-                  const form = document.querySelector("form");
+              <div className="flex gap-2">
+                {/* Save & Continue button - validates and saves to backend */}
+                <Button
+                  onClick={() => {
+                    shouldSaveToBackendRef.current = true; // Enable backend save
+                    const form = document.querySelector("form");
 
-                  if (form) {
-                    // Use requestSubmit() to properly trigger form validation
-                    if (typeof form.requestSubmit === 'function') {
-                      form.requestSubmit();
-                    } else {
-                      // Fallback for older browsers
-                      form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+                    if (form) {
+                      // Use requestSubmit() to properly trigger form validation
+                      if (typeof form.requestSubmit === 'function') {
+                        form.requestSubmit();
+                      } else {
+                        // Fallback for older browsers
+                        form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+                      }
                     }
                   }
-                }}
+                }
                 disabled={isSaving}
               >
                 {isSaving ? "Saving..." : currentStep === steps.length ? "Submit All" : "Save & Next"}
                 {!isSaving && <ChevronRight className="h-4 w-4 ml-2" />}
               </Button>
+                            {/* <Button
+  onClick={() => {
+    const form = document.querySelector("form");
+
+    if (!isEditMode) {
+      // 🟢 NEW FORM → must save then go next
+      if (form) {
+        if (typeof form.requestSubmit === "function") {
+          form.requestSubmit();
+        } else {
+          form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+        }
+      }
+    } else {
+      // 🟡 EDIT MODE → free navigation
+      handleNext();
+    }
+  }}
+  disabled={isSaving}
+>
+  {isEditMode
+    ? (currentStep === steps.length ? "Next" : "Save & Next") 
+    : (isSaving ? "Saving..." : currentStep === steps.length ? "Submit All" : "Save & Next")
+  }
+  <ChevronRight className="h-4 w-4 ml-2" />
+</Button> */}
+            </div>
+
+
             </div>
           </CardContent>
         </Card>
@@ -413,3 +471,5 @@ const renderCurrentForm = () => {
 };
 
 export default Index;
+
+

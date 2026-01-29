@@ -402,7 +402,7 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = 'https://cummulative-backend-production.up.railway.app/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -412,12 +412,12 @@ const api = axios.create({
 });
 
 export const fetchpersonalprofileFromDB = async () => {
-  const res = await axios.get("https://cummulative-backend-production.up.railway.app/api/personal-profiles/");
+  const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/personal-profiles/`);
   return res.data; // list of student step1 data
 };
 
 export const fetchadmissionDetailsFromDB = async () => {
-  const res = await axios.get("https://cummulative-backend-production.up.railway.app/api/admission-details/");
+  const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admission-details/`);
   return res.data;
 };
 
@@ -643,6 +643,13 @@ export const apiService = {
 export const getPersonalProfileByStudentId = async (studentId: string) => {
   return api.get(`/personal-profiles/student/${studentId}`);
 };
+
+//get all students by id 
+export const checkStudentId = async (studentId: string) => {
+  return api.get(`/personal-profiles/student/${studentId}`);
+};
+
+
 
 export const getEducationalQualificationByStudentId = async (studentId: string) => {
   return api.get(`/educational-qualifications/student/${studentId}`);

@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, useRef } from "react";
 import { Upload, X, User } from "lucide-react";
+import { toast } from "sonner";
+import { checkStudentId } from "@/lib/api"; 
 
 const personalProfileSchema = z.object({
   studentId: z.string().min(1, "Student ID is required"),
@@ -47,6 +49,9 @@ interface PersonalProfileFormProps {
 export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange }: PersonalProfileFormProps) => {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  // Track if photo was uploaded locally (not from backend)
+  // This prevents the uploaded photo from being overwritten when navigating between steps
+  const [isLocalPhoto, setIsLocalPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // const form = useForm<PersonalProfileFormData>({
@@ -90,8 +95,14 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
 
 
 
-  // Load saved photo from defaultValues when component mounts or defaultValues changes
+  // Load saved photo from defaultValues ONLY on initial mount (not on re-renders)
+  // This prevents the uploaded photo from disappearing when clicking on input fields
+  const hasLoadedInitialPhoto = useRef(false);
+
   useEffect(() => {
+    // Only run once on mount to load backend photo
+    if (hasLoadedInitialPhoto.current) return;
+
     // Backend returns 'photoUrl' but form uses 'photo'
     const photoUrl = defaultValues?.photo || (defaultValues as any)?.photoUrl;
 
@@ -99,15 +110,14 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
       // If there's a saved photo URL from the backend, display it
       const fullPhotoUrl = photoUrl.startsWith('http')
         ? photoUrl
-        : `https://cummulative-backend-production.up.railway.app${photoUrl}`;
+        : `${import.meta.env.VITE_BACKEND_URL}${photoUrl}`;
       setPhotoPreview(fullPhotoUrl);
       // Clear photoFile since we're showing a saved photo from backend
       setPhotoFile(null);
-    } else {
-      setPhotoPreview(null);
-      setPhotoFile(null);
     }
-  }, [defaultValues]);
+
+    hasLoadedInitialPhoto.current = true;
+  }, []); // Empty dependency array = only run on mount
 
   useEffect(() => {
     const subscription = form.watch((values) => {
@@ -143,6 +153,8 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
       }
 
       setPhotoFile(file);
+      // Mark this as a locally uploaded photo (not from backend)
+      setIsLocalPhoto(true);
 
       // Create preview URL
       const reader = new FileReader();
@@ -157,28 +169,80 @@ export const PersonalProfileForm = ({ onSubmit, defaultValues, onProgressChange 
   const handleRemovePhoto = () => {
     setPhotoFile(null);
     setPhotoPreview(null);
+    setIsLocalPhoto(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  // Handle form submission with photo
-  const handleFormSubmit = (data: PersonalProfileFormData) => {
-    console.log('✅ PersonalProfileForm handleFormSubmit called - VALIDATION PASSED!');
-    console.log('Form data:', data);
-    console.log('Photo file:', photoFile);
-    console.log('Photo preview:', photoPreview);
+// Handle form submission with studentId check
+// const handleFormSubmit = async (data: PersonalProfileFormData) => {
+//   console.log("🔍 Checking studentId before saving...");
 
-    // If photo was removed (no preview and no file), send empty photoUrl to trigger deletion
-    const submissionData = {
-      ...data,
-      photoFile,
-      photoUrl: (!photoPreview && !photoFile) ? '' : data.photo // Empty string signals deletion
-    };
+//   try {
+//     const res = await checkStudentId(data.studentId);
 
-    console.log('Calling onSubmit with:', submissionData);
-    onSubmit(submissionData);
+//     // If API returns 200 → student exists
+//     if (res?.data) {
+//       toast.error("Student already exists!");
+//       return; // ❌ stop submission
+//     }
+//   } catch (error: any) {
+//     // If backend returns 404 → student not found → OK
+//     if (error?.response?.status === 404) {
+//       console.log("StudentId not found. Proceeding...");
+//     } else {
+//       toast.error("Server error while checking student ID");
+//       return;
+//     }
+//   }
+
+//   // If reached here → ID is NEW → continue your old flow
+//   const submissionData = {
+//     ...data,
+//     photoFile,
+//     photoUrl: (!photoPreview && !photoFile) ? "" : data.photo,
+//   };
+
+//   console.log("Saving new student profile...");
+//   onSubmit(submissionData);
+// };
+const handleFormSubmit = async (data: PersonalProfileFormData) => {
+  console.log("🔍 Checking studentId before saving...");
+
+  const isEditMode = !!defaultValues?.id;
+
+  // 🟡 Only check student ID if it's a NEW form
+  if (!isEditMode) {
+    try {
+      const res = await checkStudentId(data.studentId);
+
+      if (res?.data) {
+        toast.error("Student already exists!");
+        return; // ❌ stop submission
+      }
+    } catch (error: any) {
+      if (error?.response?.status === 404) {
+        // Not found = OK
+      } else {
+        toast.error("Server error while checking student ID");
+        return;
+      }
+    }
+  } else {
+    console.log("✏️ Edit mode: Skipping studentId duplicate check");
+  }
+
+  // 🟢 Proceed with save (same as before)
+  const submissionData = {
+    ...data,
+    photoFile,
+    photoUrl: (!photoPreview && !photoFile) ? "" : data.photo,
   };
+
+  onSubmit(submissionData);
+};
+
 
   // Handle form errors
   const handleFormError = (errors: any) => {

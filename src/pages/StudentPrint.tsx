@@ -763,7 +763,7 @@ const StudentPrint = () => {
             {student.photoUrl && (
               <div className="student-photo">
                 <img
-                  src={student.photoUrl.startsWith("http") ? student.photoUrl : `https://cummulative-backend-production.up.railway.app${student.photoUrl}`}
+                  src={student.photoUrl.startsWith("http") ? student.photoUrl : `${import.meta.env.VITE_BACKEND_URL}${student.photoUrl}`}
                   alt="Student"
                 />
               </div>
@@ -776,17 +776,16 @@ const StudentPrint = () => {
           <h3 className="section-title">1. Personal Profile</h3>
           <table className="info-table">
             <tbody>
-              <tr><td style={{ fontWeight: "bold" }}>Name of Student</td><td colSpan={3}>{student.steps.step1?.studentName || "-"}</td></tr>
-              <tr><td>Age</td><td>{student.steps.step1?.age || "-"}</td><td>Date of Birth</td><td>{formatDate(student.steps.step1?.dateOfBirth)}</td></tr>
-              <tr><td>Gender</td><td>{student.steps.step1?.gender || "-"}</td><td>Nationality</td><td>{student.steps.step1?.nationality || "-"}</td></tr>
-              <tr><td>Religion</td><td>{student.steps.step1?.religion || "-"}</td><td>Community</td><td>{student.steps.step1?.community || "-"}</td></tr>
-              <tr><td>Nativity</td><td>{student.steps.step1?.nativity || "-"}</td><td>Marital Status</td><td>{student.steps.step1?.maritalStatus || "-"}</td></tr>
-              <tr><td>Mother Tongue</td><td>{student.steps.step1?.motherTongue || "-"}</td><td>Contact Mobile</td><td>{student.steps.step1?.contactMobile || "-"}</td></tr>
-              <tr><td>Email</td><td>{student.steps.step1?.studentEmail || "-"}</td><td>Aadhar No</td><td>{student.steps.step1?.aadharNo || "-"}</td></tr>
-              <tr><td>EMIS No</td><td>{student.steps.step1?.emisNo || "-"}</td><td colSpan={2}></td></tr>
-              <tr><td colSpan={4}>Parent/Guardian Name: {student.steps.step1?.parentGuardianName || "-"}</td></tr>
-              <tr><td colSpan={4}>Communication Address: {student.steps.step1?.communicationAddress || "-"}</td></tr>
-              <tr><td colSpan={4}>Permanent Address: {student.steps.step1?.permanentAddress || "-"}</td></tr>
+              <tr><td style={{ fontWeight: "bold" }}>Name of Student:</td><td colSpan={3}>{student.steps.step1?.studentName || "-"}</td></tr>
+              <tr><td style={{ fontWeight: "bold" }}>Age:</td><td>{student.steps.step1?.age || "-"}</td><td style={{ fontWeight: "bold" }}>Date of Birth:</td><td>{formatDate(student.steps.step1?.dateOfBirth)}</td></tr>
+              <tr><td style={{ fontWeight: "bold" }}>Gender:</td><td>{student.steps.step1?.gender || "-"}</td><td style={{ fontWeight: "bold" }}>Nationality:</td><td>{student.steps.step1?.nationality || "-"}</td></tr>
+              <tr><td style={{ fontWeight: "bold" }}>Religion:</td><td>{student.steps.step1?.religion || "-"}</td><td style={{ fontWeight: "bold" }}>Community:</td><td>{student.steps.step1?.community || "-"}</td></tr>
+              <tr><td style={{ fontWeight: "bold" }}>Nativity:</td><td>{student.steps.step1?.nativity || "-"}</td><td style={{ fontWeight: "bold" }}>Marital Status:</td><td>{student.steps.step1?.maritalStatus || "-"}</td></tr>
+              <tr><td style={{ fontWeight: "bold" }}>Mother Tongue:</td><td>{student.steps.step1?.motherTongue || "-"}</td><td style={{ fontWeight: "bold" }}>Contact Mobile:</td><td>{student.steps.step1?.contactMobile || "-"}</td></tr>
+              <tr><td style={{ fontWeight: "bold" }}>Email:</td><td>{student.steps.step1?.studentEmail || "-"}</td><td style={{ fontWeight: "bold" }}>Aadhar No:</td><td>{student.steps.step1?.aadharNo || "-"}</td></tr>
+              <tr><td style={{ fontWeight: "bold" }}>EMIS No:</td><td>{student.steps.step1?.emisNo || "-"}</td><td ><span style={{ fontWeight: "bold" }}>Parent/Guardian Name:</span></td><td> {student.steps.step1?.parentGuardianName || "-"}</td></tr>
+              <tr><td colSpan={4}><span style={{ fontWeight: "bold" }}>Communication Address:</span> {student.steps.step1?.communicationAddress || "-"}</td></tr>
+              <tr><td colSpan={4}><span style={{ fontWeight: "bold" }}>Permanent Address:</span> {student.steps.step1?.permanentAddress || "-"}</td></tr>
             </tbody>
           </table>
         </div>
@@ -796,9 +795,10 @@ const StudentPrint = () => {
           <h3 className="section-title">2. Educational Qualification</h3>
           <table className="info-table">
             <tbody>
-              <tr><td>Stream/Group</td><td>{student.steps.step2?.streamGroup || "-"}</td><td>Board of Examination</td><td>{student.steps.step2?.boardOfExamination || "-"}</td></tr>
-              <tr><td>Year of Passing</td><td>{student.steps.step2?.yearOfPassing || "-"}</td><td>Medium of Instruction</td><td>{student.steps.step2?.mediumOfInstruction || "-"}</td></tr>
-              <tr><td>Certificate No</td><td>{student.steps.step2?.certificateNo || "-"}</td><td colSpan={2}></td></tr>
+              <tr><td style={{ fontWeight: "bold" }}>Stream/Group:</td><td>{student.steps.step2?.streamGroup || "-"}</td><td style={{ fontWeight: "bold" }}>Board of Examination:</td><td>{student.steps.step2?.boardOfExamination || "-"}</td></tr>
+              <tr><td style={{ fontWeight: "bold" }}>Year of Passing:</td><td>{student.steps.step2?.yearOfPassing || "-"}</td><td style={{ fontWeight: "bold" }}>Medium of Instruction:</td><td>{student.steps.step2?.mediumOfInstruction || "-"}</td></tr>
+              <tr><td style={{ fontWeight: "bold" }}>Certificate No:</td><td>{student.steps.step2?.certificateNo || "-"}</td><td style={{ fontWeight: "bold" }}>Certificate Date:</td><td>{formatDate(student.steps.step2?.certificateDate)}</td></tr>
+              <tr><td style={{ fontWeight: "bold" }}>HSC Verification No:</td><td>{student.steps.step2?.hscVerificationNo || "-"}</td><td style={{ fontWeight: "bold" }}>HSC Verification Date:</td><td>{formatDate(student.steps.step2?.hscVerificationDate)}</td></tr>
             </tbody>
           </table>
           {student.steps.step2?.subjects?.length > 0 && (
