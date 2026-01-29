@@ -644,6 +644,13 @@ export const getPersonalProfileByStudentId = async (studentId: string) => {
   return api.get(`/personal-profiles/student/${studentId}`);
 };
 
+//get all students by id 
+export const checkStudentId = async (studentId: string) => {
+  return api.get(`/personal-profiles/student/${studentId}`);
+};
+
+
+
 export const getEducationalQualificationByStudentId = async (studentId: string) => {
   return api.get(`/educational-qualifications/student/${studentId}`);
 };

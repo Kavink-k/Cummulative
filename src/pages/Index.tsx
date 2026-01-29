@@ -40,6 +40,7 @@ const steps = [
 const STORAGE_KEY = "student_cumulative_data";
 const STEP_KEY = "student_cumulative_step";
 
+
 const Index = () => {
   const navigate = useNavigate();
   // 1. Load initial state from Local Storage
@@ -69,6 +70,7 @@ const Index = () => {
     }
     return progress;
   });
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -118,6 +120,8 @@ const Index = () => {
 
         if (Object.keys(mergedData).length > 0) {
           setFormData(prev => ({ ...prev, ...mergedData }));
+          ///
+            setIsEditMode(true);
 
           // Update progress for fetched steps
           const newProgress: Record<number, number> = {};
@@ -410,6 +414,33 @@ const renderCurrentForm = () => {
                 {isSaving ? "Saving..." : currentStep === steps.length ? "Submit All" : "Save & Next"}
                 {!isSaving && <ChevronRight className="h-4 w-4 ml-2" />}
               </Button>
+              {/* <Button
+  onClick={() => {
+    const form = document.querySelector("form");
+
+    if (!isEditMode) {
+      // 🟢 NEW FORM → must save then go next
+      if (form) {
+        if (typeof form.requestSubmit === "function") {
+          form.requestSubmit();
+        } else {
+          form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+        }
+      }
+    } else {
+      // 🟡 EDIT MODE → free navigation
+      handleNext();
+    }
+  }}
+  disabled={isSaving}
+>
+  {isEditMode
+    ? (currentStep === steps.length ? "Next" : "Save & Next") 
+    : (isSaving ? "Saving..." : currentStep === steps.length ? "Submit All" : "Save & Next")
+  }
+  <ChevronRight className="h-4 w-4 ml-2" />
+</Button> */}
+
             </div>
           </CardContent>
         </Card>
