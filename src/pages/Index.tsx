@@ -72,6 +72,9 @@ const Index = () => {
 
   const [isSaving, setIsSaving] = useState(false);
 
+  // Ref to track whether to save to backend or just navigate after validation
+  const shouldSaveToBackendRef = useRef(true);
+
   // 2. Auto-save to Local Storage on any change
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
@@ -157,7 +160,7 @@ const Index = () => {
     }
   };
 
-  // Main Submit Handler
+  // Main Submit Handler - now supports both save and validate-only modes
   const handleFormSubmit = async (stepData: any) => {
     setIsSaving(true);
 
@@ -166,6 +169,21 @@ const Index = () => {
     setFormData(updatedFormData);
     setStepProgress(prev => ({ ...prev, [currentStep]: 100 }));
 
+    // Check if we should save to backend or just navigate
+    if (!shouldSaveToBackendRef.current) {
+      // Validate-only mode (triggered by Next button)
+      setIsSaving(false);
+      shouldSaveToBackendRef.current = true; // Reset for next time
+      toast.success("Form validated successfully!", {
+        icon: <CheckCircle2 className="h-4 w-4 text-green-500" />,
+      });
+      if (currentStep < steps.length) {
+        handleNext();
+      }
+      return;
+    }
+
+    // Save mode (triggered by Save & Continue button)
     try {
       // Debug: Log what we are sending
       console.log(`Submitting Step ${currentStep} payload:`, stepData);
@@ -388,28 +406,54 @@ const renderCurrentForm = () => {
                 <ChevronLeft className="h-4 w-4 mr-2" /> Previous
               </Button>
 
-              {/* This button finds the first form element on the page and triggers submission.
-                  This allows the button to live outside the form component while still controlling it.
-              */}
-              <Button
-                onClick={() => {
-                  const form = document.querySelector("form");
+              <div className="flex gap-2">
+                {/* Save & Continue button - validates and saves to backend */}
+                <Button
+                  onClick={() => {
+                    shouldSaveToBackendRef.current = true; // Enable backend save
+                    const form = document.querySelector("form");
 
-                  if (form) {
-                    // Use requestSubmit() to properly trigger form validation
-                    if (typeof form.requestSubmit === 'function') {
-                      form.requestSubmit();
-                    } else {
-                      // Fallback for older browsers
-                      form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+                    if (form) {
+                      // Use requestSubmit() to properly trigger form validation
+                      if (typeof form.requestSubmit === 'function') {
+                        form.requestSubmit();
+                      } else {
+                        // Fallback for older browsers
+                        form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+                      }
                     }
-                  }
-                }}
-                disabled={isSaving}
-              >
-                {isSaving ? "Saving..." : currentStep === steps.length ? "Submit All" : "Save & Next"}
-                {!isSaving && <ChevronRight className="h-4 w-4 ml-2" />}
-              </Button>
+                  }}
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Saving..." : currentStep === steps.length ? "Submit All" : "Save & Continue"}
+                  {!isSaving && <ChevronRight className="h-4 w-4 ml-2" />}
+                </Button>
+
+                {/* Next button - validates only, doesn't save to backend */}
+                {currentStep < steps.length && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      shouldSaveToBackendRef.current = false; // Disable backend save
+                      const form = document.querySelector("form");
+
+                      if (form) {
+                        // Use requestSubmit() to properly trigger form validation
+                        if (typeof form.requestSubmit === 'function') {
+                          form.requestSubmit();
+                        } else {
+                          // Fallback for older browsers
+                          form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+                        }
+                      }
+                    }}
+                    disabled={isSaving}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
