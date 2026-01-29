@@ -13,6 +13,11 @@ const projectSchema = z.object({
   areaOfStudy: z.string().optional(),
   type: z.string().optional(),
   projectTitle: z.string().optional(),
+  id: z.number().optional(), // Added DB ID
+  // semester: z.string().min(1, "Semester is required"),
+  // areaOfStudy: z.string().min(1, "Area of study is required"),
+  // type: z.string().min(1, "Group / Individual is required"),
+  // projectTitle: z.string().min(1, "Project title is required"),
 });
 
 const researchProjectSchema = z.object({
@@ -60,6 +65,36 @@ export const ResearchProjectForm = ({ onSubmit, defaultValues, onProgressChange 
     return () => subscription.unsubscribe();
   }, [form, onProgressChange]);
 
+  const handleRemoveProject = async (index: number) => {
+    const projects = form.getValues("projects");
+    const projectToDelete = projects[index];
+
+    // If the project has a database ID, delete it from the backend
+    if (projectToDelete.id) {
+      try {
+        const response = await fetch(`https://cummulative-backend-production.up.railway.app/api/research-projects/${projectToDelete.id}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          console.error('Failed to delete project from database');
+          alert('Failed to delete project from database');
+          return;
+        }
+
+        // Remove from UI
+        remove(index);
+      } catch (error) {
+        console.error('Error deleting project:', error);
+        alert('Error deleting project');
+        return;
+      }
+    } else {
+      // If no database ID, just remove from form locally
+      remove(index);
+    }
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -71,6 +106,7 @@ export const ResearchProjectForm = ({ onSubmit, defaultValues, onProgressChange 
                 <th className="border p-3 text-left font-semibold">Area of Study/Discipline</th>
                 <th className="border p-3 text-left font-semibold">Group/Individual</th>
                 <th className="border p-3 text-left font-semibold">Project Title</th>
+                <th className="border p-3 text-center font-semibold w-20">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -143,12 +179,26 @@ export const ResearchProjectForm = ({ onSubmit, defaultValues, onProgressChange 
                       )}
                     />
                   </td>
+                  <td className="border p-2 text-center">
+                    {fields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveProject(index)}
+                        className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                        title="Delete this project"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        
+
         <div className="flex gap-2">
           <Button
             type="button"
@@ -159,18 +209,6 @@ export const ResearchProjectForm = ({ onSubmit, defaultValues, onProgressChange 
             <Plus className="h-4 w-4 mr-2" />
             Add Research Project
           </Button>
-          
-          {fields.length > 1 && (
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => remove(fields.length - 1)}
-              className="flex items-center gap-2"
-            >
-              <X className="h-4 w-4" />
-              Remove Last
-            </Button>
-          )}
         </div>
 
         <div className="flex justify-end">
