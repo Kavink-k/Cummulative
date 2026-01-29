@@ -7,6 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Eye, Edit, Printer, BookOpen, LogOut, User2 } from "lucide-react";
 import { getUser, logout } from "@/lib/auth";
 import { fetchpersonalprofileFromDB, fetchadmissionDetailsFromDB } from "@/lib/api";
+import {toast} from "sonner";
+
+
+const STORAGE_KEY = "student_cumulative_data";
+const STEP_KEY = "student_cumulative_step";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -17,6 +22,27 @@ const Dashboard = () => {
   const [students, setStudents] = useState([]); // FINAL MERGED LIST
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+
+   const handleNewForm = () => {
+    toast('Start a new form?', {
+      description: 'This will clear all current data (saved and unsaved) to start fresh.',
+      action: {
+        label: 'New Form',
+        onClick: () => {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(STEP_KEY);
+          // Reload page immediately to clear all form state
+          navigate("/form");
+
+          window.location.reload();
+        },
+      },
+      cancel: {
+        label: 'Cancel',
+        onClick: () => toast.info('Cancelled'),
+      },
+    });
+  };
 
   // Fetch both datasets + merge data
   useEffect(() => {
@@ -103,7 +129,7 @@ const Dashboard = () => {
                 </span>
               </div>
 
-              <Button variant="outline" onClick={() => navigate("/")}>New Record</Button>
+              <Button variant="outline" onClick= {handleNewForm}>New Record</Button>
 
               <Button
                 variant="destructive"

@@ -381,6 +381,8 @@ const StudentView = () => {
     fetchData();
   }, [studentId]);
 
+  const [activeTab, setActiveTab] = useState("step1");
+
   if (loading) return <p className="text-center mt-10">Loading...</p>;
   if (!data) return <p className="text-center mt-10">No student data found.</p>;
 
@@ -981,6 +983,39 @@ const StudentView = () => {
 
     return renderObject(clean);
   };
+
+  const handleEdit = () => {
+    // 1. Get the step number from the active tab (e.g., "step3" -> 3)
+    const stepNumber = parseInt(activeTab.replace("step", "")) || 1;
+
+    // 2. Save step to localStorage so Index.tsx picks it up
+    localStorage.setItem("student_cumulative_step", stepNumber.toString());
+
+    // 3. Ensure the form knows which student to load
+    // We set the basic requirement (studentId) so that Index.tsx's useEffect triggers a fetch
+    const currentData = localStorage.getItem("student_cumulative_data");
+    let newData = {};
+    if (currentData) {
+      try {
+        newData = JSON.parse(currentData);
+      } catch (e) {
+        console.error("Error parsing stored data", e);
+      }
+    }
+
+    // Create/Update step1 with studentId so the form triggers a fetch
+    const step1Data = (newData as any).step1 || {};
+    const updatedData = {
+      ...newData,
+      step1: { ...step1Data, studentId: studentId }
+    };
+
+    localStorage.setItem("student_cumulative_data", JSON.stringify(updatedData));
+
+    // 4. Navigate to the form page (Home)
+    navigate("/");
+  };
+
   return (
     <div className="container mx-auto px-4 py-10 max-w-5xl">
 
@@ -992,7 +1027,7 @@ const StudentView = () => {
         </Button>
         <div className="flex gap-2">
           <Button
-            onClick={() => navigate(`/students/${studentId}/edit`)}
+            onClick={handleEdit}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             <Edit className="h-4 w-4 mr-2" />
@@ -1035,7 +1070,7 @@ const StudentView = () => {
       </Card>
 
       {/* TABS */}
-      <Tabs defaultValue="step1" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList
           className="
     flex flex-wrap 
@@ -1070,6 +1105,7 @@ const StudentView = () => {
             </TabsTrigger>
           ))}
         </TabsList>
+
 
 
 

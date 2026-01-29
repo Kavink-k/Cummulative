@@ -346,14 +346,15 @@ const StudentEdit = () => {
     setStepProgress((prev) => ({ ...prev, [step]: clamped }));
   };
 
-  const handleResetForm = () => {
-    if (window.confirm("Are you sure you want to reset all form data? This action cannot be undone.")) {
-      setFormData({});
-      setStepProgress({});
-      setCurrentStep(1);
-      toast.success("Form reset successfully!");
-    }
-  };
+ const handleResetForm = () => {
+  setFormData({});
+  setCurrentDefaults({});
+  setStepProgress({});
+  setCurrentStep(1);
+  setStudentInfo(null);
+  toast.success("New form started");
+};
+
 
   const triggerActiveFormSubmit = () => {
     const currentForm = document.querySelector("form");
