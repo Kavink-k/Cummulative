@@ -363,15 +363,25 @@ export const CourseInstructionForm = ({
     });
   };
 
-  const form = useForm<CourseInstructionFormData>({
-    resolver: zodResolver(courseInstructionSchema),
-    defaultValues: defaultValues || {
-      studentId: "",
-      semester: selectedSemester,
-      courses: getCoursesForSemester(selectedSemester, defaultValues?.courses),
-    },
-  });
-
+  // const form = useForm<CourseInstructionFormData>({
+  //   resolver: zodResolver(courseInstructionSchema),
+  //   defaultValues: defaultValues || {
+  //     studentId: "",
+  //     semester: selectedSemester,
+  //     courses: getCoursesForSemester(selectedSemester, defaultValues?.courses),
+  //   },
+  // });
+const form = useForm({
+  resolver: zodResolver(courseInstructionSchema),
+  defaultValues: {
+    studentId: defaultValues?.studentId || "",
+    semester: defaultValues?.semester || selectedSemester,
+    courses: getCoursesForSemester(
+      defaultValues?.semester || selectedSemester,
+      defaultValues?.courses
+    )
+  },
+});
   const { fields, replace } = useFieldArray({
     control: form.control,
     name: "courses",
