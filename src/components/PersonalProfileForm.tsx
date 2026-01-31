@@ -218,7 +218,12 @@ const handleFormSubmit = async (data: PersonalProfileFormData) => {
       const res = await checkStudentId(data.studentId);
 
       if (res?.data) {
-        toast.error("Student already exists!");
+        toast.error("Student already exists!",{
+  style: {
+    background: 'red',
+    color: 'white',
+  },
+});
         return; // ❌ stop submission
       }
     } catch (error: any) {
