@@ -401,8 +401,10 @@
 
 
 import axios from 'axios';
+import { getUser } from './auth';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -411,13 +413,51 @@ const api = axios.create({
   },
 });
 
-export const fetchpersonalprofileFromDB = async () => {
-  const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/personal-profiles/`);
+// Add interceptor to include user ID in headers
+api.interceptors.request.use((config) => {
+  const user = getUser();
+  if (user) {
+    config.headers['x-user-id'] = user.id.toString();
+    config.headers['x-user-role'] = user.role;
+  }
+  return config;
+});
+
+export const fetchpersonalprofileFromDB = async (filters: { institutionId?: number; approvalStatus?: string } = {}) => {
+  const params = new URLSearchParams();
+  if (filters.institutionId) params.append("institutionId", filters.institutionId.toString());
+  if (filters.approvalStatus) params.append("approvalStatus", filters.approvalStatus);
+
+  const user = getUser();
+  const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/personal-profiles/`, {
+    params,
+    headers: user ? { 'x-user-id': user.id.toString() } : {}
+  });
   return res.data; // list of student step1 data
 };
 
+export const approveStudent = async (studentId: string) => {
+  return api.patch(`/personal-profiles/approve/${studentId}`);
+};
+
+export const rejectStudent = async (studentId: string) => {
+  return api.patch(`/personal-profiles/reject/${studentId}`);
+};
+
+export const requestEditAccess = async (studentId: string, reason: string) => {
+  return api.patch(`/personal-profiles/request-edit/${studentId}`, { reason });
+};
+
+export const allowEditAccess = async (studentId: string) => {
+  return api.patch(`/personal-profiles/allow-edit/${studentId}`);
+};
+
+
 export const fetchadmissionDetailsFromDB = async () => {
-  const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admission-details/`);
+  const user = getUser();
+  const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admission-details/`, {
+    headers: user ? { 'x-user-id': user.id.toString() } : {}
+  });
   return res.data;
 };
 
@@ -445,8 +485,14 @@ export const uploadBulkFile = async ({ file }: { file: File | null }) => {
 };
 
 
+
 // API functions for each endpoint
 export const apiService = {
+  // Institution Detail
+  createInstitutionDetail: async (data: any) => {
+    return api.post('/institution-details', cleanData(data));
+  },
+
   // Personal Profile
   createPersonalProfile: async (data: any, photoFile?: File) => {
     if (!photoFile) {
@@ -609,9 +655,11 @@ export const apiService = {
   },
 
   createCourseInstruction: async (data: any) => {
+    console.log("📤 API Service sending to backend:", { studentId: data.studentId, semester: data.semester, attempt: data.attempt, coursesCount: data.courses?.length });
     return api.post('/course-instructions', {
       studentId: data.studentId,
       semester: data.semester,
+      attempt: data.attempt, // Include attempt number
       courses: data.courses.map((course: any) => cleanData(course))
     });
   },
@@ -640,6 +688,14 @@ export const apiService = {
 };
 
 // ========== GET METHODS ==========
+export const getAllInstitutions = async () => {
+  return api.get('/institution-details');
+};
+
+export const getInstitutionByName = async (institutionName: string) => {
+  return api.get(`/institution-details/institution/${encodeURIComponent(institutionName)}`);
+};
+
 export const getPersonalProfileByStudentId = async (studentId: string) => {
   return api.get(`/personal-profiles/student/${studentId}`);
 };
@@ -726,20 +782,39 @@ export const getAllDataByStudentId = async (studentId: string) => {
       getVerificationsByStudentId(studentId),
     ]);
 
+    // Fetch institution details if institutionId exists in personal profile
+    let step0 = null;
+    if (step1.status === 'fulfilled' && step1.value.data.data?.institutionId) {
+      const institutionId = step1.value.data.data.institutionId;
+      try {
+        const institutionResponse = await api.get(`/institution-details/${institutionId}`);
+        step0 = { status: 'fulfilled' as const, value: institutionResponse };
+      } catch (error) {
+        step0 = { status: 'rejected' as const, reason: error };
+      }
+    }
+
     return {
-      // Step 1: Personal Profile - format dateOfBirth
-      step1: step1.status === 'fulfilled' && step1.value.data.data
+      // Frontend Step 1: Institution Details (from backend step0)
+      step1: step0?.status === 'fulfilled' && step0.value.data.data
+        ? step0.value.data.data
+        : null,
+
+      // Frontend Step 2: General Instructions (no backend data, skip)
+      // step2 is not included because it's a read-only instructions page
+
+      // Frontend Step 3: Personal Profile (from backend step1)
+      step3: step1.status === 'fulfilled' && step1.value.data.data
         ? {
           ...step1.value.data.data,
           photo: step1.value.data.data.photoUrl,
           dateOfBirth: parseDate(step1.value.data.data.dateOfBirth),
           regNo: step1.value.data.data.universityRegistration,
-
         }
         : null,
 
-      // Step 2: Educational Qualification - format date fields
-      step2: step2.status === 'fulfilled' && step2.value.data.data
+      // Frontend Step 4: Educational Qualification (from backend step2)
+      step4: step2.status === 'fulfilled' && step2.value.data.data
         ? {
           ...step2.value.data.data,
           certificateDate: parseDate(step2.value.data.data.certificateDate),
@@ -747,8 +822,8 @@ export const getAllDataByStudentId = async (studentId: string) => {
         }
         : null,
 
-      // Step 3: Admission Details - format all date fields
-      step3: step3.status === 'fulfilled' && step3.value.data.data
+      // Frontend Step 5: Admission Details (from backend step3)
+      step5: step3.status === 'fulfilled' && step3.value.data.data
         ? {
           ...step3.value.data.data,
           dateOfAdmission: parseDate(step3.value.data.data.dateOfAdmission),
@@ -760,17 +835,29 @@ export const getAllDataByStudentId = async (studentId: string) => {
         }
         : null,
 
-      // Step 4: Attendance Records - no date fields
-      step4: step4.status === 'fulfilled' ? step4.value.data.data : null,
+      // Frontend Step 6: Attendance Record (from backend step4)
+      step6: step4.status === 'fulfilled' && step4.value.data.data
+        ? { semesters: Array.isArray(step4.value.data.data) ? step4.value.data.data : [] }
+        : null,
 
-      // Step 5: Activity Participation - no date fields
-      step5: step5.status === 'fulfilled' ? step5.value.data.data : null,
+      // Frontend Step 7: Activities & Participation (from backend step5)
+      step7: step5.status === 'fulfilled' && step5.value.data.data
+        ? { semesters: Array.isArray(step5.value.data.data) ? step5.value.data.data : [] }
+        : null,
 
-      // Step 6: Course Instructions - no date fields
-      step6: step6.status === 'fulfilled' ? step6.value.data.data : null,
+      // Frontend Step 8: Course Instruction (from backend step6)
+      // Backend returns: { data: [{ semester, attempts: [{ attempt, courses }] }] }
+      // Return the semestersData array directly - it will be transformed by StudentEdit.tsx
+      step8: (() => {
+        const rawData = step6.status === 'fulfilled' && step6.value.data.data;
+        console.log("🔍 API - step6 raw data:", JSON.stringify(rawData).substring(0, 300));
+        const result = rawData ? (Array.isArray(rawData) ? rawData : []) : null;
+        console.log("🔍 API - step8 result is array?", Array.isArray(result), "Value:", result);
+        return result;
+      })(),
 
-      // Step 7: Observational Visits - format date fields and wrap in visits object
-      step7: step7.status === 'fulfilled' && step7.value.data.data
+      // Frontend Step 9: Observational Visits (from backend step7)
+      step9: step7.status === 'fulfilled' && step7.value.data.data
         ? {
           visits: Array.isArray(step7.value.data.data)
             ? step7.value.data.data.map((visit: any) => ({
@@ -781,22 +868,22 @@ export const getAllDataByStudentId = async (studentId: string) => {
         }
         : null,
 
-      // Step 8: Clinical Experience - wrap in records object
-      step8: step8.status === 'fulfilled' && step8.value.data.data
+      // Frontend Step 10: Clinical Experience (from backend step8)
+      step10: step8.status === 'fulfilled' && step8.value.data.data
         ? {
           records: Array.isArray(step8.value.data.data) ? step8.value.data.data : []
         }
         : null,
 
-      // Step 9: Research Projects - wrap in projects object
-      step9: step9.status === 'fulfilled' && step9.value.data.data
+      // Frontend Step 11: Research Projects (from backend step9)
+      step11: step9.status === 'fulfilled' && step9.value.data.data
         ? {
           projects: Array.isArray(step9.value.data.data) ? step9.value.data.data : []
         }
         : null,
 
-      // Step 10: Additional Courses - format from/to dates
-      step10: step10.status === 'fulfilled' && step10.value.data.data
+      // Frontend Step 12: Additional Courses (from backend step10)
+      step12: step10.status === 'fulfilled' && step10.value.data.data
         ? {
           courses: Array.isArray(step10.value.data.data)
             ? step10.value.data.data.map((course: any, index: number) => ({
@@ -810,8 +897,8 @@ export const getAllDataByStudentId = async (studentId: string) => {
         }
         : null,
 
-      // Step 11: Course Completion - format date fields
-      step11: step11.status === 'fulfilled' && step11.value.data.data
+      // Frontend Step 13: Course Completion (from backend step11)
+      step13: step11.status === 'fulfilled' && step11.value.data.data
         ? {
           completions: Array.isArray(step11.value.data.data)
             ? step11.value.data.data.map((comp: any) => ({
@@ -822,8 +909,8 @@ export const getAllDataByStudentId = async (studentId: string) => {
         }
         : null,
 
-      // Step 12: Verification - extract verifications array from record and format dates
-      step12: step12.status === 'fulfilled' && step12.value.data.data
+      // Frontend Step 14: Verification (from backend step12)
+      step14: step12.status === 'fulfilled' && step12.value.data.data
         ? {
           verifications: Array.isArray(step12.value.data.data.verifications)
             ? step12.value.data.data.verifications.map((ver: any) => ({
@@ -842,22 +929,32 @@ export const getAllDataByStudentId = async (studentId: string) => {
 };
 
 export const saveDataToBackend = async (step: number, data: any) => {
+  // Frontend step numbers now include "General Instructions" at step 2
+  // Backend expects: 1=Institution, 2=Personal, 3=Educational, etc.
+  // Frontend has: 1=Institution, 2=Instructions, 3=Personal, 4=Educational, etc.
+  // So we need to map: frontend step 3+ → backend step 2+
+
   switch (step) {
-    case 1: {
+    case 1: return apiService.createInstitutionDetail(data);
+    case 2:
+      // Step 2 is General Instructions (no backend save)
+      throw new Error('General Instructions page does not save to backend');
+    case 3: {
+      // Frontend step 3 = Personal Profile = Backend step 2
       const { photoFile, ...restData } = data;
       return apiService.createPersonalProfile(restData, photoFile);
     }
-    case 2: return apiService.createEducationalQualification(data);
-    case 3: return apiService.createAdmissionDetail(data);
-    case 4: return apiService.createAttendanceRecord(data);
-    case 5: return apiService.createActivityParticipation(data);
-    case 6: return apiService.createCourseInstruction(data);
-    case 7: return apiService.createObservationalVisit(data);
-    case 8: return apiService.createClinicalExperience(data);
-    case 9: return apiService.createResearchProject(data);
-    case 10: return apiService.createAdditionalCourses(data);
-    case 11: return apiService.createCourseCompletion(data);
-    case 12: return apiService.createVerification(data);
+    case 4: return apiService.createEducationalQualification(data); // Backend step 3
+    case 5: return apiService.createAdmissionDetail(data); // Backend step 4
+    case 6: return apiService.createAttendanceRecord(data); // Backend step 5
+    case 7: return apiService.createActivityParticipation(data); // Backend step 6
+    case 8: return apiService.createCourseInstruction(data); // Backend step 7
+    case 9: return apiService.createObservationalVisit(data); // Backend step 8
+    case 10: return apiService.createClinicalExperience(data); // Backend step 9
+    case 11: return apiService.createResearchProject(data); // Backend step 10
+    case 12: return apiService.createAdditionalCourses(data); // Backend step 11
+    case 13: return apiService.createCourseCompletion(data); // Backend step 12
+    case 14: return apiService.createVerification(data); // Backend step 13
     default: throw new Error(`No API endpoint configured for step ${step}`);
   }
 };

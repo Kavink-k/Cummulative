@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@/lib/adminApi";
+import { getInstitutions, Institution } from "@/lib/adminApi";
 import { Eye, EyeOff, RefreshCw } from "lucide-react";
 
 interface UserFormModalProps {
@@ -21,15 +22,16 @@ export default function UserFormModal({ open, onClose, onSubmit, user, mode }: U
     const [formData, setFormData] = useState({
         name: '',
         designation: '',
-        collegeName: '',
+        institutionId: 0,
         email: '',
         phone: '',
         password: '',
-        role: 'user' as 'user' | 'admin',
+        role: 'user' as 'user' | 'admin' | 'principal',
         isActive: true,
     });
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [institutions, setInstitutions] = useState<Institution[]>([]);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -37,7 +39,7 @@ export default function UserFormModal({ open, onClose, onSubmit, user, mode }: U
             setFormData({
                 name: user.name,
                 designation: user.designation,
-                collegeName: user.collegeName,
+                institutionId: user.institutionId,
                 email: user.email,
                 phone: user.phone,
                 password: '',
@@ -48,7 +50,7 @@ export default function UserFormModal({ open, onClose, onSubmit, user, mode }: U
             setFormData({
                 name: '',
                 designation: '',
-                collegeName: '',
+                institutionId: 0,
                 email: '',
                 phone: '',
                 password: '',
@@ -57,6 +59,21 @@ export default function UserFormModal({ open, onClose, onSubmit, user, mode }: U
             });
         }
     }, [user, mode, open]);
+
+    // Fetch institutions on mount
+    useEffect(() => {
+        const fetchInstitutionsData = async () => {
+            try {
+                const data = await getInstitutions();
+                setInstitutions(data);
+            } catch (error) {
+                console.error('Failed to fetch institutions:', error);
+            }
+        };
+        if (open) {
+            fetchInstitutionsData();
+        }
+    }, [open]);
 
     const generatePassword = () => {
         const length = 12;
@@ -76,7 +93,7 @@ export default function UserFormModal({ open, onClose, onSubmit, user, mode }: U
         e.preventDefault();
 
         // Validation
-        if (!formData.name || !formData.designation || !formData.collegeName || !formData.email || !formData.phone) {
+        if (!formData.name || !formData.designation || !formData.institutionId || !formData.email || !formData.phone) {
             toast({
                 title: "Validation Error",
                 description: "Please fill in all required fields",
@@ -168,13 +185,22 @@ export default function UserFormModal({ open, onClose, onSubmit, user, mode }: U
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="collegeName">College Name *</Label>
-                        <Input
-                            id="collegeName"
-                            value={formData.collegeName}
-                            onChange={(e) => setFormData({ ...formData, collegeName: e.target.value })}
-                            placeholder="ABC Medical College"
-                        />
+                        <Label htmlFor="institutionId">Institution *</Label>
+                        <Select
+                            value={formData.institutionId?.toString()}
+                            onValueChange={(value) => setFormData({ ...formData, institutionId: parseInt(value) })}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select institution" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {institutions.map((inst) => (
+                                    <SelectItem key={inst.id} value={inst.id.toString()}>
+                                        {inst.institutionName}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -239,13 +265,14 @@ export default function UserFormModal({ open, onClose, onSubmit, user, mode }: U
                             <Label htmlFor="role">Role</Label>
                             <Select
                                 value={formData.role}
-                                onValueChange={(value: 'user' | 'admin') => setFormData({ ...formData, role: value })}
+                                onValueChange={(value: 'user' | 'admin' | 'principal') => setFormData({ ...formData, role: value })}
                             >
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="user">User</SelectItem>
+                                    <SelectItem value="principal">Principal</SelectItem>
                                     <SelectItem value="admin">Admin</SelectItem>
                                 </SelectContent>
                             </Select>

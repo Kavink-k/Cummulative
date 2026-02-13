@@ -6,9 +6,7 @@
 All colors MUST be HSL.
 */
 
-@import url('fonts.googleapis.com');
-
-
+/* Removed invalid @import - Google Fonts should be imported via <link> in HTML or with full URL */
 
 @layer base {
   :root {
@@ -105,6 +103,6 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family:'poppins', sans-serif;
+    font-family: "poppins", sans-serif;
   }
 }

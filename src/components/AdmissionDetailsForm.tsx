@@ -47,8 +47,8 @@ const admissionDetailsSchema = z.object({
 
   // Allotment
   allotmentCategory: z.string().min(1, "Allotment category is required"),
-  govtAllotmentNo: z.string().nullable().optional(),
-  privateAllotmentNo: z.string().nullable().optional(),
+  allotmentNo: z.string().nullable().optional(),
+  allotmentDate: z.string().nullable().optional(),
 
   // Community / Nativity
   communityCertificateNo: z.string().nullable().optional(),
@@ -85,6 +85,8 @@ export const AdmissionDetailsForm = ({
     defaultValues: defaultValues || {
       studentId: "",
       allotmentCategory: "",
+      allotmentNo: "",
+      allotmentDate: "",
       scholarshipAmount: null,
       bankLoanAmount: null,
     },
@@ -254,7 +256,7 @@ export const AdmissionDetailsForm = ({
                   <FormControl>
                     <Input {...field} value={field.value || ""} />
                   </FormControl>
-                   <FormMessage />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -267,7 +269,7 @@ export const AdmissionDetailsForm = ({
                   <FormControl>
                     <Input type="date" {...field} value={field.value || ""} />
                   </FormControl>
-                   <FormMessage />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -280,7 +282,7 @@ export const AdmissionDetailsForm = ({
                   <FormControl>
                     <Input {...field} value={field.value || ""} />
                   </FormControl>
-                   <FormMessage />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -293,33 +295,37 @@ export const AdmissionDetailsForm = ({
                   <FormControl>
                     <Input type="date" {...field} value={field.value || ""} />
                   </FormControl>
-                   <FormMessage />
+                  <FormMessage />
                 </FormItem>
               )}
             />
             <FormField
               control={form.control}
-              name="govtAllotmentNo"
+              name="allotmentNo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Govt Allotment Order No.</FormLabel>
+                  <FormLabel>
+                    {form.watch("allotmentCategory") === "government"
+                      ? "Govt Allotment Order No."
+                      : "Private Allotment Order No."}
+                  </FormLabel>
                   <FormControl>
                     <Input {...field} value={field.value || ""} />
                   </FormControl>
-                   <FormMessage />
+                  <FormMessage />
                 </FormItem>
               )}
             />
             <FormField
               control={form.control}
-              name="privateAllotmentNo"
+              name="allotmentDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Private Allotment Order No.</FormLabel>
+                  <FormLabel> Allotment Order Date </FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value || ""} />
+                    <Input type="date" {...field} value={field.value || ""} />
                   </FormControl>
-                   <FormMessage />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -332,7 +338,7 @@ export const AdmissionDetailsForm = ({
                   <FormControl>
                     <Input {...field} value={field.value || ""} />
                   </FormControl>
-                   <FormMessage />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -345,7 +351,7 @@ export const AdmissionDetailsForm = ({
                   <FormControl>
                     <Input type="date" {...field} value={field.value || ""} />
                   </FormControl>
-                   <FormMessage />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -358,7 +364,7 @@ export const AdmissionDetailsForm = ({
                   <FormControl>
                     <Input {...field} value={field.value || ""} />
                   </FormControl>
-                   <FormMessage />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -371,7 +377,7 @@ export const AdmissionDetailsForm = ({
                   <FormControl>
                     <Input type="date" {...field} value={field.value || ""} />
                   </FormControl>
-                   <FormMessage />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -390,7 +396,7 @@ export const AdmissionDetailsForm = ({
                   <FormControl>
                     <Input {...field} value={field.value || ""} />
                   </FormControl>
-                   <FormMessage />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -422,7 +428,7 @@ export const AdmissionDetailsForm = ({
                   <FormControl>
                     <Input {...field} value={field.value || ""} />
                   </FormControl>
-                   <FormMessage />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -460,7 +466,7 @@ export const AdmissionDetailsForm = ({
                 <FormItem>
                   <FormLabel>Date of Discontinuation</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} value={field.value || ""} />  
+                    <Input type="date" {...field} value={field.value || ""} />
                   </FormControl>
                 </FormItem>
               )}

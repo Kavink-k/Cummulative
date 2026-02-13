@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit, Printer } from "lucide-react";
+import { ArrowLeft, Edit, Printer, ShieldCheck, UserPlus, CheckCircle, AlertCircle } from "lucide-react";
 import { getAllDataByStudentId } from "@/lib/api";
 import { EducationalMarksTable } from "@/components/EducationalMarksTable";
+import { GeneralInstructions } from "@/components/GeneralInstructions";
 import {
   Select,
   SelectContent,
@@ -21,17 +22,114 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import semesterNotes from "../data/semesterNotes.json";
 
 /* -------------------------------------------------------------------------- */
 /*               Dedicated component for Course Instruction view             */
 /* -------------------------------------------------------------------------- */
-const CourseInstructionView = ({ data }: { data: any[] }) => {
+const CourseInstructionView = ({ data }: { data: any }) => {
   const [selectedSemester, setSelectedSemester] = useState("I");
+  // Default to stored attempt or "0" (since we know 0 exists now)
+  const [selectedAttempt, setSelectedAttempt] = useState("0");
 
-  // Filter courses for the selected semester
-  const semesterCourses = Array.isArray(data)
-    ? data.filter((item: any) => item.semester === selectedSemester)
-    : [];
+  // Flatten the data into a uniform structure (array of courses)
+  const flattenedData = useMemo(() => {
+    // ... (rest of useMemo logic remains same, just need to preserve it)
+    // Case 1: New structure with attempts array (Object with attempts)
+    if (data?.attempts && Array.isArray(data.attempts)) {
+      return data.attempts.flatMap((att: any) => {
+        if (!att.courses || !Array.isArray(att.courses)) return [];
+        // Handle both attemptNumber and attempt keys, allowing 0 as a valid value
+        const attemptVal = att.attemptNumber !== undefined ? att.attemptNumber : (att.attempt !== undefined ? att.attempt : 1);
+        
+        return att.courses.map((course: any) => ({
+          ...course,
+          semester: att.semester,
+          attempt: attemptVal
+        }));
+      });
+    }
+    
+    // Case 2: Intermediate structure (Object with courses)
+    if (data?.courses && Array.isArray(data.courses)) {
+
+      return data.courses.map((course: any) => ({
+        ...course,
+        semester: data.semester || course.semester,
+        attempt: data.attempt || course.attempt || 1
+      }));
+    }
+
+    // Case 3: Array of Semester Objects (EACH containing attempts) - THIS IS THE ACTUAL CASE
+    if (Array.isArray(data)) {
+      // Check if items have attempts array
+      const firstItem = data.length > 0 ? data[0] : null;
+      if (firstItem && firstItem.attempts && Array.isArray(firstItem.attempts)) {
+
+        return data.flatMap((semesterObj: any) => {
+          return semesterObj.attempts.flatMap((att: any) => {
+            if (!att.courses || !Array.isArray(att.courses)) return [];
+            // Handle both attemptNumber and attempt keys, allowing 0 as a valid value
+            const attemptVal = att.attemptNumber !== undefined ? att.attemptNumber : (att.attempt !== undefined ? att.attempt : 1);
+            
+            return att.courses.map((course: any) => ({
+              ...course,
+              semester: semesterObj.semester, // Use semester from parent object
+              attempt: attemptVal
+            }));
+          });
+        });
+      }
+
+      // Case 4: Legacy flat array (items are courses directly)
+
+      return data;
+    }
+
+
+    return [];
+  }, [data]);
+
+
+
+  // Get unique attempts for the selected semester
+  const getAvailableAttempts = (): string[] => {
+    if (flattenedData.length === 0) return ["1"];
+    
+    const semesterData = flattenedData.filter((item: any) => item.semester === selectedSemester);
+    
+    // Use explicit check for undefined/null to allow 0 as a valid attempt
+    const attempts = [...new Set(semesterData.map((item: any) => 
+      String(item.attempt !== undefined && item.attempt !== null ? item.attempt : "1")
+    ))] as string[];
+    
+    if (attempts.length === 0) return ["1"];
+    
+    return attempts.sort((a, b) => Number(a) - Number(b));
+  };
+
+  const availableAttempts = getAvailableAttempts();
+
+  // Effect to set initial attempt when semester changes or data loads
+  useEffect(() => {
+    if (availableAttempts.length > 0) {
+      // Always select the first available attempt (closest to 0)
+      setSelectedAttempt(availableAttempts[0]);
+    }
+  }, [selectedSemester, availableAttempts.join(",")]); // Depend on the values of availableAttempts
+
+  // Filter courses for the selected semester and attempt
+  const semesterCourses = flattenedData.filter((item: any) => {
+    // First filter by semester
+    if (item.semester !== selectedSemester) return false;
+    
+    // Filter by attempt - allow 0
+    const itemAttempt = String(item.attempt !== undefined && item.attempt !== null ? item.attempt : "1");
+    // If selected attempt defaults to "1" but data has no attempt field, it matches
+    return itemAttempt === selectedAttempt;
+  });
+
+
 
   // Separate actual courses from total/summary rows
   const actualCourses = semesterCourses.filter(
@@ -100,9 +198,81 @@ const CourseInstructionView = ({ data }: { data: any[] }) => {
   if (actualCourses.length === 0) {
     return (
       <div className="space-y-6">
+        <div className="flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-4">
+            <label className="font-semibold">Select Semester:</label>
+            <Select value={selectedSemester} onValueChange={(value) => {
+              setSelectedSemester(value);
+              setSelectedAttempt("1");
+            }}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map((s) => (
+                  <SelectItem key={s} value={s}>Semester {s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <label className="font-semibold">Select Attempt:</label>
+            <Select value={selectedAttempt} onValueChange={setSelectedAttempt} disabled={availableAttempts.length === 0}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableAttempts.length > 0 ? (
+                  availableAttempts.map((attempt) => (
+                    <SelectItem key={attempt} value={attempt}>Attempt {attempt}</SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="1">Attempt 1</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <p className="text-muted-foreground">No course records found for Semester {selectedSemester}, Attempt {selectedAttempt}.</p>
+
+        {/* Semester Specific Notes */}
+        {semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] && (
+          <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border">
+            {typeof semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] === 'string' ? (
+              <p className="text-sm font-medium text-foreground">
+                {semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] as string}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <h4 className="font-bold text-base text-foreground">
+                  {(semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] as any).title}
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  {(semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] as any).description}
+                </p>
+                <ul className="list-disc list-inside space-y-1">
+                  {(semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] as any).list.map((note: string, idx: number) => (
+                    <li key={idx} className="text-sm text-foreground">{note}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-6 flex-wrap">
         <div className="flex items-center gap-4">
           <label className="font-semibold">Select Semester:</label>
-          <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+          <Select value={selectedSemester} onValueChange={(value) => {
+            setSelectedSemester(value);
+            setSelectedAttempt("1");
+          }}>
             <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
@@ -113,25 +283,24 @@ const CourseInstructionView = ({ data }: { data: any[] }) => {
             </SelectContent>
           </Select>
         </div>
-        <p className="text-muted-foreground">No course records found for Semester {selectedSemester}.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <label className="font-semibold">Select Semester:</label>
-        <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map((s) => (
-              <SelectItem key={s} value={s}>Semester {s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        
+        <div className="flex items-center gap-4">
+          <label className="font-semibold">Select Attempt:</label>
+          <Select value={selectedAttempt} onValueChange={setSelectedAttempt} disabled={availableAttempts.length === 0}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableAttempts.length > 0 ? (
+                availableAttempts.map((attempt) => (
+                  <SelectItem key={attempt} value={attempt}>Attempt {attempt}</SelectItem>
+                ))
+              ) : (
+                <SelectItem value="1">Attempt 1</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="border rounded-lg overflow-x-auto">
@@ -204,24 +373,24 @@ const CourseInstructionView = ({ data }: { data: any[] }) => {
             {/* Self-study row if present */}
             {selfStudyRow && (
               <TableRow className="bg-gray-50 text-sm">
-                <TableCell className="border-r"></TableCell>
-                <TableCell className="border-r">{selfStudyRow.courseCode || "-"}</TableCell>
-                <TableCell className="border-r">{selfStudyRow.universityCourseCode || "-"}</TableCell>
+                <TableCell className="border-r text-center"></TableCell>
+                <TableCell className="border-r text-center">{selfStudyRow.courseCode || "-"}</TableCell>
+                <TableCell className="border-r text-center">{selfStudyRow.universityCourseCode || "-"}</TableCell>
                 <TableCell className="border-r italic">{selfStudyRow.courseTitle || "-"}</TableCell>
                 <TableCell className="border-r"></TableCell>
                 <TableCell className="border-r"></TableCell>
                 <TableCell className="border-r"></TableCell>
                 <TableCell className="border-r text-center">{selfStudyRow.theoryPrescribed || "-"}</TableCell>
-                <TableCell colSpan={28} className="border-r text-muted-foreground text-center">Self-study / Co-curricular</TableCell>
+                <TableCell colSpan={20} className="border-r text-muted-foreground text-center">Self-study / Co-curricular</TableCell>
               </TableRow>
             )}
 
             {/* Elective row if present */}
             {electiveRow && (
               <TableRow className="bg-gray-50 text-sm">
-                <TableCell className="border-r"></TableCell>
-                <TableCell className="border-r">{electiveRow.courseCode || "-"}</TableCell>
-                <TableCell className="border-r">{electiveRow.universityCourseCode || "-"}</TableCell>
+                <TableCell className="border-r text-center"></TableCell>
+                <TableCell className="border-r text-center">{electiveRow.courseCode || "-"}</TableCell>
+                <TableCell className="border-r text-center">{electiveRow.universityCourseCode || "-"}</TableCell>
                 <TableCell className="border-r italic">{electiveRow.courseTitle || "-"}</TableCell>
                 <TableCell className="border-r text-center">{electiveRow.theoryCredits || "-"}</TableCell>
                 <TableCell className="border-r"></TableCell>
@@ -229,18 +398,18 @@ const CourseInstructionView = ({ data }: { data: any[] }) => {
                 <TableCell className="border-r text-center">{electiveRow.theoryPrescribed || "-"}</TableCell>
                 <TableCell className="border-r text-center">{electiveRow.theoryAttended || "-"}</TableCell>
                 <TableCell className="border-r text-center">{electiveRow.theoryPercentage || "-"}</TableCell>
-                <TableCell colSpan={9} className="border-r text-center">-</TableCell>
-                <TableCell className="border-r"></TableCell>
-                <TableCell className="border-r"></TableCell>
+                <TableCell colSpan={6} className="border-r text-center">-</TableCell>
+                <TableCell className="border-r text-center">{electiveRow.theoryInternalMax || "-"}</TableCell>
+                <TableCell className="border-r text-center">{electiveRow.theoryInternalObtained || "-"}</TableCell>
                 <TableCell className="border-r text-center">{electiveRow.theoryEndSemMax || "-"}</TableCell>
                 <TableCell className="border-r text-center">{electiveRow.theoryEndSemObtained || "-"}</TableCell>
                 <TableCell className="border-r text-center">{electiveRow.theoryTotalMax || "-"}</TableCell>
                 <TableCell className="border-r text-center">{electiveRow.theoryTotalObtained || "-"}</TableCell>
                 <TableCell colSpan={6} className="border-r text-center">-</TableCell>
-                <TableCell className="border-r"></TableCell>
-                <TableCell className="border-r"></TableCell>
-                <TableCell className="border-r"></TableCell>
-                <TableCell className="border-r"></TableCell>
+                <TableCell className="border-r text-center">{electiveRow.gradePoint || "-"}</TableCell>
+                <TableCell className="border-r text-center">{electiveRow.letterGrade || "-"}</TableCell>
+                <TableCell className="border-r text-center">{electiveRow.sgpa || "-"}</TableCell>
+                <TableCell className="border-r text-center">{electiveRow.rank || "-"}</TableCell>
               </TableRow>
             )}
 
@@ -331,9 +500,31 @@ const CourseInstructionView = ({ data }: { data: any[] }) => {
         </Table>
       </div>
 
-      <p className="text-xs text-muted-foreground italic">
-        Note: Fill in marks and attendance for the selected semester.
-      </p>
+
+      {/* Semester Specific Notes */}
+      {semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] && (
+        <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border">
+          {typeof semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] === 'string' ? (
+            <p className="text-sm font-medium text-foreground">
+              {semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] as string}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              <h4 className="font-bold text-base text-foreground">
+                {(semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] as any).title}
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                {(semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] as any).description}
+              </p>
+              <ul className="list-disc list-inside space-y-1">
+                {(semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] as any).list.map((note: string, idx: number) => (
+                  <li key={idx} className="text-sm text-foreground">{note}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -348,7 +539,7 @@ const StudentView = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const FILTER_KEYS = ["id", "createdAt", "updatedAt", "regNo", "photo", "photoUrl"];
+  const FILTER_KEYS = ["id", "createdAt", "updatedAt", "regNo", "photo", "photoUrl", "institutionId", "studentId", "creator", "approver", "editor", "institution", "createdBy", "approvedBy", "editedBy", "editRequestStatus", "editRequestReason", "approvalStatus"];
 
   const filterData = (obj: any) => {
     if (!obj) return null;
@@ -387,18 +578,20 @@ const StudentView = () => {
   if (!data) return <p className="text-center mt-10">No student data found.</p>;
 
   const tabs = [
-    { id: "step1", title: "1. Personal Profile" },
-    { id: "step2", title: "2. Educational Qualification" },
-    { id: "step3", title: "3. Admission Details" },
-    { id: "step4", title: "4. Attendance" },
-    { id: "step5", title: "5. Activities" },
-    { id: "step6", title: "6. Course Instruction" },
-    { id: "step7", title: "7. Observational Visits" },
-    { id: "step8", title: "8. Clinical Experience" },
-    { id: "step9", title: "9. Research Projects" },
-    { id: "step10", title: "10. Additional Courses" },
-    { id: "step11", title: "11. Course Completion" },
-    { id: "step12", title: "12. Verification" },
+    { id: "step1", title: "1. Institution Details" },
+    { id: "step2", title: "2. General Instructions" },
+    { id: "step3", title: "3. Personal Profile" },
+    { id: "step4", title: "4. Educational Qualification" },
+    { id: "step5", title: "5. Admission Details" },
+    { id: "step6", title: "6. Attendance Record" },
+    { id: "step7", title: "7. Activities & Participation" },
+    { id: "step8", title: "8. Course Instruction" },
+    { id: "step9", title: "9. Observational Visits" },
+    { id: "step10", title: "10. Clinical Experience" },
+    { id: "step11", title: "11. Research Projects" },
+    { id: "step12", title: "12. Additional Courses" },
+    { id: "step13", title: "13. Course Completion" },
+    { id: "step14", title: "14. Verification" },
   ];
 
   const renderObject = (obj: any) => (
@@ -413,15 +606,284 @@ const StudentView = () => {
   );
 
   const renderSection = (section: any, stepId?: string) => {
+    // === GENERAL INSTRUCTIONS - STEP 2 ===
+    // We check this BEFORE the !section check because it's a static component
+    if (stepId === "step2") {
+      return <GeneralInstructions mode="view" />;
+    }
+
     if (!section) return <p className="text-muted-foreground">No data available.</p>;
 
-    // === COURSE INSTRUCTION - STEP 6 ===
+    // === INSTITUTION DETAILS - STEP 1 ===
+    if (stepId === "step1") {
+      const clean = filterData(section);
+      if (!clean) return <p className="text-muted-foreground">No data available.</p>;
+
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 border rounded-lg bg-muted/30">
+              <p className="font-semibold text-sm">Institution Name</p>
+              <p className="text-muted-foreground">{clean.institutionName || "-"}</p>
+            </div>
+            <div className="p-4 border rounded-lg bg-muted/30">
+              <p className="font-semibold text-sm">Address</p>
+              <p className="text-muted-foreground">{clean.address || "-"}</p>
+            </div>
+            <div className="p-4 border rounded-lg bg-muted/30">
+              <p className="font-semibold text-sm">Batch</p>
+              <p className="text-muted-foreground">{clean.batch || "-"}</p>
+            </div>
+            <div className="p-4 border rounded-lg bg-muted/30">
+              <p className="font-semibold text-sm">Course</p>
+              <p className="text-muted-foreground">{clean.course || "-"}</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // === PERSONAL PROFILE - STEP 3 ===
+    if (stepId === "step3") {
+      const clean = filterData(section);
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(clean).map(([key, value]) => (
+              <div key={key} className="p-3 border rounded-md bg-muted/20">
+                <p className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1">
+                  {key.replace(/([A-Z])/g, " $1")}
+                </p>
+                <p className="text-sm font-medium">{String(value) || "-"}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* AUDIT INFO */}
+          <div className="mt-6 pt-6 border-t">
+            <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4" /> Audit Information
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-3 border rounded-md bg-blue-50/50">
+                <p className="text-[10px] uppercase text-blue-600 font-bold tracking-wider mb-1 flex items-center gap-1">
+                  <UserPlus className="h-3 w-3" /> Created By
+                </p>
+                <p className="text-sm font-medium">
+                  {section.creator?.name || "System"}
+                  {section.creator?.designation && ` (${section.creator.designation})`}
+                </p>
+              </div>
+
+              {section.approver && (
+                <div className="p-3 border rounded-md bg-green-50/50">
+                  <p className="text-[10px] uppercase text-green-600 font-bold tracking-wider mb-1 flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" /> Approved By
+                  </p>
+                  <p className="text-sm font-medium">
+                    {section.approver.name}
+                    {section.approver.designation && ` (${section.approver.designation})`}
+                  </p>
+                </div>
+              )}
+
+              {section.editor && (
+                <div className="p-3 border rounded-md bg-purple-50/50">
+                  <p className="text-[10px] uppercase text-purple-600 font-bold tracking-wider mb-1 flex items-center gap-1">
+                    <Edit className="h-3 w-3" /> Last Edited By
+                  </p>
+                  <p className="text-sm font-medium">
+                    {section.editor.name}
+                    {section.editor.designation && ` (${section.editor.designation})`}
+                  </p>
+                </div>
+              )}
+
+              {section.editRequestReason && (
+                <div className="md:col-span-2 p-3 border rounded-md bg-amber-50/50 border-amber-100">
+                  <p className="text-[10px] uppercase text-amber-600 font-bold tracking-wider mb-1 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" /> Modification Reason
+                  </p>
+                  <p className="text-sm italic text-amber-900">"{section.editRequestReason}"</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // === EDUCATIONAL QUALIFICATION - STEP 4 ===
+    if (stepId === "step4") {
+      const clean = filterData(section);
+
+      return (
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(clean).map(([key, value]) => {
+              if (key === 'subjects' || key === 'totalPlusOneAttempts' || key === 'totalPlusTwoAttempts') return null;
+              return (
+                <div key={key} className="p-4 border rounded-lg bg-muted/30">
+                  <p className="font-semibold text-sm capitalize">{key.replace(/([A-Z])/g, " $1")}</p>
+                  <p className="text-muted-foreground">{String(value) || "-"}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          {clean.subjects && Array.isArray(clean.subjects) && clean.subjects.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-lg font-semibold mb-4">Marks Obtained</h3>
+              <EducationalMarksTable
+                subjects={clean.subjects}
+                totalPlusOneAttempts={clean.totalPlusOneAttempts || []}
+                totalPlusTwoAttempts={clean.totalPlusTwoAttempts || []}
+              />
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // === ADMISSION DETAILS - STEP 5 ===
+    if (stepId === "step5") {
+      const clean = filterData(section);
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(clean).map(([key, value]) => (
+              <div key={key} className="p-3 border rounded-md bg-muted/20">
+                <p className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1">
+                  {key === "allotmentNo"
+                    ? (section.allotmentCategory === "government" ? "Govt Allotment No" : "Private Allotment No")
+                    : key.replace(/([A-Z])/g, " $1")}
+                </p>
+                <p className="text-sm font-medium">{String(value) || "-"}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+
+    // === ATTENDANCE RECORD - STEP 6 ===
     if (stepId === "step6") {
+      const attendanceRecords = Array.isArray(section) ? section : section?.semesters || [];
+
+      if (!attendanceRecords || attendanceRecords.length === 0) {
+        return <p className="text-muted-foreground">No attendance data available.</p>;
+      }
+
+      return (
+        <div className="space-y-6">
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="w-full border-collapse min-w-[800px] text-sm">
+              <thead>
+                <tr className="bg-muted">
+                  <th className="border p-3 text-left font-semibold">Semester</th>
+                  <th className="border p-3 text-left font-semibold">Working Days</th>
+                  <th className="border p-3 text-left font-semibold">Annual Leave</th>
+                  <th className="border p-3 text-left font-semibold">Sick Leave</th>
+                  <th className="border p-3 text-left font-semibold">Gazetted Holidays</th>
+                  <th className="border p-3 text-left font-semibold">Other Leave</th>
+                  <th className="border p-3 text-center font-semibold">
+                    Compensation<br />
+                    <span className="text-xs font-normal text-muted-foreground">Days/Hrs</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map((sem) => {
+                  const record = attendanceRecords.find((r: any) =>
+                    r.semester === sem || r.semester === `Semester ${sem}`
+                  ) || {};
+
+                  return (
+                    <tr key={sem} className="hover:bg-muted/30 transition-colors">
+                      <td className="border p-3 font-medium text-center bg-muted/20">
+                        Semester {sem}
+                      </td>
+                      <td className="border p-3 text-center">{record.workingDays ?? "-"}</td>
+                      <td className="border p-3 text-center">{record.annualLeave ?? "-"}</td>
+                      <td className="border p-3 text-center">{record.sickLeave ?? "-"}</td>
+                      <td className="border p-3 text-center">{record.gazettedHolidays ?? "-"}</td>
+                      <td className="border p-3 text-center">{record.otherLeave ?? "-"}</td>
+                      <td className="border p-3 text-center font-medium">
+                        {record.compensationDaysHours || "-"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-muted-foreground italic">
+            Note: Other Leave includes arrear study holidays, arrear examination leave, and important family functions.
+          </p>
+        </div>
+      );
+    }
+
+    // === ACTIVITIES & PARTICIPATION - STEP 7 ===
+    if (stepId === "step7") {
+      const activities = Array.isArray(section) ? section : section?.semesters || [];
+
+      if (!activities || activities.length === 0) {
+        return <p className="text-muted-foreground">No activities recorded.</p>;
+      }
+
+      return (
+        <div className="overflow-x-auto border rounded-lg">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-muted">
+                <th className="border p-4 text-left font-semibold">Semester</th>
+                <th className="border p-4 text-left font-semibold">Sports</th>
+                <th className="border p-4 text-left font-semibold">Co-curricular</th>
+                <th className="border p-4 text-left font-semibold">Extra-curricular</th>
+                <th className="border p-4 text-left font-semibold">SNA</th>
+                <th className="border p-4 text-left font-semibold">NSS/YRC/RRC</th>
+                <th className="border p-4 text-left font-semibold">CNE</th>
+                <th className="border p-4 text-left font-semibold">Awards/Rewards</th>
+              </tr>
+            </thead>
+            <tbody>
+              {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map((sem) => {
+                const act = activities.find((a: any) => a.semester === sem) || {};
+
+                return (
+                  <tr key={sem} className="hover:bg-muted/30 transition-colors">
+                    <td className="border p-4 font-medium text-center bg-muted/20">
+                      {sem}
+                    </td>
+                    <td className="border p-4 min-w-[120px]">{act.sports || "-"}</td>
+                    <td className="border p-4 min-w-[120px]">{act.coCurricular || "-"}</td>
+                    <td className="border p-4 min-w-[120px]">{act.extraCurricular || "-"}</td>
+                    <td className="border p-4 min-w-[80px]">{act.sna || "-"}</td>
+                    <td className="border p-4 min-w-[100px]">{act.nssYrcRrc || "-"}</td>
+                    <td className="border p-4 min-w-[80px]">{act.cne || "-"}</td>
+                    <td className="border p-4 min-w-[140px] font-medium text-emerald-700">
+                      {act.awardsRewards || "-"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+
+
+    // === COURSE INSTRUCTION - STEP 8 ===
+    if (stepId === "step8") {
       return <CourseInstructionView data={section} />;
     }
 
-    // === OBSERVATIONAL VISITS - STEP 7 ===
-    if (stepId === "step7") {
+    // === OBSERVATIONAL VISITS - STEP 9 ===
+    if (stepId === "step9") {
       // Handle both array format and {visits: []} format
       const visits = Array.isArray(section) ? section : (section?.visits || []);
 
@@ -484,8 +946,8 @@ const StudentView = () => {
       );
     }
 
-    // === CLINICAL EXPERIENCE - STEP 8 ===
-    if (stepId === "step8") {
+    // === CLINICAL EXPERIENCE - STEP 10 ===
+    if (stepId === "step10") {
       // Handle both array format and {records: []} format
       const records = Array.isArray(section) ? section : (section?.records || []);
 
@@ -560,8 +1022,8 @@ const StudentView = () => {
       );
     }
 
-    // === RESEARCH PROJECTS - STEP 9 ===
-    if (stepId === "step9") {
+    // === RESEARCH PROJECTS - STEP 11 ===
+    if (stepId === "step11") {
       // Handle both array format and {projects: []} format
       const projects = Array.isArray(section) ? section : (section?.projects || []);
 
@@ -602,8 +1064,8 @@ const StudentView = () => {
       );
     }
 
-    // === ADDITIONAL COURSES - STEP 10 ===
-    if (stepId === "step10") {
+    // === ADDITIONAL COURSES - STEP 12 ===
+    if (stepId === "step12") {
       const courses = section?.courses || (Array.isArray(section) ? section : []);
 
       if (courses.length === 0) {
@@ -636,13 +1098,13 @@ const StudentView = () => {
       );
     }
 
-    // === COURSE COMPLETION - STEP 11 ===
-    if (stepId === "step11") {
+    // === COURSE COMPLETION - STEP 13 ===
+    if (stepId === "step13") {
       const completions = Array.isArray(section?.completions) ? section.completions : [];
 
       // Define the exact order and labels to display
       const certificateOrder = [
-        "Name of the Certificate",
+        // "Name of the Certificate",
         "Course completion certificate",
         "Transfer certificate",
         "Provisional certificate",
@@ -707,8 +1169,8 @@ const StudentView = () => {
       );
     }
 
-    // === VERIFICATION - STEP 12 ===
-    if (stepId === "step12") {
+    // === VERIFICATION - STEP 14 ===
+    if (stepId === "step14") {
       // Handle both array format and {verifications: []} format
       const verifications = Array.isArray(section) ? section : (section?.verifications || []);
 
@@ -786,183 +1248,7 @@ const StudentView = () => {
       );
     }
 
-    // === ACTIVITIES - STEP 5 ===
-    if (stepId === "step5") {
-      const activities = Array.isArray(section) ? section : [];
 
-      if (activities.length === 0) {
-        return <p className="text-muted-foreground">No activities recorded.</p>;
-      }
-
-      return (
-        <div className="overflow-x-auto border rounded-lg">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="bg-muted">
-                <th className="border p-4 text-left font-semibold">Semester</th>
-                <th className="border p-4 text-left font-semibold">Sports</th>
-                <th className="border p-4 text-left font-semibold">Co-curricular</th>
-                <th className="border p-4 text-left font-semibold">Extra-curricular</th>
-                <th className="border p-4 text-left font-semibold">SNA</th>
-                <th className="border p-4 text-left font-semibold">NSS/YRC/RRC</th>
-                <th className="border p-4 text-left font-semibold">CNE</th>
-                <th className="border p-4 text-left font-semibold">Awards/Rewards</th>
-              </tr>
-            </thead>
-            <tbody>
-              {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map((sem) => {
-                const act = activities.find((a: any) => a.semester === sem) || {};
-
-                return (
-                  <tr key={sem} className="hover:bg-muted/30 transition-colors">
-                    <td className="border p-4 font-medium text-center bg-muted/20">
-                      {sem}
-                    </td>
-                    <td className="border p-4 min-w-[120px]">{act.sports || "-"}</td>
-                    <td className="border p-4 min-w-[120px]">{act.coCurricular || "-"}</td>
-                    <td className="border p-4 min-w-[120px]">{act.extraCurricular || "-"}</td>
-                    <td className="border p-4 min-w-[80px]">{act.sna || "-"}</td>
-                    <td className="border p-4 min-w-[100px]">{act.nssYrcRrc || "-"}</td>
-                    <td className="border p-4 min-w-[80px]">{act.cne || "-"}</td>
-                    <td className="border p-4 min-w-[140px] font-medium text-emerald-700">
-                      {act.awardsRewards || "-"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      );
-    }
-
-    // === ATTENDANCE - STEP 4 ===
-    if (stepId === "step4") {
-      const attendanceRecords = Array.isArray(section) ? section : section?.semesters || [];
-
-      if (!attendanceRecords || attendanceRecords.length === 0) {
-        return <p className="text-muted-foreground">No attendance data available.</p>;
-      }
-
-      return (
-        <div className="space-y-6">
-          <div className="overflow-x-auto border rounded-lg">
-            <table className="w-full border-collapse min-w-[800px] text-sm">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="border p-3 text-left font-semibold">Semester</th>
-                  <th className="border p-3 text-left font-semibold">Working Days</th>
-                  <th className="border p-3 text-left font-semibold">Annual Leave</th>
-                  <th className="border p-3 text-left font-semibold">Sick Leave</th>
-                  <th className="border p-3 text-left font-semibold">Gazetted Holidays</th>
-                  <th className="border p-3 text-left font-semibold">Other Leave</th>
-                  <th className="border p-3 text-center font-semibold">
-                    Compensation<br />
-                    <span className="text-xs font-normal text-muted-foreground">Days/Hrs</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {["I", "II", "III", "IV", "V", "VI", "VII", "VIII"].map((sem) => {
-                  const record = attendanceRecords.find((r: any) =>
-                    r.semester === sem || r.semester === `Semester ${sem}`
-                  ) || {};
-
-                  return (
-                    <tr key={sem} className="hover:bg-muted/30 transition-colors">
-                      <td className="border p-3 font-medium text-center bg-muted/20">
-                        Semester {sem}
-                      </td>
-                      <td className="border p-3 text-center">{record.workingDays ?? "-"}</td>
-                      <td className="border p-3 text-center">{record.annualLeave ?? "-"}</td>
-                      <td className="border p-3 text-center">{record.sickLeave ?? "-"}</td>
-                      <td className="border p-3 text-center">{record.gazettedHolidays ?? "-"}</td>
-                      <td className="border p-3 text-center">{record.otherLeave ?? "-"}</td>
-                      <td className="border p-3 text-center font-medium">
-                        {record.compensationDaysHours || "-"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-xs text-muted-foreground italic">
-            Note: Other Leave includes arrear study holidays, arrear examination leave, and important family functions.
-          </p>
-        </div>
-      );
-    }
-
-    // === EDUCATIONAL QUALIFICATION - STEP 2 ===
-    if (stepId === "step2") {
-      const clean = filterData(section);
-
-      return (
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {clean.streamGroup && (
-              <div className="p-4 border rounded-lg bg-muted/30">
-                <p className="font-semibold text-sm">Stream/Group</p>
-                <p className="text-muted-foreground">{clean.streamGroup}</p>
-              </div>
-            )}
-            {clean.boardOfExamination && (
-              <div className="p-4 border rounded-lg bg-muted/30">
-                <p className="font-semibold text-sm">Board of Examination</p>
-                <p className="text-muted-foreground">{clean.boardOfExamination}</p>
-              </div>
-            )}
-            {clean.yearOfPassing && (
-              <div className="p-4 border rounded-lg bg-muted/30">
-                <p className="font-semibold text-sm">Year of Passing</p>
-                <p className="text-muted-foreground">{clean.yearOfPassing}</p>
-              </div>
-            )}
-            {clean.certificateNo && (
-              <div className="p-4 border rounded-lg bg-muted/30">
-                <p className="font-semibold text-sm">Certificate No.</p>
-                <p className="text-muted-foreground">{clean.certificateNo}</p>
-              </div>
-            )}
-            {clean.mediumOfInstruction && (
-              <div className="p-4 border rounded-lg bg-muted/30">
-                <p className="font-semibold text-sm">Medium of Instruction</p>
-                <p className="text-muted-foreground">{clean.mediumOfInstruction}</p>
-              </div>
-            )}
-            {clean.certificateDate && (
-              <div className="p-4 border rounded-lg bg-muted/30">
-                <p className="font-semibold text-sm">Certificate Date</p>
-                <p className="text-muted-foreground">{clean.certificateDate}</p>
-              </div>
-            )}   {clean.hscVerificationNo && (
-              <div className="p-4 border rounded-lg bg-muted/30">
-                <p className="font-semibold text-sm">HSC Verification No</p>
-                <p className="text-muted-foreground">{clean.hscVerificationNo}</p>
-              </div>
-            )}
-            {clean.hscVerificationDate && (
-              <div className="p-4 border rounded-lg bg-muted/30">
-                <p className="font-semibold text-sm">HSC Verification Date</p>
-                <p className="text-muted-foreground">{clean.hscVerificationDate}</p>
-              </div>
-            )}
-          </div>
-
-          {clean.subjects && Array.isArray(clean.subjects) && clean.subjects.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-lg font-semibold mb-4">Marks Obtained</h3>
-              <EducationalMarksTable
-                subjects={clean.subjects}
-                totalPlusOneAttempts={clean.totalPlusOneAttempts || []}
-                totalPlusTwoAttempts={clean.totalPlusTwoAttempts || []}
-              />
-            </div>
-          )}
-        </div>
-      );
-    }
 
     // === DEFAULT RENDERING ===
     const clean = filterData(section);
@@ -1045,12 +1331,12 @@ const StudentView = () => {
       {/* TOP PROFILE CARD */}
       <Card className="mb-6 border-2 shadow">
         <CardHeader className="flex flex-row items-center gap-4">
-          {data.step1?.photoUrl || data.step1?.photo ? (
+          {data.step3?.photoUrl || data.step3?.photo ? (
             <img
               src={
-                (data.step1?.photoUrl || data.step1?.photo)?.startsWith('http')
-                  ? (data.step1?.photoUrl || data.step1?.photo)
-                  : `${import.meta.env.VITE_BACKEND_URL}${data.step1?.photoUrl || data.step1?.photo}`
+                (data.step3?.photoUrl || data.step3?.photo)?.startsWith('http')
+                  ? (data.step3?.photoUrl || data.step3?.photo)
+                  : `${import.meta.env.VITE_BACKEND_URL}${data.step3?.photoUrl || data.step3?.photo}`
               }
               alt="profile"
               className="w-32 h-40 object-cover rounded-sm border-2 border-border shadow-md"
@@ -1062,9 +1348,11 @@ const StudentView = () => {
             </div>
           )}
           <div>
-            <CardTitle className="text-xl">{data.step1?.studentName}</CardTitle>
+            <CardTitle className="text-xl">{data.step3?.studentName || data.step3?.name || "Student Profile"}</CardTitle>
             <p className="text-muted-foreground text-sm">Student ID: {studentId}</p>
-            {/* <p className="text-muted-foreground text-sm">Registration No: {data.step1?.regNo}</p> */}
+            {data.step3?.universityRegistration && (
+              <p className="text-muted-foreground text-sm uppercase">Reg No: {data.step3.universityRegistration}</p>
+            )}
           </div>
         </CardHeader>
       </Card>

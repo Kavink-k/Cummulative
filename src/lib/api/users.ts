@@ -3,7 +3,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export interface RegisterUserData {
     name: string;
     designation: string;
-    collegeName: string;
+    institutionId: number;
     email: string;
     phone: string;
     password: string;
@@ -18,7 +18,13 @@ export interface UserResponse {
     id: number;
     name: string;
     designation: string;
-    collegeName: string;
+    institutionId: number;
+    institution?: {
+        id: number;
+        institutionName: string;
+        address: string;
+        batch: string;
+    };
     email: string;
     phone: string;
     role: 'user' | 'admin';

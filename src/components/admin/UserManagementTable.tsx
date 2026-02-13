@@ -121,9 +121,9 @@ export default function UserManagementTable({
                                     <TableCell className="font-medium">{user.name}</TableCell>
                                     <TableCell>{user.email}</TableCell>
                                     <TableCell>{user.designation}</TableCell>
-                                    <TableCell className="max-w-[200px] truncate">{user.collegeName}</TableCell>
+                                    <TableCell className="max-w-[200px] truncate">{user.institution?.institutionName || '—'}</TableCell>
                                     <TableCell>
-                                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                                        <Badge variant={user.role === 'admin' ? 'default' : user.role === 'principal' ? 'outline' : 'secondary'}>
                                             {user.role}
                                         </Badge>
                                     </TableCell>
