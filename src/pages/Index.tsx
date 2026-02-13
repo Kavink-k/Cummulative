@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormStepper } from "@/components/FormStepper";
+import { InstitutionForm } from "@/components/InstitutionForm";
+import { GeneralInstructions } from "@/components/GeneralInstructions";
 import { PersonalProfileForm } from "@/components/PersonalProfileForm";
 import { EducationalQualificationForm } from "@/components/EducationalQualificationForm";
 import { AdmissionDetailsForm } from "@/components/AdmissionDetailsForm";
@@ -22,19 +24,22 @@ import { saveDataToBackend, getAllDataByStudentId } from "@/lib/api";
 
 
 
+
 const steps = [
-  { id: 1, title: "Personal Profile", description: "Student's basic information" },
-  { id: 2, title: "Educational Qualification", description: "Academic records" },
-  { id: 3, title: "Admission Details", description: "Admission & certificates" },
-  { id: 4, title: "Attendance Record", description: "Working days & leave details" },
-  { id: 5, title: "Activities & Participation", description: "Sports & co-curricular activities" },
-  { id: 6, title: "Course Instruction", description: "Course details & marks" },
-  { id: 7, title: "Observational Visits", description: "Field visit records" },
-  { id: 8, title: "Clinical Experience", description: "Clinical hours tracking" },
-  { id: 9, title: "Research Projects", description: "Nursing research projects" },
-  { id: 10, title: "Additional Courses", description: "Extra courses completed" },
-  { id: 11, title: "Course Completion", description: "Course completion details" },
-  { id: 12, title: "Verification", description: "Semester-wise verification" },
+  { id: 1, title: "Institution Details", description: "Institution information" },
+  { id: 2, title: "General Instructions", description: "Important guidelines & grading system" },
+  { id: 3, title: "Personal Profile", description: "Student's basic information" },
+  { id: 4, title: "Educational Qualification", description: "Academic records" },
+  { id: 5, title: "Admission Details", description: "Admission & certificates" },
+  { id: 6, title: "Attendance Record", description: "Working days & leave details" },
+  { id: 7, title: "Activities & Participation", description: "Sports & co-curricular activities" },
+  { id: 8, title: "Course Instruction", description: "Course details & marks" },
+  { id: 9, title: "Observational Visits", description: "Field visit records" },
+  { id: 10, title: "Clinical Experience", description: "Clinical hours tracking" },
+  { id: 11, title: "Research Projects", description: "Nursing research projects" },
+  { id: 12, title: "Additional Courses", description: "Extra courses completed" },
+  { id: 13, title: "Course Completion", description: "Course completion details" },
+  { id: 14, title: "Verification", description: "Semester-wise verification" },
 ];
 
 const STORAGE_KEY = "student_cumulative_data";
@@ -105,11 +110,41 @@ const Index = () => {
       try {
         const backendData = await getAllDataByStudentId(step1Data.studentId);
 
+        // **CRITICAL FIX**: Transform step8 data from backend structure to form structure
+        // Backend: [{ semester, attempts: [{ attempt, courses }] }]
+        // Form needs: { studentId, attempts: [{ semester, attemptNumber, courses }] }
+        if (backendData.step8 && Array.isArray(backendData.step8)) {
+          console.log("🔧 Index.tsx - Transforming step8 data...");
+          const flattenedAttempts: any[] = [];
+          
+          backendData.step8.forEach((semesterObj: any) => {
+            const semester = semesterObj.semester;
+            const attempts = Array.isArray(semesterObj.attempts) ? semesterObj.attempts : [];
+            
+            attempts.forEach((attemptObj: any) => {
+              flattenedAttempts.push({
+                semester: semester,
+                attemptNumber: attemptObj.attempt,
+                courses: attemptObj.courses || []
+              });
+            });
+          });
+          
+          // Create a properly typed object for the transformed data
+          const transformedStep8: { studentId: string; attempts: any[] } = {
+            studentId: step1Data.studentId,
+            attempts: flattenedAttempts
+          };
+          // Use type assertion since we're intentionally changing the structure
+          (backendData as any).step8 = transformedStep8;
+          console.log("✅ Index.tsx - step8 transformed, attempts count:", flattenedAttempts.length);
+        }
+
         // Merge backend data with localStorage (localStorage takes precedence)
         const mergedData: Record<string, any> = {};
 
         // Iterate over step keys
-        (['step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'step7', 'step8', 'step9', 'step10', 'step11', 'step12'] as const).forEach((stepKey) => {
+        (['step0', 'step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'step7', 'step8', 'step9', 'step10', 'step11', 'step12', 'step13'] as const).forEach((stepKey) => {
           if (backendData[stepKey]) {
             // If localStorage doesn't have this step, use backend data
             if (!formData[stepKey]) {
@@ -124,7 +159,7 @@ const Index = () => {
         if (Object.keys(mergedData).length > 0) {
           setFormData(prev => ({ ...prev, ...mergedData }));
           ///
-            setIsEditMode(true);
+          setIsEditMode(true);
 
           // Update progress for fetched steps
           const newProgress: Record<number, number> = {};
@@ -148,7 +183,7 @@ const Index = () => {
     };
 
     fetchBackendData();
-  }, [formData.step1?.studentId]); // Only run when studentId changes
+  }, [formData.step3?.studentId]); // Changed from step2 to step3 since Personal Profile is now step 3
 
   const handleNext = () => {
     if (currentStep < steps.length) {
@@ -278,7 +313,7 @@ const Index = () => {
     }
 
     // Data is already auto-saved to localStorage
-    const studentId = formData.step1?.studentId || 'Unknown';
+    const studentId = formData.step3?.studentId || 'Unknown';
     const completedSteps = Object.keys(formData).length;
 
     toast.success('Draft saved successfully!', {
@@ -295,45 +330,47 @@ const Index = () => {
   const getStepDefaultValues = (step: number) => {
     const savedData = formData[`step${step}`] || {};
 
-    // If we are on step 2 or greater, look for studentId in step 1 data
-    if (step > 1) {
-      const step1Data = formData.step1;
-      // If we have a studentId from step 1, ensure it's in the current step's defaults
-      if (step1Data?.studentId && !savedData.studentId) {
-        return { ...savedData, studentId: step1Data.studentId };
+    // If we are on step 4 or greater (after Institution, Instructions, and Personal Profile), look for studentId in step 3 data
+    if (step > 3) {
+      const step3Data = formData.step3; // Personal Profile is now step 3
+      // If we have a studentId from step 3, ensure it's in the current step's defaults
+      if (step3Data?.studentId && !savedData.studentId) {
+        return { ...savedData, studentId: step3Data.studentId };
       }
     }
     return savedData;
   };
 
-// ✅ NEW CODE (FIXED)
-const renderCurrentForm = () => {
-  const defaultValues = getStepDefaultValues(currentStep);
-  
-  // 1. Remove key from the object
-  const commonProps = {
-    onSubmit: handleFormSubmit,
-    defaultValues: defaultValues,
-    onProgressChange: handleProgressChange(currentStep),
-  };
+  // ✅ NEW CODE (FIXED)
+  const renderCurrentForm = () => {
+    const defaultValues = getStepDefaultValues(currentStep);
+
+    // 1. Remove key from the object
+    const commonProps = {
+      onSubmit: handleFormSubmit,
+      defaultValues: defaultValues,
+      onProgressChange: handleProgressChange(currentStep),
+    };
 
     // 2. Define the key separately
     const formKey = `step-${currentStep}-${JSON.stringify(defaultValues)}`;
 
     // 3. Pass the key explicitly to each component
     switch (currentStep) {
-      case 1: return <PersonalProfileForm key={formKey} {...commonProps} />;
-      case 2: return <EducationalQualificationForm key={formKey} {...commonProps} />;
-      case 3: return <AdmissionDetailsForm key={formKey} {...commonProps} />;
-      case 4: return <AttendanceForm key={formKey} {...commonProps} />;
-      case 5: return <ActivitiesParticipationForm key={formKey} {...commonProps} />;
-      case 6: return <CourseInstructionForm key={formKey} {...commonProps} />;
-      case 7: return <ObservationalVisitForm key={formKey} {...commonProps} />;
-      case 8: return <ClinicalExperienceForm key={formKey} {...commonProps} />;
-      case 9: return <ResearchProjectForm key={formKey} {...commonProps} />;
-      case 10: return <AdditionalCoursesForm key={formKey} {...commonProps} />;
-      case 11: return <CourseCompletionForm key={formKey} {...commonProps} />;
-      case 12: return <VerificationForm key={formKey} {...commonProps} />;
+      case 1: return <InstitutionForm key={formKey} {...commonProps} />;
+      case 2: return <GeneralInstructions key={formKey} onNext={handleNext} />;
+      case 3: return <PersonalProfileForm key={formKey} {...commonProps} />;
+      case 4: return <EducationalQualificationForm key={formKey} {...commonProps} />;
+      case 5: return <AdmissionDetailsForm key={formKey} {...commonProps} />;
+      case 6: return <AttendanceForm key={formKey} {...commonProps} />;
+      case 7: return <ActivitiesParticipationForm key={formKey} {...commonProps} />;
+      case 8: return <CourseInstructionForm key={formKey} {...commonProps} />;
+      case 9: return <ObservationalVisitForm key={formKey} {...commonProps} />;
+      case 10: return <ClinicalExperienceForm key={formKey} {...commonProps} />;
+      case 11: return <ResearchProjectForm key={formKey} {...commonProps} />;
+      case 12: return <AdditionalCoursesForm key={formKey} {...commonProps} />;
+      case 13: return <CourseCompletionForm key={formKey} {...commonProps} />;
+      case 14: return <VerificationForm key={formKey} {...commonProps} />;
       default: return null;
     }
   };
@@ -375,7 +412,7 @@ const renderCurrentForm = () => {
               title="Save current progress as draft"
             >
               <Save className="h-4 w-4 mr-2" />
-            Save as   Draft
+              Save as   Draft
             </Button>
           </div>
         </div>
@@ -427,13 +464,13 @@ const renderCurrentForm = () => {
                       }
                     }
                   }
-                }
-                disabled={isSaving}
-              >
-                {isSaving ? "Saving..." : currentStep === steps.length ? "Submit All" : "Save & Next"}
-                {!isSaving && <ChevronRight className="h-4 w-4 ml-2" />}
-              </Button>
-                            {/* <Button
+                  }
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Saving..." : currentStep === steps.length ? "Submit All" : "Save & Next"}
+                  {!isSaving && <ChevronRight className="h-4 w-4 ml-2" />}
+                </Button>
+                {/* <Button
   onClick={() => {
     const form = document.querySelector("form");
 
@@ -459,7 +496,7 @@ const renderCurrentForm = () => {
   }
   <ChevronRight className="h-4 w-4 ml-2" />
 </Button> */}
-            </div>
+              </div>
 
 
             </div>

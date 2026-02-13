@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit, Printer, Loader2 } from "lucide-react";
+import { ArrowLeft, Edit, Printer, Loader2, CheckCircle, XCircle, Clock, ShieldCheck, UserPlus, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { getAllDataByStudentId } from "@/lib/api";
 import { EducationalMarksTable } from "@/components/EducationalMarksTable";
 
@@ -126,32 +127,47 @@ const StudentDetail = () => {
           </CardHeader>
         </Card>
 
-        {student.steps.step1 && (
+        {student.steps.step3 && (
           <Card className="mb-6">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle>Personal Profile</CardTitle>
+              <div className="flex gap-2">
+                {student.steps.step3.approvalStatus === 'APPROVED' ? (
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
+                    <CheckCircle className="h-3 w-3 mr-1" /> Approved
+                  </Badge>
+                ) : student.steps.step3.approvalStatus === 'REJECTED' ? (
+                  <Badge variant="destructive">
+                    <XCircle className="h-3 w-3 mr-1" /> Rejected
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                    <Clock className="h-3 w-3 mr-1" /> Pending Approval
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="flex gap-6">
                 {/* Left side - Personal details */}
                 <div className="flex-1">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <DetailItem label="Name" value={student.steps.step1.studentName} />
-                    <DetailItem label="Age" value={student.steps.step1.age} />
-                    <DetailItem label="Gender" value={student.steps.step1.gender} />
-                    <DetailItem label="Date of Birth" value={student.steps.step1.dateOfBirth} />
-                    <DetailItem label="Nationality" value={student.steps.step1.nationality} />
-                    <DetailItem label="Religion" value={student.steps.step1.religion} />
-                    <DetailItem label="Community" value={student.steps.step1.community} />
-                    <DetailItem label="Nativity" value={student.steps.step1.nativity} />
-                    <DetailItem label="Marital Status" value={student.steps.step1.maritalStatus} />
-                    <DetailItem label="Parent/Guardian" value={student.steps.step1.parentGuardianName} />
-                    <DetailItem label="Mother Tongue" value={student.steps.step1.motherTongue} />
-                    <DetailItem label="Mobile" value={student.steps.step1.contactMobile} />
-                    <DetailItem label="Email" value={student.steps.step1.studentEmail} />
-                    <DetailItem label="Aadhar No" value={student.steps.step1.aadharNo} />
-                    <DetailItem label="EMIS No" value={student.steps.step1.emisNo} />
-                    <DetailItem label="Medium" value={student.steps.step1.mediumOfInstruction} />
+                    <DetailItem label="Name" value={student.steps.step3.studentName} />
+                    <DetailItem label="Age" value={student.steps.step3.age} />
+                    <DetailItem label="Gender" value={student.steps.step3.gender} />
+                    <DetailItem label="Date of Birth" value={student.steps.step3.dateOfBirth} />
+                    <DetailItem label="Nationality" value={student.steps.step3.nationality} />
+                    <DetailItem label="Religion" value={student.steps.step3.religion} />
+                    <DetailItem label="Community" value={student.steps.step3.community} />
+                    <DetailItem label="Nativity" value={student.steps.step3.nativity} />
+                    <DetailItem label="Marital Status" value={student.steps.step3.maritalStatus} />
+                    <DetailItem label="Parent/Guardian" value={student.steps.step3.parentGuardianName} />
+                    <DetailItem label="Mother Tongue" value={student.steps.step3.motherTongue} />
+                    <DetailItem label="Mobile" value={student.steps.step3.contactMobile} />
+                    <DetailItem label="Email" value={student.steps.step3.studentEmail} />
+                    <DetailItem label="Aadhar No" value={student.steps.step3.aadharNo} />
+                    <DetailItem label="EMIS No" value={student.steps.step3.emisNo} />
+                    <DetailItem label="Medium" value={student.steps.step3.mediumOfInstruction} />
                   </div>
                 </div>
 
@@ -159,8 +175,8 @@ const StudentDetail = () => {
                 <div className="flex-shrink-0">
                   <img
                     src={
-                      student.steps.step1?.photoUrl
-                        ? (student.steps.step1.photoUrl.startsWith('http') ? student.steps.step1.photoUrl : `${import.meta.env.VITE_BACKEND_URL}${student.steps.step1.photoUrl}`)
+                      student.steps.step3?.photoUrl || student.steps.step3?.photo
+                        ? ((student.steps.step3?.photoUrl || student.steps.step3?.photo).startsWith('http') ? (student.steps.step3?.photoUrl || student.steps.step3?.photo) : `${import.meta.env.VITE_BACKEND_URL}${student.steps.step3?.photoUrl || student.steps.step3?.photo}`)
                         : '/images/default-profile.svg'
                     }
                     alt={student.name}
@@ -171,69 +187,69 @@ const StudentDetail = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <DetailItem label="Communication Address" value={student.steps.step1.communicationAddress} />
-                <DetailItem label="Permanent Address" value={student.steps.step1.permanentAddress} />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {student.steps.step2 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>2. Educational Qualification</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                <DetailItem label="Stream/Group" value={student.steps.step2.streamGroup} />
-                <DetailItem label="Board" value={student.steps.step2.boardOfExamination} />
-                <DetailItem label="Year of Passing" value={student.steps.step2.yearOfPassing} />
-                <DetailItem label="Certificate No" value={student.steps.step2.certificateNo} />
-                <DetailItem label="Certificate Date" value={student.steps.step2.certificateDate} />
-                <DetailItem label="Medium" value={student.steps.step2.mediumOfInstruction} />
+                <DetailItem label="Communication Address" value={student.steps.step3.communicationAddress} />
+                <DetailItem label="Permanent Address" value={student.steps.step3.permanentAddress} />
               </div>
 
-              {/* Marks Table */}
-              {student.steps.step2.subjects && student.steps.step2.subjects.length > 0 ? (
-                <div>
-                  <h4 className="font-semibold mb-3">Marks Details</h4>
-                  <EducationalMarksTable
-                    subjects={student.steps.step2.subjects}
-                    totalPlusOneAttempts={student.steps.step2.totalPlusOneAttempts || []}
-                    totalPlusTwoAttempts={student.steps.step2.totalPlusTwoAttempts || []}
-                  />
+              {/* AUDIT TRAIL */}
+              <div className="mt-8 pt-6 border-t border-muted">
+                <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4" /> Audit Trail
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-muted/30 p-4 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-100 p-2 rounded-full">
+                      <UserPlus className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Created By</p>
+                      <p className="text-sm font-medium">
+                        {student.steps.step3?.creator?.name || "System"}
+                        {student.steps.step3?.creator?.designation && ` (${student.steps.step3.creator.designation})`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {student.steps.step3?.approver && (
+                    <div className="flex items-center gap-3">
+                      <div className="bg-green-100 p-2 rounded-full">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Approved By</p>
+                        <p className="text-sm font-medium">
+                          {student.steps.step3.approver.name}
+                          {student.steps.step3.approver.designation && ` (${student.steps.step3.approver.designation})`}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {student.steps.step3?.editor && (
+                    <div className="flex items-center gap-3">
+                      <div className="bg-purple-100 p-2 rounded-full">
+                        <Edit className="h-4 w-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Last Edited By</p>
+                        <p className="text-sm font-medium">
+                          {student.steps.step3.editor.name}
+                          {student.steps.step3.editor.designation && ` (${student.steps.step3.editor.designation})`}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <p className="text-muted-foreground">No marks data available.</p>
-              )}
-            </CardContent>
-          </Card>
-        )}
 
-        {student.steps.step3 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Admission Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <DetailItem label="Date of Admission" value={student.steps.step3.dateOfAdmission} />
-                <DetailItem label="Admission Number" value={student.steps.step3.admissionNumber} />
-                <DetailItem label="Roll Number" value={student.steps.step3.rollNumber} />
-                <DetailItem label="University Registration" value={student.steps.step3.universityRegistration} />
-                <DetailItem label="Allotment Category" value={student.steps.step3.allotmentCategory} />
-                {student.steps.step3.govtAllotmentNo && (
-                  <DetailItem label="Govt Allotment No" value={student.steps.step3.govtAllotmentNo} />
-                )}
-                {student.steps.step3.privateAllotmentNo && (
-                  <DetailItem label="Private Allotment No" value={student.steps.step3.privateAllotmentNo} />
-                )}
-                {student.steps.step3.scholarshipSource && (
-                  <DetailItem label="Scholarship Source" value={student.steps.step3.scholarshipSource} />
-                )}
-                {student.steps.step3.scholarshipAmount && (
-                  <DetailItem label="Scholarship Amount" value={`₹${student.steps.step3.scholarshipAmount}`} />
+                {student.steps.step3?.editRequestReason && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                    <p className="text-[10px] uppercase text-blue-600 font-bold tracking-wider mb-1 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> Reason for Edit Request / Modification
+                    </p>
+                    <p className="text-sm text-blue-800 italic">
+                      "{student.steps.step3.editRequestReason}"
+                    </p>
+                  </div>
                 )}
               </div>
             </CardContent>
@@ -243,7 +259,72 @@ const StudentDetail = () => {
         {student.steps.step4 && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>4. Attendance Record</CardTitle>
+              <CardTitle>4. Educational Qualification</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Basic Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <DetailItem label="Stream/Group" value={student.steps.step4.streamGroup} />
+                <DetailItem label="Board" value={student.steps.step4.boardOfExamination} />
+                <DetailItem label="Year of Passing" value={student.steps.step4.yearOfPassing} />
+                <DetailItem label="Certificate No" value={student.steps.step4.certificateNo} />
+                <DetailItem label="Certificate Date" value={student.steps.step4.certificateDate} />
+                <DetailItem label="Medium" value={student.steps.step4.mediumOfInstruction} />
+              </div>
+
+              {/* Marks Table */}
+              {student.steps.step4.subjects && student.steps.step4.subjects.length > 0 ? (
+                <div>
+                  <h4 className="font-semibold mb-3">Marks Details</h4>
+                  <EducationalMarksTable
+                    subjects={student.steps.step4.subjects}
+                    totalPlusOneAttempts={student.steps.step4.totalPlusOneAttempts || []}
+                    totalPlusTwoAttempts={student.steps.step4.totalPlusTwoAttempts || []}
+                  />
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No marks data available.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {student.steps.step5 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>5. Admission Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <DetailItem label="Date of Admission" value={student.steps.step5.dateOfAdmission} />
+                <DetailItem label="Admission Number" value={student.steps.step5.admissionNumber} />
+                <DetailItem label="Roll Number" value={student.steps.step5.rollNumber} />
+                <DetailItem label="University Registration" value={student.steps.step5.universityRegistration} />
+                <DetailItem label="Allotment Category" value={student.steps.step5.allotmentCategory} />
+                {student.steps.step5.allotmentNo && (
+                  <DetailItem
+                    label={student.steps.step5.allotmentCategory === "government" ? "Govt Allotment No" : "Private Allotment No"}
+                    value={student.steps.step5.allotmentNo}
+                  />
+                )}
+                {student.steps.step5.allotmentDate && (
+                  <DetailItem label="Allotment Order Date" value={student.steps.step5.allotmentDate} />
+                )}
+                {student.steps.step5.scholarshipSource && (
+                  <DetailItem label="Scholarship Source" value={student.steps.step5.scholarshipSource} />
+                )}
+                {student.steps.step5.scholarshipAmount && (
+                  <DetailItem label="Scholarship Amount" value={`₹${student.steps.step5.scholarshipAmount}`} />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {student.steps.step6 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>6. Attendance Record</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto border rounded-lg">
@@ -260,7 +341,7 @@ const StudentDetail = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {student.steps.step4.semesters?.map((sem: any) => (
+                    {student.steps.step6.semesters?.map((sem: any) => (
                       <tr key={sem.semester} className="hover:bg-muted/50">
                         <td className="border p-2 font-medium text-center bg-muted/20">{sem.semester}</td>
                         <td className="border p-2">{sem.workingDays || "-"}</td>
@@ -281,10 +362,10 @@ const StudentDetail = () => {
           </Card>
         )}
 
-        {student.steps.step5 && (
+        {student.steps.step7 && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>5. Activities & Participation</CardTitle>
+              <CardTitle>7. Activities & Participation</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto border rounded-lg">
@@ -302,7 +383,7 @@ const StudentDetail = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {student.steps.step5.semesters?.map((sem: any) => (
+                    {student.steps.step7.semesters?.map((sem: any) => (
                       <tr key={sem.semester} className="hover:bg-muted/50">
                         <td className="border p-2 font-medium text-center bg-muted/20">{sem.semester}</td>
                         <td className="border p-2">{sem.sports || "-"}</td>

@@ -25,7 +25,7 @@ type CourseCompletionFormData = z.infer<typeof courseCompletionFormSchema>;
 
 // Predefined certificate names from the Excel file
 const certificateNames = [
-  "Name of the Certificate",
+  // "Name of the Certificate",
   "Course completion certificate",
   "Transfer certificate",
   "Provisional certificate",

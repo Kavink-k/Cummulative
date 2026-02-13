@@ -1,0 +1,19 @@
+{
+    "notes": {
+        "I": "NB: *Will be added to the Internal marks of Nursing Foundation II Theory and Practical respectively in the next semester (Total weightage remains the same).",
+        "II": "NB: Nursing Foundation I & II internal marks for Theory and Practical to be added for calculating IA for Nursing Foundation II.",
+        "III": "NB: * Will be added to the internal marks of Pharmacology II and Pathology II & Genetics in the next semester.",
+        "V": "NB: * Will be added to the Internal Marks of Child Health Nursing II and Mental Health Nursing II in both Theory and Practical respectively to the next semester (total weightage remains same).",
+        "VI": "NB: * Will be added to Internal Marks of Midwifery II Theory and Practical respectively in the next semester (Total weightage remains the same).",
+        "VIII": {
+            "title": "Note",
+            "description": "The final notes apply to the completion of the program at the end of the 8th semester:",
+            "list": [
+                "Research Note: * Research Project - 40 hours.",
+                "SGPA Note: English and Electives are excluded for SGPA calculation.",
+                "Instruction Note: For courses having hours of instruction spread across two semesters, the university examination is conducted in the next semester.",
+                "Credit Note: The credit of two semesters is considered for calculating SGPA for the course."
+            ]
+        }
+    }
+}

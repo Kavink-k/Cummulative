@@ -5,10 +5,16 @@ export type User = {
   id: number;
   name: string;
   designation: string;
-  collegeName: string;
+  institutionId: number;
+  institution?: {
+    id: number;
+    institutionName: string;
+    address: string;
+    batch: string;
+  };
   email: string;
   phone: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'principal';
   isActive: boolean;
 };
 
@@ -29,10 +35,20 @@ export function isAdmin(): boolean {
   return user?.role === 'admin';
 }
 
+export function isPrincipal(): boolean {
+  const user = getUser();
+  return user?.role === 'principal';
+}
+
+export function isMentor(): boolean {
+  const user = getUser();
+  return user?.role === 'user';
+}
+
 export async function register(
   name: string,
   designation: string,
-  collegeName: string,
+  institutionId: number,
   email: string,
   phone: string,
   password: string
@@ -41,7 +57,7 @@ export async function register(
     const userData = await apiRegisterUser({
       name,
       designation,
-      collegeName,
+      institutionId,
       email,
       phone,
       password,
@@ -52,7 +68,8 @@ export async function register(
       id: userData.id,
       name: userData.name,
       designation: userData.designation,
-      collegeName: userData.collegeName,
+      institutionId: userData.institutionId,
+      institution: userData.institution,
       email: userData.email,
       phone: userData.phone,
       role: userData.role || 'user',
@@ -77,7 +94,8 @@ export async function login(email: string, password: string): Promise<User> {
       id: userData.id,
       name: userData.name,
       designation: userData.designation,
-      collegeName: userData.collegeName,
+      institutionId: userData.institutionId,
+      institution: userData.institution,
       email: userData.email,
       phone: userData.phone,
       role: userData.role || 'user',

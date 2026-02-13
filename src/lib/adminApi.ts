@@ -23,14 +23,15 @@ export interface User {
     id: number;
     name: string;
     designation: string;
-    collegeName: string;
+    institutionId: number;
+    institution?: Institution;
     email: string;
     phone: string;
-    role: 'user' | 'admin';
+    role: 'user' | 'admin' | 'principal';
     isActive: boolean;
-    lastLogin?: string;
     createdAt: string;
     updatedAt: string;
+    lastLogin?: string;
 }
 
 export interface UserStats {
@@ -41,6 +42,7 @@ export interface UserStats {
     usersByRole: {
         admin: number;
         user: number;
+        principal: number;
     };
     recentUsers: User[];
 }
@@ -94,11 +96,11 @@ export const getUsers = async (
 export const createUser = async (userData: {
     name: string;
     designation: string;
-    collegeName: string;
+    institutionId: number;
     email: string;
     phone: string;
     password: string;
-    role?: 'user' | 'admin';
+    role?: 'user' | 'admin' | 'principal';
 }): Promise<User> => {
     const response = await axios.post(`${API_BASE_URL}/admin/create`, userData, {
         headers: getHeaders(),
@@ -112,11 +114,11 @@ export const updateUser = async (
     userData: Partial<{
         name: string;
         designation: string;
-        collegeName: string;
+        institutionName: string;
         email: string;
         phone: string;
         password: string;
-        role: 'user' | 'admin';
+        role: 'user' | 'admin' | 'principal';
         isActive: boolean;
     }>
 ): Promise<User> => {
@@ -164,4 +166,51 @@ export const downloadTemplate = async (format: 'csv' | 'xlsx' = 'xlsx'): Promise
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+};
+
+// ========== INSTITUTION MANAGEMENT ==========
+
+const INSTITUTION_API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/institution-details`;
+
+export interface Institution {
+    id: number;
+    institutionName: string;
+    address: string;
+    batch: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Get all institutions
+export const getInstitutions = async (): Promise<Institution[]> => {
+    const response = await axios.get(INSTITUTION_API_BASE_URL);
+    return response.data.data;
+};
+
+// Create new institution
+export const createInstitution = async (data: {
+    institutionName: string;
+    address: string;
+    batch: string;
+}): Promise<Institution> => {
+    const response = await axios.post(INSTITUTION_API_BASE_URL, data);
+    return response.data.data;
+};
+
+// Update institution
+export const updateInstitution = async (
+    id: number,
+    data: Partial<{
+        institutionName: string;
+        address: string;
+        batch: string;
+    }>
+): Promise<Institution> => {
+    const response = await axios.put(`${INSTITUTION_API_BASE_URL}/${id}`, data);
+    return response.data.data;
+};
+
+// Delete institution
+export const deleteInstitution = async (id: number): Promise<void> => {
+    await axios.delete(`${INSTITUTION_API_BASE_URL}/${id}`);
 };

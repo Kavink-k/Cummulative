@@ -7,6 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import UserManagementTable from "@/components/admin/UserManagementTable";
 import UserFormModal from "@/components/admin/UserFormModal";
 import BulkUploadComponent from "@/components/admin/BulkUploadComponent";
+import InstitutionManagementTable from "@/components/admin/InstitutionManagementTable";
+import InstitutionFormModal from "@/components/admin/InstitutionFormModal";
 import {
     getUsers,
     createUser,
@@ -14,17 +16,27 @@ import {
     deleteUser,
     User,
     PaginatedUsers,
+    getInstitutions,
+    createInstitution,
+    updateInstitution,
+    deleteInstitution,
+    Institution,
 } from "@/lib/adminApi";
 
 export default function AdminDashboard() {
     const [usersData, setUsersData] = useState<PaginatedUsers | null>(null);
+    const [institutions, setInstitutions] = useState<Institution[]>([]);
     const [loading, setLoading] = useState(true);
     const [usersLoading, setUsersLoading] = useState(false);
+    const [institutionsLoading, setInstitutionsLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
     const [modalOpen, setModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [institutionModalOpen, setInstitutionModalOpen] = useState(false);
+    const [institutionModalMode, setInstitutionModalMode] = useState<'create' | 'edit'>('create');
+    const [selectedInstitution, setSelectedInstitution] = useState<Institution | null>(null);
     const { toast } = useToast();
 
     const limit = 10;
@@ -46,11 +58,28 @@ export default function AdminDashboard() {
         }
     };
 
+    // Fetch institutions
+    const fetchInstitutions = async () => {
+        setInstitutionsLoading(true);
+        try {
+            const data = await getInstitutions();
+            setInstitutions(data);
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.response?.data?.message || "Failed to fetch institutions",
+                variant: "destructive",
+            });
+        } finally {
+            setInstitutionsLoading(false);
+        }
+    };
+
     // Initial load
     useEffect(() => {
         const loadData = async () => {
             setLoading(true);
-            await fetchUsers();
+            await Promise.all([fetchUsers(), fetchInstitutions()]);
             setLoading(false);
         };
         loadData();
@@ -121,6 +150,57 @@ export default function AdminDashboard() {
         }
     };
 
+    const handleCreateInstitution = () => {
+        setInstitutionModalMode('create');
+        setSelectedInstitution(null);
+        setInstitutionModalOpen(true);
+    };
+
+    const handleEditInstitution = (institution: Institution) => {
+        setInstitutionModalMode('edit');
+        setSelectedInstitution(institution);
+        setInstitutionModalOpen(true);
+    };
+
+    const handleDeleteInstitution = async (institutionId: number) => {
+        try {
+            await deleteInstitution(institutionId);
+            toast({
+                title: "Success",
+                description: "Institution deleted successfully",
+            });
+            await fetchInstitutions();
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.response?.data?.message || "Failed to delete institution",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleSubmitInstitution = async (institutionData: any) => {
+        try {
+            if (institutionModalMode === 'create') {
+                await createInstitution(institutionData);
+                toast({
+                    title: "Success",
+                    description: "Institution created successfully",
+                });
+            } else if (selectedInstitution) {
+                await updateInstitution(selectedInstitution.id, institutionData);
+                toast({
+                    title: "Success",
+                    description: "Institution updated successfully",
+                });
+            }
+            setInstitutionModalOpen(false);
+            await fetchInstitutions();
+        } catch (error: any) {
+            throw error; // Let the modal handle the error
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-screen">
@@ -146,10 +226,11 @@ export default function AdminDashboard() {
                 </Button>
             </div>
 
-            {/* Tabs for User Management and Bulk Upload */}
+            {/* Tabs for User Management, Institution Management, and Bulk Upload */}
             <Tabs defaultValue="users" className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="users">User Management</TabsTrigger>
+                    <TabsTrigger value="institutions">Institution Management</TabsTrigger>
                     <TabsTrigger value="bulk-upload">Bulk Upload</TabsTrigger>
                 </TabsList>
 
@@ -178,6 +259,31 @@ export default function AdminDashboard() {
                     </Card>
                 </TabsContent>
 
+                <TabsContent value="institutions" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle>All Institutions</CardTitle>
+                                    <CardDescription>View and manage all institutions</CardDescription>
+                                </div>
+                                <Button onClick={handleCreateInstitution}>
+                                    <UserPlus2 className="h-4 w-4 mr-2" />
+                                    Add Institution
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <InstitutionManagementTable
+                                institutions={institutions}
+                                onEdit={handleEditInstitution}
+                                onDelete={handleDeleteInstitution}
+                                loading={institutionsLoading}
+                            />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
                 <TabsContent value="bulk-upload">
                     <BulkUploadComponent key={usersData?.total} />
                 </TabsContent>
@@ -190,6 +296,15 @@ export default function AdminDashboard() {
                 onSubmit={handleSubmitUser}
                 user={selectedUser}
                 mode={modalMode}
+            />
+
+            {/* Institution Form Modal */}
+            <InstitutionFormModal
+                open={institutionModalOpen}
+                onClose={() => setInstitutionModalOpen(false)}
+                onSubmit={handleSubmitInstitution}
+                institution={selectedInstitution}
+                mode={institutionModalMode}
             />
         </div>
     );

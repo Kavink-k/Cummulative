@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -19,11 +19,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Import your data file - ensure this path is correct
 import { semesterData } from "./data/semesterData";
+import semesterNotes from "../data/semesterNotes.json";
 
 // Define the shape of a single course
+// Schema for individual course - removed isSelected field
 const courseSchema = z.object({
   sNo: z.string(),
   courseCode: z.string(),
@@ -59,9 +63,11 @@ const courseSchema = z.object({
   rank: z.string().optional(),
 });
 
+// Main form schema - attempt is now required
 const courseInstructionSchema = z.object({
   studentId: z.string().optional(),
   semester: z.string(),
+  attempt: z.number(), // Required for per-semester attempts
   courses: z.array(courseSchema),
 });
 
@@ -237,9 +243,16 @@ function isEditable(semester: string, fieldName: string, rowIndex: number) {
 
 type CourseInstructionFormData = z.infer<typeof courseInstructionSchema>;
 
+// Extended interface to support the new attempts structure
 interface CourseInstructionFormProps {
   onSubmit: (data: CourseInstructionFormData) => void;
-  defaultValues?: Partial<CourseInstructionFormData>;
+  defaultValues?: Partial<CourseInstructionFormData> & {
+    attempts?: Array<{
+      semester: string;
+      attemptNumber: number;
+      courses: any[];
+    }>;
+  };
   onProgressChange?: (progress: number) => void;
 }
 
@@ -320,9 +333,65 @@ export const CourseInstructionForm = ({
   defaultValues,
   onProgressChange,
 }: CourseInstructionFormProps) => {
-  const [selectedSemester, setSelectedSemester] = useState<string>(
-    defaultValues?.semester || "I"
-  );
+  // State: Selected semester
+  // Extract from first attempt if available, otherwise default to "I"
+  const [selectedSemester, setSelectedSemester] = useState<string>(() => {
+    if (defaultValues?.attempts && Array.isArray(defaultValues.attempts) && defaultValues.attempts.length > 0) {
+      return defaultValues.attempts[0].semester || "I";
+    }
+    return "I";
+  });
+  
+  // State: Per-semester attempts tracking (semester -> array of attempt numbers)
+  // CRITICAL: Always start from 0, extract existing attempts from defaultValues
+  const [attemptsBySemester, setAttemptsBySemester] = useState<Map<string, number[]>>(() => {
+    const initialMap = new Map<string, number[]>();
+    
+    // Extract all existing attempts from defaultValues if available
+    if (defaultValues?.attempts && Array.isArray(defaultValues.attempts)) {
+      defaultValues.attempts.forEach((attempt: any) => {
+        const sem = attempt.semester;
+        const attemptNum = attempt.attemptNumber;
+        
+        if (!initialMap.has(sem)) {
+          initialMap.set(sem, []);
+        }
+        const existing = initialMap.get(sem)!;
+        if (!existing.includes(attemptNum)) {
+          existing.push(attemptNum);
+        }
+      });
+      
+      // Ensure EVERY semester has Attempt 0 (even if not in data)
+      initialMap.forEach((attempts, semester) => {
+        if (!attempts.includes(0)) {
+          attempts.unshift(0); // Add 0 at the beginning
+        }
+        attempts.sort((a, b) => a - b); // Sort: 0, 1, 2...
+      });
+    }
+    
+    // Ensure current semester is initialized with at least [0]
+    // Extract first semester from attempts if available
+    const currentSem = (defaultValues?.attempts && Array.isArray(defaultValues.attempts) && defaultValues.attempts.length > 0)
+      ? defaultValues.attempts[0].semester
+      : "I";
+    if (!initialMap.has(currentSem)) {
+      initialMap.set(currentSem, [0]);
+    }
+    
+    return initialMap;
+  });
+  
+  // State: Current selected attempt (starts from 0)
+  const [selectedAttempt, setSelectedAttempt] = useState<number>(0);
+  
+  // State: Enabled rows per semester/attempt combination (key format: "semester-attempt")
+  const [enabledRowsBySemesterAttempt, setEnabledRowsBySemesterAttempt] = useState<Map<string, Set<string>>>(() => {
+    const initialMap = new Map<string, Set<string>>();
+    // For attempt 0, all rows are enabled by default (will be handled in isRowEnabled)
+    return initialMap;
+  });
 
   // Helper to load and normalize template data from semesterData
   const getTemplateCoursesForSemester = (sem: string) => {
@@ -330,26 +399,44 @@ export const CourseInstructionForm = ({
     return rawData.map((r: any) => normalizeRow(r));
   };
 
-  // Helper to merge saved data with template data
-  const getCoursesForSemester = (sem: string, savedData?: any[]) => {
+  // Helper to merge saved data with template data for specific semester and attempt
+  const getCoursesForSemester = (sem: string, attempt: number, savedData?: any) => {
     const templateCourses = getTemplateCoursesForSemester(sem);
 
-    // If no saved data, return template
-    if (!savedData || !Array.isArray(savedData)) {
+    // Handle case where savedData is a single attempt object with courses directly
+    // Format: { semester, attempt, courses: [...], studentId }
+    if (savedData?.courses && Array.isArray(savedData.courses) && !savedData.attempts) {
+      // Check if this matches the requested semester and attempt
+      if (savedData.semester === sem && savedData.attempt === attempt) {
+        return templateCourses.map((template: any) => {
+          const saved = savedData.courses.find(
+            (s: any) => s.sNo === template.sNo || s.courseCode === template.courseCode
+          );
+          return saved ? { ...template, ...saved } : template;
+        });
+      }
       return templateCourses;
     }
 
-    // Filter saved data for this semester
-    const savedCoursesForSem = savedData.filter((c: any) => c.semester === sem);
+    // Handle standard format with attempts array
+    // Format: { studentId, attempts: [{ semester, attemptNumber, courses }] }
+    if (!savedData?.attempts || !Array.isArray(savedData.attempts)) {
+      return templateCourses;
+    }
 
-    // If no saved courses for this semester, return template
-    if (savedCoursesForSem.length === 0) {
+    // Find the specific attempt data for this semester
+    const attemptData = savedData.attempts.find(
+      (a: any) => a.semester === sem && a.attemptNumber === attempt
+    );
+
+    // If no attempt data or courses, return template
+    if (!attemptData?.courses || !Array.isArray(attemptData.courses)) {
       return templateCourses;
     }
 
     // Merge: for each template course, check if there's saved data
-    return templateCourses.map((template: any) => {
-      const saved = savedCoursesForSem.find(
+    const merged = templateCourses.map((template: any) => {
+      const saved = attemptData.courses.find(
         (s: any) => s.sNo === template.sNo || s.courseCode === template.courseCode
       );
 
@@ -361,6 +448,8 @@ export const CourseInstructionForm = ({
       // Otherwise return template
       return template;
     });
+
+    return merged;
   };
 
   // const form = useForm<CourseInstructionFormData>({
@@ -371,35 +460,241 @@ export const CourseInstructionForm = ({
   //     courses: getCoursesForSemester(selectedSemester, defaultValues?.courses),
   //   },
   // });
-const form = useForm({
-  resolver: zodResolver(courseInstructionSchema),
-  defaultValues: {
-    studentId: defaultValues?.studentId || "",
-    semester: defaultValues?.semester || selectedSemester,
-    courses: getCoursesForSemester(
-      defaultValues?.semester || selectedSemester,
-      defaultValues?.courses
-    )
-  },
-});
+  const form = useForm({
+    resolver: zodResolver(courseInstructionSchema),
+    defaultValues: {
+      studentId: defaultValues?.studentId || "",
+      semester: (() => {
+        // Extract semester from first attempt if available
+        if (defaultValues?.attempts && Array.isArray(defaultValues.attempts) && defaultValues.attempts.length > 0) {
+          return defaultValues.attempts[0].semester;
+        }
+        return selectedSemester;
+      })(),
+      courses: getCoursesForSemester(
+        (() => {
+          // Use same logic to get initial semester
+          if (defaultValues?.attempts && Array.isArray(defaultValues.attempts) && defaultValues.attempts.length > 0) {
+            return defaultValues.attempts[0].semester;
+          }
+          return selectedSemester;
+        })(),
+        0, // Start with attempt 0
+        defaultValues
+      ),
+      attempt: 0, // Attempts start from 0
+    },
+  });
   const { fields, replace } = useFieldArray({
     control: form.control,
     name: "courses",
   });
+  
+  // Track if we've already initialized with defaultValues to prevent infinite loops
+  const initializedWithData = useRef(false);
+  const lastDefaultValues = useRef<string>("");
+  
   ///////////
   useEffect(() => {
-  const initialCourses = getCoursesForSemester(selectedSemester, defaultValues?.courses);
-  replace(initialCourses);
-}, []);
+    // Convert defaultValues to string to check if it actually changed
+    const currentData = JSON.stringify(defaultValues);
+    
+    // Only run if data actually changed (not just reference)
+    if (currentData === lastDefaultValues.current) {
+      return; // No change, skip
+    }
+    
+    lastDefaultValues.current = currentData;
+    
+    // CRITICAL FIX: Update selectedSemester and selectedAttempt from saved data
+    // This ensures the form displays the correct semester/attempt in edit mode
+    let targetSemester = selectedSemester;
+    let targetAttempt = 0;
+    
+    if (defaultValues?.attempts && Array.isArray(defaultValues.attempts) && defaultValues.attempts.length > 0) {
+      // Use the first attempt's semester and attempt number
+      targetSemester = defaultValues.attempts[0].semester || selectedSemester;
+      targetAttempt = defaultValues.attempts[0].attemptNumber || 0;
+      
+      // Update states to match the saved data
+      if (targetSemester !== selectedSemester) {
+        setSelectedSemester(targetSemester);
+      }
+      if (targetAttempt !== selectedAttempt) {
+        setSelectedAttempt(targetAttempt);
+      }
+    }
+    
+    const initialCourses = getCoursesForSemester(targetSemester, targetAttempt, defaultValues);
+    
+    // CRITICAL: Use form.reset() instead of just replace() to update ALL form fields
+    // This ensures the entire form (studentId, semester, attempt, courses) is updated
+    form.reset({
+      studentId: defaultValues?.studentId || "",
+      semester: targetSemester,
+      attempt: targetAttempt,
+      courses: initialCourses,
+    });
+    
+    // Initialize enabled rows for the target attempt if we have saved data
+    if (defaultValues?.attempts) {
+      const attemptData = defaultValues.attempts.find(
+        (a: any) => a.semester === targetSemester && a.attemptNumber === targetAttempt
+      );
+      if (attemptData?.courses) {
+        const key = getAttemptKey(targetSemester, targetAttempt);
+        const enabledRows = new Set(attemptData.courses.map((c: any) => c.sNo));
+        setEnabledRowsBySemesterAttempt(new Map(enabledRowsBySemesterAttempt.set(key, enabledRows)));
+      }
+    }
+    
+    // Handle direct course format too
+    if (defaultValues?.courses && Array.isArray(defaultValues.courses) && !defaultValues.attempts) {
+      if (defaultValues.semester && defaultValues.attempt !== undefined) {
+        targetSemester = defaultValues.semester;
+        targetAttempt = defaultValues.attempt;
+        
+        if (targetSemester !== selectedSemester) {
+          setSelectedSemester(targetSemester);
+        }
+        if (targetAttempt !== selectedAttempt) {
+          setSelectedAttempt(targetAttempt);
+        }
+        
+        const key = getAttemptKey(targetSemester, targetAttempt);
+        const enabledRows = new Set(defaultValues.courses.map((c: any) => c.sNo).filter(Boolean));
+        setEnabledRowsBySemesterAttempt(new Map(enabledRowsBySemesterAttempt.set(key, enabledRows)));
+      }
+    }
+    
+    initializedWithData.current = true;
+  }, [defaultValues]); // Keep dependency but use ref to prevent infinite loops
 
   // Handle Semester Change
   const handleSemesterChange = (semester: string) => {
     setSelectedSemester(semester);
     form.setValue("semester", semester);
 
-    // Replace current fields with new semester data (merged with saved data if available)
-    const newCourses = getCoursesForSemester(semester, defaultValues?.courses);
+    // Get or initialize attempts for this semester
+    let semesterAttempts = attemptsBySemester.get(semester);
+    if (!semesterAttempts) {
+      semesterAttempts = [0]; // Initialize with attempt 0
+      setAttemptsBySemester(new Map(attemptsBySemester.set(semester, semesterAttempts)));
+    }
+
+    // Set to first attempt (0)
+    setSelectedAttempt(0);
+    form.setValue("attempt", 0);
+
+    // Load courses for this semester, attempt 0
+    const newCourses = getCoursesForSemester(semester, 0, defaultValues);
     replace(newCourses);
+    
+    // Load enabled rows for this semester/attempt if saved data exists
+    if (defaultValues?.attempts) {
+      const attemptData = defaultValues.attempts.find(
+        (a: any) => a.semester === semester && a.attemptNumber === 0
+      );
+      if (attemptData?.courses) {
+        const key = getAttemptKey(semester, 0);
+        const enabledRows = new Set(attemptData.courses.map((c: any) => c.sNo));
+        setEnabledRowsBySemesterAttempt(new Map(enabledRowsBySemesterAttempt.set(key, enabledRows)));
+      }
+    }
+  };
+
+  // Get the key for enabledRowsBySemesterAttempt Map
+  const getAttemptKey = (semester: string, attempt: number) => `${semester}-${attempt}`;
+
+  // Handle Add Attempt - creates new attempt for current semester only
+  const handleAddAttempt = () => {
+    const currentAttempts = attemptsBySemester.get(selectedSemester) || [0];
+    const newAttemptNumber = Math.max(...currentAttempts) + 1;
+    
+    // Add new attempt to current semester
+    const updatedAttempts = [...currentAttempts, newAttemptNumber];
+    setAttemptsBySemester(new Map(attemptsBySemester.set(selectedSemester, updatedAttempts)));
+    setSelectedAttempt(newAttemptNumber);
+    form.setValue("attempt", newAttemptNumber);
+
+    // Load fresh template with all editable fields empty
+    const templateCourses = getTemplateCoursesForSemester(selectedSemester);
+    replace(templateCourses);
+    
+    // Initialize with all rows disabled (empty Set)
+    const key = getAttemptKey(selectedSemester, newAttemptNumber);
+    setEnabledRowsBySemesterAttempt(new Map(enabledRowsBySemesterAttempt.set(key, new Set<string>())));
+  };
+
+  // Handle Attempt Change - loads data for specific semester/attempt
+  const handleAttemptChange = (attempt: number) => {
+    setSelectedAttempt(attempt);
+    form.setValue("attempt", attempt);
+
+    // Load data for selected semester and attempt
+    const attemptCourses = getCoursesForSemester(selectedSemester, attempt, defaultValues);
+    replace(attemptCourses);
+    
+    // Load enabled rows for this attempt if saved data exists
+    if (defaultValues?.attempts) {
+      const attemptData = defaultValues.attempts.find(
+        (a: any) => a.semester === selectedSemester && a.attemptNumber === attempt
+      );
+      if (attemptData?.courses) {
+        const key = getAttemptKey(selectedSemester, attempt);
+        const enabledRows = new Set(attemptData.courses.map((c: any) => c.sNo));
+        setEnabledRowsBySemesterAttempt(new Map(enabledRowsBySemesterAttempt.set(key, enabledRows)));
+      }
+    }
+  };
+
+  // Toggle row enabled/disabled
+  const handleToggleRow = (sNo: string) => {
+    const key = getAttemptKey(selectedSemester, selectedAttempt);
+    const currentEnabledRows = enabledRowsBySemesterAttempt.get(key) || new Set<string>();
+    const newEnabledRows = new Set(currentEnabledRows);
+    
+    if (newEnabledRows.has(sNo)) {
+      // Disable: remove from set and clear editable field values
+      newEnabledRows.delete(sNo);
+      clearRowEditableFields(sNo);
+    } else {
+      // Enable: add to set
+      newEnabledRows.add(sNo);
+    }
+    
+    setEnabledRowsBySemesterAttempt(new Map(enabledRowsBySemesterAttempt.set(key, newEnabledRows)));
+  };
+
+  // Clear editable fields for a row when disabling
+  const clearRowEditableFields = (sNo: string) => {
+    const courses = form.getValues("courses");
+    const index = courses.findIndex((c: any) => c.sNo === sNo);
+    
+    if (index >= 0) {
+      const editableFields = [
+        'theoryAttended', 'theoryPercentage',
+        'skillLabAttended', 'skillLabPercentage',
+        'clinicalAttended', 'clinicalPercentage',
+        'theoryInternalObtained', 'theoryEndSemObtained', 'theoryTotalObtained',
+        'practicalInternalObtained', 'practicalEndSemObtained', 'practicalTotalObtained',
+        'gradePoint', 'letterGrade', 'sgpa', 'rank', 'universityCourseCode'
+      ];
+      
+      editableFields.forEach(field => {
+        form.setValue(`courses.${index}.${field}` as any, '');
+      });
+    }
+  };
+
+  // Check if row is enabled (for attempt 0, all rows are enabled by default)
+  const isRowEnabled = (sNo: string) => {
+    // For attempt 0, all rows are enabled by default
+    if (selectedAttempt === 0) return true;
+    
+    const key = getAttemptKey(selectedSemester, selectedAttempt);
+    const enabledRows = enabledRowsBySemesterAttempt.get(key) || new Set<string>();
+    return enabledRows.has(sNo);
   };
 
   // Progress Tracking
@@ -437,11 +732,38 @@ const form = useForm({
     }
   }, [defaultValues, form]);
 
+  // CRITICAL: Sync attempt field with selectedAttempt state
+  // This ensures the form always submits the correct attempt number
+  useEffect(() => {
+    form.setValue("attempt", selectedAttempt);
+  }, [selectedAttempt, form]);
+
+  // Handle form submission - filter courses by enabled rows
+  const handleFormSubmit = (data: CourseInstructionFormData) => {
+    const key = getAttemptKey(selectedSemester, selectedAttempt);
+    const enabledRows = enabledRowsBySemesterAttempt.get(key) || new Set<string>();
+    
+    // For attempt 0, include all courses; otherwise filter by enabled rows
+    const filteredCourses = selectedAttempt === 0 
+      ? data.courses
+      : data.courses.filter(c => enabledRows.has(c.sNo));
+    
+    // Structure data for backend: {studentId, semester, attempt, courses}
+    const submissionData = {
+      studentId: data.studentId,
+      semester: selectedSemester,
+      attempt: selectedAttempt,
+      courses: filteredCourses
+    };
+    
+    onSubmit(submissionData);
+  };
+
   return (
     <Form {...form}>
       <form
         id="active-form"
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={form.handleSubmit(handleFormSubmit)}
         className="space-y-6"
       >
         <FormField
@@ -468,11 +790,50 @@ const form = useForm({
           </Select>
         </div>
 
+        <div className="flex items-center gap-4">
+          <Button
+            type="button"
+            onClick={handleAddAttempt}
+            variant="outline"
+            size="sm"
+          >
+            + Add Attempt
+          </Button>
+
+          {/* Show attempt dropdown if more than one attempt exists for current semester */}
+          {(attemptsBySemester.get(selectedSemester)?.length || 0) > 1 && (
+            <>
+              <label className="font-semibold">Attempt:</label>
+              <Select value={String(selectedAttempt)} onValueChange={(v) => handleAttemptChange(Number(v))}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(attemptsBySemester.get(selectedSemester) || []).map((attempt) => (
+                    <SelectItem key={attempt} value={String(attempt)}>
+                      Attempt {attempt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          )}
+        </div>
+
+        {/* Removed selection mode banner - now using +/× toggles per row */}
+
         <div className="border rounded-lg overflow-x-auto">
           <Table>
             <TableHeader>
               {/* Header Rows */}
               <TableRow className="bg-muted/50 text-xs">
+                {/* Action column for row enable/disable toggle (only for attempt > 0) */}
+                <TableHead
+                  rowSpan={4}
+                  className="border-r text-center align-middle min-w-16"
+                >
+                  {selectedAttempt > 0 ? 'Action' : ''}
+                </TableHead>
                 <TableHead
                   rowSpan={4}
                   className="border-r text-center align-middle min-w-12"
@@ -629,7 +990,7 @@ const form = useForm({
                   Internal
                 </TableHead>
                 <TableHead colSpan={2} className="border-r text-center">
-                  End Sem
+                  End Sem / College Examination
                 </TableHead>
                 <TableHead colSpan={2} className="border-r text-center">
                   Total
@@ -639,7 +1000,7 @@ const form = useForm({
                   Internal
                 </TableHead>
                 <TableHead colSpan={2} className="border-r text-center">
-                  End Sem
+                  End Sem / College Examination
                 </TableHead>
                 <TableHead colSpan={2} className="border-r text-center">
                   Total
@@ -678,6 +1039,24 @@ const form = useForm({
                     key={field.id}
                     className="hover:bg-muted/30 text-xs"
                   >
+                    {/* --- ACTION COLUMN: +/× Toggle Button ---  */}
+                    <TableCell className="border-r text-center">
+                      {selectedAttempt > 0 ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => handleToggleRow(field.sNo)}
+                        >
+                          {isRowEnabled(field.sNo) ? '×' : '+'}
+                        </Button>
+                      ) : (
+                        // Empty cell for attempt 0
+                        <span></span>
+                      )}
+                    </TableCell>
+
                     {/* --- COLUMNS 1-4 (Always Visible) --- */}
 
                     {/* 1. S.No */}
@@ -706,7 +1085,8 @@ const form = useForm({
                                 // SHOW INPUT only when editable
                                 <Input
                                   {...formField}
-                                  className="h-8 w-16 text-xs"
+                                  disabled={!isRowEnabled(field.sNo)}
+                                  className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                 />
                               ) : (
                                 // OTHERWISE SHOW TEXT (no input)
@@ -761,7 +1141,8 @@ const form = useForm({
                                   <FormControl>
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   </FormControl>
                                 </FormItem>
@@ -787,7 +1168,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                      className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -816,7 +1198,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -850,7 +1233,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -879,7 +1263,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -913,7 +1298,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -942,7 +1328,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -976,7 +1363,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -1009,7 +1397,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -1042,7 +1431,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -1076,7 +1466,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -1109,7 +1500,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -1142,7 +1534,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -1172,7 +1565,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -1201,7 +1595,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -1230,7 +1625,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -1259,7 +1655,8 @@ const form = useForm({
                                     // SHOW INPUT only when editable
                                     <Input
                                       {...formField}
-                                      className="h-8 w-16 text-xs"
+                                      disabled={!isRowEnabled(field.sNo)}
+                                    className={`h-8 w-16 text-xs ${!isRowEnabled(field.sNo) ? 'opacity-50' : ''}`}
                                     />
                                   ) : (
                                     // OTHERWISE SHOW TEXT (no input)
@@ -1281,10 +1678,36 @@ const form = useForm({
           </Table>
         </div>
 
-        <div className="text-sm text-muted-foreground italic">
-          Note: Fill in marks and attendance for the selected semester.
-        </div>
+
+        {/* Semester Specific Notes */}
+        {semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] && (
+          <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border">
+            {typeof semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] === 'string' ? (
+              <p className="text-sm font-medium text-foreground">
+                {semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] as string}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <h4 className="font-bold text-base text-foreground">
+                  {(semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] as any).title}
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  {(semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] as any).description}
+                </p>
+                <ul className="list-disc list-inside space-y-1">
+                  {(semesterNotes.notes[selectedSemester as keyof typeof semesterNotes.notes] as any).list.map((note: string, idx: number) => (
+                    <li key={idx} className="text-sm text-foreground">{note}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
       </form>
     </Form>
   );
 };
+
+
+
+
